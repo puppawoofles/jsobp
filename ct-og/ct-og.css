@@ -1,0 +1,1845 @@
+/* Structure */
+body {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  background: #e5e5e5;
+  font-family: verdana;
+}
+
+/* Custom tag to hide shit. */
+info {
+	display: none;
+}
+
+.hidden {
+	display: none;
+}
+
+.debug_wrapper {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;	
+}
+
+.debug_wrapper > .main_screen {
+  top: 25px;
+}
+
+.main_screen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;		
+}
+
+.debug_wrapper > .main_screen {
+	right: 300px;
+}
+
+.debug_panel {
+  position: absolute;
+  top: 0;
+  height: 25px;
+  left: 0;
+  right: 0;
+  background: #e5e5e5;
+}
+
+.modal_screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: red;
+}
+
+.info_panel_widget {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 60%;
+  width: 300px;
+  background: #696969;
+  overflow: scroll;
+}
+
+.console_widget {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  height: 40%;
+  width: 300px;
+  background: #636363;    
+}
+
+.card_hud_widget {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  left: 0;
+  height: 200px;
+  background: rgba(0,0,0,.6);
+  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.preview_panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300px;
+  bottom: 212px;
+  background: rgba(0,0,0,.6);
+  overflow-y: scroll;
+}
+
+.preview_panel > .move_preview {
+	text-align: center;
+	background: rgba(0,0,0,.8);
+	color: white;
+	padding-top: 8px;
+	padding-bottom: 8px;
+	margin-bottom: 12px;
+}
+
+.move_preview > .title {
+	font-weight: bolder;
+}
+
+.move_preview .default {
+	animation: wubbleOpacity ease-in-out 0.5s infinite;
+}
+
+@keyframes wubbleOpacity {
+	0% {
+		opacity: 75%;
+	}
+	50% {
+		opacity: 100%;
+	}
+	100% {
+		opacity: 75%;
+	}
+}
+
+.preview_panel > .trigger_preview {
+	background: rgba(0,0,0,.8);
+	color: white;
+	padding-top: 8px;
+	padding-bottom: 8px;
+	margin-bottom: 12px;
+	white-space: nowrap;
+}
+
+.trigger_preview > .content {
+	position: relative;
+}
+
+.trigger_preview > .content > .trigger_preview[active] {	
+	background: rgba(255, 255, 30, 0.1);
+}
+
+.trigger_preview > .content > .trigger_preview[is-pending] {	
+}
+
+.trigger_preview > .content > .trigger_preview {
+	height: 40px;
+	position: absolute;
+	left: 0;
+	right: 0;
+	transition: top ease 0.2s;
+}
+
+.trigger_preview > .content > .trigger_preview > .card_icon  {
+	height: 40px;
+	display: inline-block;
+	width: 40px;
+	text-align: center;
+	vertical-align: bottom;
+	position: absolute;
+	left: 35px;
+}
+
+.trigger_preview > .highlight_gem {
+	position: absolute;
+	display: inline-block;
+	height: 40px;
+	vertical-align: top;
+	text-align: center;
+	left: 15px;
+}
+
+.trigger_preview > .move_name {
+	line-height: 40px;
+	vertical-align: top;
+	position: absolute;
+	left: 80px;
+	right: 30px;
+}
+
+.trigger_preview > .target_type_icon {
+}
+
+.trigger_preview > .target_type_icon {
+	right: 0;
+	position: absolute;
+	width: 30px;
+	background: blue;
+}
+
+.trigger_preview > .content > .trigger_preview > div  {
+	display: inline-block;
+	height: 40px;
+}
+
+
+
+.trigger_preview > .title {
+	font-weight: bolder;
+	text-align: center;
+}
+
+.battlefield_widget_container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #252525;
+}
+
+.battlefield_widget {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  overflow: scroll;
+}
+
+* {
+    transition: box-shadow 500ms ease-out;
+	user-select: none;
+}
+
+input {
+	user-select: auto;
+}
+
+.text {
+	user-select: auto;
+}
+
+
+.highlight {
+	box-shadow: inset 0px 0px 50px 50px #FFFF00;
+	transition: none;
+}
+
+.highlight.red {
+	box-shadow: inset 0px 0px 50px 50px #FF0000;
+	transition: none;
+}
+
+.wub_ui_effect {
+	position: absolute;
+	left: 0;
+	top: 0;
+	display: inline-block;
+	transition: transform linear 0.5s, opacity ease-out 0.5s;
+	opacity: 1;
+	transform: scale(0.7);
+}
+
+.wub_ui_effect.finalize {
+	opacity: 0;
+	transform: scale(4);	
+}
+
+.ui_effect_overlay {
+	pointer-events: none;	
+	position: absolute;
+	height: 0;
+	width: 0;
+	top: 0;
+	left: 0;
+	overflow: visible;
+}
+
+.initiative_tracker {
+	position: absolute;
+	top: 0;
+	left: 300px;
+	right: 12px;
+	height: 50px;
+	padding-left: 5px;
+	padding-right: 5px;
+	border: 1px solid black;
+	background: rgba(0,0,0,.6);
+}
+
+.initiative_tracker > .initiative_doodad {
+	position: absolute;
+	bottom: 1px;
+	left: 20px;
+	height: 0;
+	width: 0;
+	border-left: 4px solid transparent;
+	border-right: 4px solid transparent;
+	border-bottom: 8px solid Yellow;
+}
+
+
+.gem {
+	width: 8px;
+	height: 8px;
+	display: inline-block;
+	transform: rotate(45deg);
+	background: black;
+	border: 1px solid gray;
+	position: relative;
+	top: 8px;
+}
+
+
+[active] .gem {
+	animation: gemActiveFrames ease 1s infinite;
+}
+
+[is-pending][active] .gem {
+	animation: gemActiveFrames ease 1s infinite;
+}
+
+[is-pending] .gem {
+	background: #cd7f32;
+	box-shadow: inset 1px 0px 2px 1px rgba(0, 0, 0, .2);
+}
+
+
+@keyframes gemActiveFrames {
+	0% {
+		background: #cd7f32;
+		box-shadow: 0 0 0 0 rgba(255, 255, 255, 1.0), inset 0 0 0 0 rgba(0, 0, 0, 0.2);
+	}
+
+	48% {
+		background: #fdef32;
+		box-shadow: 0 0 5px 3px rgba(255, 255, 180, 1.0), inset 0 0 2px 0 rgba(255, 255, 255, 0.5);
+		
+	}
+	
+	52% {
+		background: #fdef32;
+		box-shadow: 0 0 5px 3px rgba(255, 255, 180, 1.0), inset 0 0 2px 0 rgba(255, 255, 255, 0.5);
+	}
+	
+	100% {
+		background: #cd7f32;
+		box-shadow: 0 0 0 0 rgba(255, 255, 255, 1.0), inset 0 0 0 0 rgba(0, 0, 0, 0.2);
+	}
+}
+
+
+
+
+.initiative_tracker > .initiative_tracker_contents {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	top: 0;
+	right: 0;
+	padding-left: 5px;
+}
+
+.initiative_tracker > .initiative_tracker_decor {
+	position: absolute;
+	top: -5px;
+	left: 0;
+	right: 0;
+	font-size: 40px;
+	color: #222222;
+	font-weight: bolder;
+	text-align: center;
+}
+
+.initiative_entry:first-child {
+	border-color: white;
+}
+
+.initiative_entry:first-child {
+	animation: activeGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+.initiative_entry {
+	display: inline-block;
+	height: 35px;
+	width: 30px;
+	border: 2px solid black;
+	background: #2f2f2f;
+	text-align: center;
+}
+
+
+
+
+.card_hud_widget > .deck {
+	position: absolute;
+	top: 20px;
+	left: 20px;
+	height: 70px;
+	width: 50px;	
+	background: #222299;
+	border-radius: 4px;
+	box-sizing: border-box;
+	border: 4px solid white;	
+}
+
+.card_hud_widget > .deck > .content {
+	display: none;
+}
+
+.card_hud_widget > div > .size {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 10px;
+	height: 20px;
+	color: white;
+	font-weight: bolder;
+	text-align: center;
+}
+
+.card_hud_widget > .discard > .size {
+	color: black;
+}
+
+
+.card_hud_widget > .discard {
+	position: absolute;
+	top: 110px;
+	left: 20px;
+	height: 70px;
+	width: 50px;	
+	background: white;
+	border-radius: 4px;
+	box-sizing: border-box;
+}
+
+.card_hud_widget > .discard > .content {
+	display: none;
+}
+
+.card_hud_widget > .hand {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 125px;
+	right: 0px;
+}
+
+.hand > .content {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+
+/* Info Panel */
+.info_panel_contents {
+	padding: 4px;
+}
+
+.battlefield_unit .defend {
+	position: absolute;
+}
+
+.defend > .decor {
+	font-size: 32px;
+	top: 8px;
+	left: -34px;
+	filter: grayscale(1) brightness(2.5);
+}
+
+.defend > .content {
+	font-size: 16px;
+	top: 22px;
+	left: -32px;
+	width: 30px;
+	text-align: center;	
+}
+
+.battlefield_unit .defend > div {
+	position: absolute;
+}
+
+.battlefield_unit .hp_tracker {
+	position: absolute;
+	top: 20px;
+}
+
+.battlefield_unit[active="true"] > .appearance {
+	animation: activeGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+@keyframes activeGlowey {
+	0% {
+		box-shadow: 0px 0px 15px 0px rgba(255,255,255,1.0);		
+	}	
+	100% {
+		box-shadow: 0px 0px 15px 0px rgba(255,255,255,0.5);		
+	}
+}
+
+
+.battlefield_unit .hp_tracker > progress {
+	position: absolute;
+	top: 25px;
+	left: -24px;
+	width: 90px;
+	height: 16px;
+	appearance: none;
+}
+
+.battlefield_unit .hp_tracker > progress::-webkit-progress-bar {
+	background-color: #2e2e2e;
+	border-radius: 15px;
+	border: 1px solid white;
+}
+
+
+.battlefield_unit .hp_tracker > progress::-webkit-progress-value {
+	background-color: #159915;
+	border-radius: 15px;
+}
+
+
+.battlefield_unit .hp_tracker > .hp_text {
+	position: absolute;
+	top: 25px;
+	left: 0;
+	right: 0;
+	text-align: center;
+	font-size: 12px;
+	color: white;
+}
+
+.compendium * {
+	display: none;
+}
+
+.holding_area * {
+	display: none;
+}
+
+
+/* Battlefield */
+
+.battlefield_widget_inner {
+	padding: 20px;
+	padding-top: 70px;
+	padding-bottom: 220px;
+	padding-left: 320px;
+	background: #252525;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.battlefield_widget_overlay {
+	position: absolute;
+	height: 0;
+	width: 0;
+	top: 0;
+	left: 0;
+	overflow: visible;
+}
+
+.battlefield_unit {
+	position: absolute;
+	width: 40px;
+	height: 40px;
+	text-align: center;
+	background-color: #111111;
+	border-radius: 50%;
+	border: 2px solid SkyBlue;
+}
+
+.battlefield_unit .flank {
+	display: none;
+	position: absolute;
+	right: -12px;
+	top: 22px;
+}
+
+.battlefield_unit[flanked="true"] .flank {
+	display: block;
+}
+
+.battlefield_unit .support {
+	display: none;
+	position: absolute;
+	left: -12px;
+	top: 22px;
+}
+
+
+.battlefield_unit[supported="true"] .support {
+	display: block;
+}
+
+.battlefield_unit[team-id="AI"] {
+	border: 2px solid orange;
+}
+
+.battlefield_unit.target_active {
+	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+	box-shadow: inset 0px 0px 20px 20px #DDDD88;
+}
+
+@keyframes targetGlowey {
+	0% {
+		box-shadow: inset 0px 0px 10px 0px #dddd88;
+	}
+	100% {
+		box-shadow: inset 0px 0px 10px 10px #dddd88;		
+	}	
+}
+
+.no_transition {
+	transition: none;
+}
+
+
+.battlefield_unit .appearance {
+	position: absolute;
+	left: -2px;
+	right: -2px;
+	top: -2px;
+	bottom: -2px;
+	border-radius: inherit;
+	line-height: 42px;
+}
+
+.battlefield_root {
+  display: table;
+  background: darkgreen;
+}
+
+.battlefield_root > div > div {
+	border: 0.5px solid black;
+}
+
+.battlefield_header {
+	display: table-row;
+}
+
+.battlefield_header > div {
+	height: 30px;
+	vertical-align: middle;
+}
+
+.battlefield_transition_row {
+	display: table-row;
+}
+
+.battlefield_row {
+	display: table-row;
+}
+
+.battlefield_label {
+	display: table-cell;
+	min-width: 30px;
+	max-width: 30px;
+	vertical-align: middle;
+}
+
+.battlefield_transition_row > .battlefield_edge {
+	display: table-cell;
+	min-width: 100px;
+	max-width: 100px;
+	min-height: 10px;
+	height: 10px;
+	max-height: 10px;
+}
+
+.battlefield_edge {
+	display: table-cell;
+	min-width: 10px;
+	max-width: 10px;
+	min-height: 100px;
+	height: 100px;
+	max-height: 100px;
+}
+
+.battlefield_point {
+	display: table-cell;
+	min-width: 10px;
+	max-width: 10px;
+	min-height: 10px;
+	height: 10px;
+	max-height: 10px;
+}
+
+.battlefield_cell {
+	display: table-cell;
+	min-width: 100px;
+	max-width: 100px;
+	min-height: 100px;
+	height: 100px;
+	max-height: 100px;
+}
+
+.battlefield_cell.target_active {
+	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+.beeg_grid_cell.target_active .underlay {
+	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+	box-shadow: inset 0px 0px 20px 20px #DDDD88;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+/* Console */
+.console_input {
+	position: absolute;
+	height: 20px;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	width: calc(100% - 8px);
+}
+
+.log_level_selectors {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 20px;
+	bottom: 26px;
+}
+
+.log_history {
+	position: absolute;
+	top: 0;
+	bottom: 50px;
+	left: 0;
+	right: 0;	
+	overflow: scroll;
+}
+
+.log_entry {
+	margin-top:4px;
+	padding: 4px;
+	background: rgba(255, 255, 255, .1);
+	font-family: arial;
+	font-size: small;
+}
+
+.upside-down {
+	transform: rotate(180deg);
+}
+
+/* Icon */
+
+.icon_single_card {
+	display: inline-block;
+	background: white;
+	height: 33px;
+	width: 23px;
+	border: 1px solid black;
+	color: gray;
+	font-size: 30px;
+	border-radius: 4px;
+	line-height: 42px;
+	position: relative;
+}
+
+.icon_single_card.heart {
+	line-height: 30px;
+}
+
+.icon_single_card.spade {
+	line-height: 30px;
+}
+
+.icon_single_card.diamond {
+	line-height: 30px;
+}
+
+.icon_single_card.club {
+	line-height: 30px;
+}
+
+.icon_single_card.joker {
+	font-size: 17px;
+	line-height: 30px;
+}
+
+
+.icon_single_card > .sub-icon1 {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	text-align: center;
+}
+
+.sub-icon.spade {
+	color: black;
+}
+
+.sub-icon.heart {
+	color: firebrick;
+}
+
+.sub-icon.diamond {
+	color: steelblue;
+}
+
+.sub-icon.club {
+	color: MediumSeaGreen;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon1 {
+	font-size: 20px;
+	position: absolute;
+	top: -15px;
+	left: 0px;
+	right: auto;
+}
+
+
+.icon_single_card .slash {
+	position: absolute;
+	left: 6px;
+	top: -6px;
+	transform: rotate(20deg);
+}
+
+.icon_count_0 .slash {
+	display: none;
+
+}
+
+.icon_count_op1 .slash {
+	display: none;
+}
+
+.icon_count_op1 .sub-icon1 {
+	font-size: 16px;
+	top: -12px;
+}
+
+.icon_count_op1 .icon_single_card .sub-icon2 {
+	font-size: 12px;
+	left: 0;
+	right: 0;
+	top: 4px;
+	text-align: center;
+}
+
+.icon_count_1 .slash {
+	display: none;	
+}
+
+.sub-icon1.any-rank {
+	font-size: 20px;
+	top: -22px;
+	left: 0px;
+	right: auto;
+}
+
+.icon_single_card > .sub-icon2 {
+	font-size: 20px;
+	position: absolute;
+	bottom: -10px;
+	right: 0px;
+}
+
+.icon_single_card.icon_count_0 > .sub-icon2 {
+	display: none;
+
+}
+
+.icon_single_card.icon_count_1 > .sub-icon2 {
+	display: none;
+	
+}
+
+.icon_single_card.icon_count_2 > .sub-icon1.spade {
+	left: 1px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon1.diamond {
+	left: 1px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon1.heart {
+	left: 1px;
+	top: -14px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon1.club {
+	left: 1px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon2.spade {
+	right: 1px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon2.diamond {
+	right: 1px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon2.heart {
+	right: 1px;
+	top: -12px;
+}
+
+.icon_single_card.icon_count_2 > .sub-icon2.club {
+	right: 1px;
+}
+
+.icon_set_card {
+	display: inline-block;
+	position: relative;
+	width: 40px;
+	height: 40px;
+	whitespace: nowrap;
+	text-align: center;
+}
+
+.icon_set_card > .icon_single_card.first_child {
+	position: absolute;
+	transform: rotate(-20deg);
+	height: 26px;
+	width: 18px;
+	left: 0;
+	bottom: 8px;
+}
+
+.icon_set_card > .icon_single_card.second_child {
+	position: absolute;
+	transform: rotate(20deg);
+	height: 26px;
+	width: 18px;
+	right: 0;
+	bottom: 8px;	
+}
+
+.icon_set_card > .icon_single_card.third_child {
+	position: relative;
+	transform: rotate(0);
+}
+
+.icon_sum_card {
+	display: inline-block;
+	position: relative;
+	width: 40px;
+	height: 40px;
+	white-space: nowrap;
+}
+
+.icon_sum_card > .icon_single_card {
+	white-space: break-spaces;
+	font-size: 15px;
+	line-height: 15px;
+	text-align: center;
+}
+
+.icon_sum_card > .icon_single_card.first_child {
+	position: absolute;
+	transform: rotate(-20deg);
+	height: 26px;
+	width: 18px;
+	left: 0;
+	bottom: 8px;
+}
+
+.icon_sum_card > .icon_single_card.second_child {
+	position: absolute;
+	transform: rotate(20deg);
+	height: 26px;
+	width: 18px;
+	right: 0;
+	bottom: 8px;	
+}
+
+.icon_sum_card > .icon_single_card.third_child {
+	position: relative;
+	transform: rotate(0);	
+}
+
+
+/* Cards */
+.card {
+	position: relative;
+	display: inline-block;
+	height: 160px;
+	width: 115px;
+	border: 2px solid black;
+	background: white;
+	border-radius: 8px;
+}
+
+.hand .card {
+	top: 20px;
+	transition: top 100ms ease-in;;
+}
+
+.hand > .size {
+	display: none;
+}
+
+.hand .card[selected] {
+	top: 0px;
+}
+
+.card > .rank-suit {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	text-align: center;
+}
+
+.card > .rank-suit.upside-down {
+	top: auto;
+	left: auto;
+	right: 8px;
+	bottom: 8px;
+}
+
+.card > .rank-suit > .rank {
+	font-size: 24px;	
+}
+
+.card > .rank-suit > .suit {
+	font-size: 32px;
+	position: relative;
+	top: -12px;
+}
+
+
+.card[rank="1"] > .rank-suit > .rank:after {
+	content: "A";
+}
+
+.card[rank="2"] > .rank-suit >.rank:after {
+	content: "2";
+}
+
+
+.card[rank="3"] > .rank-suit >.rank:after {
+	content: "3";
+}
+
+
+.card[rank="4"] > .rank-suit >.rank:after {
+	content: "4";
+}
+
+
+.card[rank="5"] > .rank-suit >.rank:after {
+	content: "5";
+}
+
+
+.card[rank="6"] > .rank-suit >.rank:after {
+	content: "6";
+}
+
+
+.card[rank="7"] > .rank-suit >.rank:after {
+	content: "7";
+}
+
+.card[rank="8"] > .rank-suit >.rank:after {
+	content: "8";
+}
+
+.card[rank="9"] > .rank-suit >.rank:after {
+	content: "9";
+}
+
+.card[rank="10"] > .rank-suit >.rank:after {
+	content: "10";
+	letter-spacing: -6px;
+	position: relative;
+	left: -5px;
+}
+
+.card[rank="11"] > .rank-suit >.rank:after {
+	content: "J";
+}
+
+.card[rank="12"] > .rank-suit >.rank:after {
+	content: "Q";
+}
+
+.card[rank="13"] > .rank-suit >.rank:after {
+	content: "K";
+}
+
+.card[rank="0"][suit="joker"] > .decor > [pip]:after {
+	content: "\01F436";
+}
+
+.card[rank="13"][suit="heart"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F9D4";
+	white-space: pre;
+}
+
+.card[rank="13"][suit="spade"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F9D4";
+	white-space: pre;
+}
+
+.card[rank="13"][suit="club"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F9D4";
+	white-space: pre;
+}
+
+.card[rank="13"][suit="diamond"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F9D4";
+	white-space: pre;
+}
+
+.card[rank="12"][suit="heart"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F469";
+	white-space: pre;
+}
+
+.card[rank="12"][suit="spade"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F469";
+	white-space: pre;
+}
+
+.card[rank="12"][suit="club"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F469";
+	white-space: pre;
+}
+
+.card[rank="12"][suit="diamond"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F469";
+	white-space: pre;
+}
+
+.card[rank="11"][suit="heart"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F431";
+	white-space: pre;
+}
+
+.card[rank="11"][suit="spade"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F431";
+	white-space: pre;
+}
+
+.card[rank="11"][suit="club"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F431";
+	white-space: pre;
+}
+
+.card[rank="11"][suit="diamond"] > .decor > [pip]:after {
+	content: "\01F451 \a \01F431";
+	white-space: pre;
+}
+
+.card[suit=joker][rank="0"] > .rank-suit >.suit:after {
+	content: "J\a O\a K\a E\a R";
+	white-space: pre;
+}
+
+.card[suit=joker][rank="0"] > .rank-suit > .suit {
+	font-size: 16px;
+	font-weight: bolder;
+	top: 0px;	
+}
+
+.card[suit=spade] > .rank-suit >.suit:after {
+	content: "\2660";
+}
+
+.card[suit=spade] > .decor > [pip]:after {
+	content: "\2660";
+}
+
+.card[suit=heart] > .rank-suit >.suit:after {
+	content: "\2665";
+}
+
+.card[suit=heart] > .decor >[pip]:after {
+	content: "\2665";
+}
+
+.card[suit=diamond] > .rank-suit >.suit:after {
+	content: "\2666";
+}
+
+.card[suit=diamond] > .decor > [pip]:after {
+	content: "\2666";
+}
+
+.card[suit=club] > .rank-suit >.suit:after {
+	content: "\2663";
+}
+
+.card[suit=club] > .decor > [pip]:after {
+	content: "\2663";
+}
+
+.card > .decor {
+	position: absolute;
+	left: 8px;
+	top: 8px;
+	right: 8px;
+	bottom: 8px;
+}
+
+.card > .decor > [pip] {
+	display: none;
+	position: absolute;
+	text-align: center;
+	overflow: visible;
+	height: 10px;
+}
+
+.card[rank="1"] > .decor {
+	font-size: 90px;
+}
+
+.card[rank="1"] > .decor > [pip="1"] {
+	display: block;
+	top: 46px;
+	line-height: 32px;
+	width: 100%;
+	left: 0;
+	right: 0;
+}
+
+.card[rank="2"] > .decor {
+	font-size: 60px;
+}
+
+.card[rank="2"] > .decor > [pip="1"] {
+	display: block;
+	line-height: 32px;
+	top: 0px;
+	width: 100%;
+}
+
+.card[rank="2"] > .decor > [pip="2"] {
+	display: block;
+	line-height: 32px;
+	bottom: 8px; 
+	transform: rotate(180deg);
+	width: 100%;
+}
+
+.card[rank="3"] > .decor {
+	font-size: 48px;
+}
+
+.card[rank="3"] > .decor > [pip="1"] {
+	display: block;
+	top: 0px;
+	width: 100%;
+	line-height: 32px;
+}
+
+.card[rank="3"] > .decor > [pip="2"] {
+	display: block;
+	top: 50px;
+	width: 100%;
+	line-height: 32px;
+	
+}
+.card[rank="3"] > .decor > [pip="3"] {
+	display: block;
+	transform: rotate(180deg);
+	bottom: 0px;
+	width: 100%;
+	line-height: 32px;
+}
+
+.card[rank="4"] > .decor {
+	font-size: 40px;
+}
+
+.card[rank="4"] > .decor > [pip="1"] {
+	display: block;
+	line-height: 32px;
+	right: 20px;
+	top: -2px;
+}
+
+.card[rank="4"] > .decor > [pip="2"] {
+	display: block;
+	line-height: 32px;
+	left: 20px;
+	top: -2px;
+}
+
+.card[rank="4"] > .decor > [pip="3"] {
+	display: block;
+	line-height: 32px;
+	right: 20px;
+	bottom: -2px;
+	transform: rotate(180deg);
+}
+
+.card[rank="4"] > .decor > [pip="4"] {
+	display: block;
+	line-height: 32px;
+	left: 20px;
+	bottom: -2px;
+	transform: rotate(180deg);
+}
+
+.card[rank="5"] > .decor {
+	font-size: 40px;
+}
+
+.card[rank="5"] > .decor > [pip="1"] {
+	display: block;
+	line-height: 32px;
+	right: 20px;
+	top: 0px;
+}
+
+.card[rank="5"] > .decor > [pip="2"] {
+	display: block;
+	line-height: 32px;
+	left: 20px;
+	top: 0px;
+}
+
+.card[rank="5"] > .decor > [pip="3"] {
+	display: block;
+	line-height: 32px;
+	right: 20px;
+	bottom: 0px;
+	transform: rotate(180deg);
+}
+
+.card[rank="5"] > .decor > [pip="4"] {
+	display: block;
+	line-height: 32px;
+	transform: rotate(180deg);
+	left: 20px;
+	bottom: -2px;
+}
+
+.card[rank="5"] > .decor > [pip="5"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	top: 52px;
+}
+
+.card[rank="6"] > .decor {
+	font-size: 40px;
+}
+
+.card[rank="6"] > .decor > [pip="1"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 0;
+}
+
+.card[rank="6"] > .decor > [pip="2"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 0;
+}
+
+.card[rank="6"] > .decor > [pip="3"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 52px;
+}
+
+.card[rank="6"] > .decor > [pip="4"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 52px;
+}
+
+.card[rank="6"] > .decor > [pip="5"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="6"] > .decor > [pip="6"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="7"] > .decor {
+	font-size: 40px;
+}
+.card[rank="7"] > .decor > [pip="1"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 0;
+}
+
+.card[rank="7"] > .decor > [pip="2"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 0;
+}
+
+.card[rank="7"] > .decor > [pip="3"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 52px;
+}
+
+.card[rank="7"] > .decor > [pip="4"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 52px;
+}
+
+.card[rank="7"] > .decor > [pip="5"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="7"] > .decor > [pip="6"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+
+.card[rank="7"] > .decor > [pip="7"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	top: 28px;
+}
+
+.card[rank="8"] > .decor {
+	font-size: 40px;
+}
+
+.card[rank="8"] > .decor > [pip="1"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 0;
+}
+
+.card[rank="8"] > .decor > [pip="2"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 0;
+}
+
+.card[rank="8"] > .decor > [pip="3"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 52px;
+}
+
+.card[rank="8"] > .decor > [pip="4"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 52px;
+}
+
+.card[rank="8"] > .decor > [pip="5"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="8"] > .decor > [pip="6"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+
+.card[rank="8"] > .decor > [pip="7"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	top: 28px;
+}
+
+.card[rank="8"] > .decor > [pip="8"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	bottom: 24px;
+	transform: rotate(180deg);
+}
+
+.card[rank="9"] > .decor {
+	font-size: 40px;
+}
+
+.card[rank="9"] > .decor > [pip="1"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 0;
+}
+
+.card[rank="9"] > .decor > [pip="2"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 0;
+}
+
+.card[rank="9"] > .decor > [pip="3"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 34px;
+}
+
+.card[rank="9"] > .decor > [pip="4"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 34px;
+}
+
+.card[rank="9"] > .decor > [pip="5"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="9"] > .decor > [pip="6"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="9"] > .decor > [pip="7"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 34px;
+}
+
+.card[rank="9"] > .decor > [pip="8"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 34px;
+	
+}
+
+.card[rank="9"] > .decor > [pip="9"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	top: 50px;
+}
+
+.card[rank="10"] > .decor {
+	font-size: 40px;
+}
+
+.card[rank="10"] > .decor > [pip="1"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 0;
+}
+
+.card[rank="10"] > .decor > [pip="2"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 0;
+}
+
+.card[rank="10"] > .decor > [pip="3"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	top: 38px;
+}
+
+.card[rank="10"] > .decor > [pip="4"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	top: 38px;
+}
+
+.card[rank="10"] > .decor > [pip="5"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="10"] > .decor > [pip="6"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 0;
+}
+
+.card[rank="10"] > .decor > [pip="7"] {
+	line-height: 32px;
+	display: block;
+	left: 20px;
+	transform: rotate(180deg);
+	bottom: 38px;
+}
+
+.card[rank="10"] > .decor > [pip="8"] {
+	line-height: 32px;
+	display: block;
+	right: 20px;
+	transform: rotate(180deg);
+	bottom: 38px;
+	
+}
+
+.card[rank="10"] > .decor > [pip="9"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	top: 20px;
+}
+
+.card[rank="10"] > .decor > [pip="10"] {
+	display: block;
+	line-height: 32px;
+	left: 39px;
+	bottom: 20px;
+	transform: rotate(180deg);
+}
+
+.card[suit=joker] {
+	color: gray;
+}
+
+.card[suit=club] {
+	color: MediumSeaGreen;
+}
+
+.card[suit=spade] {
+	color: black;
+
+}
+.card[suit=heart] {
+	color: firebrick;
+}
+
+.card[suit=diamond] {
+	color: steelblue;
+}
+
+.card[rank="0"][suit="joker"] > .decor > [pip="1"] {
+	display: block;
+	top: 52px;
+	line-height: 32px;
+	width: 100%;
+	left: 0;
+	right: 0;
+	font-size: 50px;
+	filter: grayscale(1);
+	opacity: .5;
+}
+
+.card[rank="13"] > .decor > [pip="1"] {
+	display: block;
+	top: 36px;
+	line-height: 36px;
+	width: 100%;
+	left: 0;
+	right: 0;
+	font-size: 36px;
+	filter: grayscale(1);
+	opacity: .5;
+}
+
+.card[rank="12"] > .decor > [pip="1"] {
+	display: block;
+	top: 36px;
+	line-height: 36px;
+	width: 100%;
+	left: 0;
+	right: 0;
+	font-size: 36px;
+	filter: grayscale(1);
+	opacity: .5;
+}
+
+.card[rank="11"] > .decor > [pip="1"] {
+	display: block;
+	top: 36px;
+	line-height: 36px;
+	width: 100%;
+	left: 0;
+	right: 0;
+	font-size: 36px;
+	filter: grayscale(1);
+	opacity: .5;
+}
+
+.intent_tracker .card {
+	height: 23px;
+	width: 16px;
+	border: 1px solid black;
+	border-radius: 2px;
+}
+
+.intent_tracker .card .decor {
+	display: none;
+}
+
+.intent_tracker .card .rank-suit.upside-down {
+	display: none;
+}
+
+.intent_tracker .card .rank-suit > div {
+	font-size: 12px;
+}
+
+.intent_tracker .card .rank-suit > .rank {
+	position: relative;
+	top: -5px;
+}
+
+.intent_tracker .card[rank="10"] .rank-suit > .rank {
+	left: -2px;
+}
+
+.intent_tracker .card[rank="10"] > .rank-suit >.rank:after {
+	left: 0;
+}
+
+.intent_tracker .card[suit=heart] .rank-suit > .suit {
+	line-height: 22px;
+}
+
+.intent_tracker .card[rank="10"] .rank-suit > .rank:after {
+	letter-spacing: -3px;
+}
+
+.intent_tracker .card .rank-suit > .suit {
+	position: relative;
+	line-height: 20px;
+	font-size: 14px;
+}
+
+.intent_tracker .card .rank-suit {
+	top: 3px;
+	left: 3px;
+	right: 3px;
+	left: 3px;
+	text-align: center;
+}
+
+.intent_tracker {
+	position: absolute;
+	top: -20px;
+	left: -30px;
+	right: -30px;
+}
+
+
+/** Custom elements */
+model {
+	display: none;
+}
+
+templates {
+	display: none;
+}
+
+templates * {
+	display: none;
+}
+
+
+/* Google scrollbars. */
+::-webkit-scrollbar{height:16px; width:16px;}
+::-webkit-scrollbar-button{height:0; width:0;}
+::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment{display:block;}
+::-webkit-scrollbar-button:vertical:start:increment,
+::-webkit-scrollbar-button:vertical:end:decrement{display:none;}
+::-webkit-scrollbar-track:vertical,
+::-webkit-scrollbar-track:horizontal,
+::-webkit-scrollbar-thumb:vertical,
+::-webkit-scrollbar-thumb:horizontal{border-style:solid; border-color:transparent;}
+::-webkit-scrollbar-track:vertical{background-clip:padding-box; background-color:#fff; border-left-width:5px; border-right-width:0;}
+::-webkit-scrollbar-track:horizontal{background-clip:padding-box; background-color:#fff; border-bottom-width:0; border-top-width:5px;}
+::-webkit-scrollbar-thumb{-webkit-box-shadow:inset 1px 1px 0 rgba(0,0,0,.1), inset 0 -1px 0 rgba(0,0,0,.07); background-clip:padding-box; background-color:rgba(0,0,0,.2); min-height:28px;padding-top:100px}
+::-webkit-scrollbar-thumb:hover{-webkit-box-shadow:inset 1px 1px 1px rgba(0,0,0,.25); background-color:rgba(0,0,0,.4);}
+::-webkit-scrollbar-thumb:active{-webkit-box-shadow:inset 1px 1px 3px rgba(0,0,0,.35); background-color:rgba(0,0,0,.5);}
+::-webkit-scrollbar-thumb:vertical{border-width:0; border-left-width:5px;}
+::-webkit-scrollbar-thumb:horizontal{border-width:0; border-top-width:5px;}
+::-webkit-scrollbar-track:hover{-webkit-box-shadow:inset 1px 0 0 rgba(0,0,0,.1); background-color:rgba(0,0,0,.05);}
+::-webkit-scrollbar-track:active{-webkit-box-shadow:inset 1px 0 0 rgba(0,0,0,.14), inset -1px -1px 0 rgba(0,0,0,.07); background-color:rgba(0,0,0,.05);}

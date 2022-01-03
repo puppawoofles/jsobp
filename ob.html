@@ -1,0 +1,1305 @@
+<!doctype html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+
+<link rel="stylesheet" href="ob.css" />
+<style type="text/css"></style>
+
+
+
+	<!-- Load code at the top -->
+	<script src="woof/loader.js"></script>
+</head>
+
+<body wt="TargetController"  console-selector=".message_log"
+		wh-c=".ConsoleCommand>TestConsole.OnConsoleCommand,
+			  .contextmenu>InfoPanel.OnInfoClick,
+			  Window.hashchange>InfoPanel.OnHashChange,
+			  .click>DomHighlighter.OnClick"
+	    wh-b="Target.click>TargetController.OnTargetClick,
+			 .mouseover>HoverHelper.OnMouseOver,
+			 .mouseout>HoverHelper.OnMouseOut">
+	<div class="debug_wrapper" wh-b="ScreenWrapper.ScreenChange>TutorialHelper.OnScreenChange">
+		<!-- Debug stuff here. -->
+		<div class="debug_panel"><span compendium="tutorial/title2">👩‍🏫</span><span class="screen" screen-label></span></div>
+		<div class="info_panel_widget">
+			<div class="info_panel_contents"></div>
+		</div>
+		<div class="console_widget"></div>
+
+		<!-- Main screen here. -->
+		<div class="main_screen" wt="MainScreen ScreenWrapper" woof-queue="info.main_screen > [wt='EffectQueue']">
+			<info class="main_screen" wh-b="Effect.Create|Effect.Destroy|Effect.Attr:pending-operation>GameEffectInvoker.OnNewElement">
+				<effects wt="EffectQueue">
+					<handlers default="GameEffectImpls.HandleDefault">
+						<!-- Handlers for round structure -->
+						<handler handler="GameRules.NewRun" event-types="Run"></handler>
+
+						<!-- Handlers for combat behavior -->
+						<!-- Encounter Structure -->
+						<handler handler="EncounterRules.Encounter" event-types="Encounter"></handler>
+						<handler handler="EncounterRules.Round" event-types="Round"></handler>
+						<handler handler="RoundRules.PlayRound" event-types="PlayRound"></handler>
+						<handler handler="RoundRules.Volley" event-types="Volley"></handler>
+						<handler handler="RoundRules.TickCooldowns" event-types="Volley:after"></handler>
+						<handler handler="RoundRules.BlockActivation" event-types="BlockActivation"></handler>
+						<handler handler="RoundRules.ActivateGroup" event-types="ActivateGroup"></handler>
+						<handler handler="UnitRules.UseAbility" event-types="UseAbility"></handler>
+
+						<!-- Combat effects -->
+						<handler handler="UnitRules.Attack" event-types="Attack"></handler>
+						<handler handler="UnitRules.TakeDamage" event-types="TakeDamage"></handler>
+						<handler handler="UnitRules.UnitDeath" event-types="UnitDeath"></handler>
+						<handler handler="UnitRules.UnitRetreat" event-types="UnitRetreat"></handler>
+						<handler handler="UnitRules.UnitMoveToward" event-types="UnitMoveToward"></handler>
+						<handler handler="UnitRules.ShiftUnit" event-types="ShiftUnit"></handler>
+						<handler handler="UnitRules.PushUnit" event-types="PushUnit"></handler>
+						<handler handler="UnitRules.UnitCollision" event-types="UnitCollision"></handler>
+						<handler handler="UnitRules.ApplyStatus" event-types="ApplyStatus" TODO></handler>
+						<handler handler="UnitRules.RemoveStatus" event-types="RemoveStatus" TODO></handler>
+						
+						<!-- Handlers for card behavior -->
+						<handler handler="CardRules.DrawCard" event-types="DrawCard"></handler>
+						<handler handler="CardRules.RefillHand" event-types="RefillHand"></handler>
+						<handler handler="CardRules.DiscardCards" event-types="DiscardCards"></handler>
+						<handler handler="CardRules.DiscardSingleCard" event-types="DiscardSingleCard"></handler>
+						<handler handler="CardRules.ShuffleDiscard" event-types="ShuffleDiscard"></handler>
+						<handler handler="CardRules.PlayCard" event-types="PlayCard" TODO></handler>
+
+						<!-- Handlers for structural UI effects-->
+						<handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after">
+							<ui-effect type="delay" delay="1000"></ui-effect>
+							<ui-effect type="banner" content-fn="EncounterRules.EndOfEncounterBanner"></ui-effect>
+						</handler>
+						<!-- Handlers for UI Effects -->
+						<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after">
+							<ui-effect type="delay" delay="100"></ui-effect>
+						</handler> 
+						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" delay="0">
+							<ui-effect type="blink" blink-color="red"></ui-effect>
+							<ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
+						</handler>
+						<handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit">
+							<ui-effect type="wub" icon="☠️"></ui-effect>
+						</handler>
+						<handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit">
+							<ui-effect type="wub" icon="🏳️"></ui-effect>
+						</handler>
+						<handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after">
+							<ui-effect type="wub" icon="💥" target-fn="UiTreatments.TargetsFromParams" target-param="firstUnit secondUnit"></ui-effect>
+						</handler>
+						<handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before">
+							<ui-effect type="wub" icon="💨" target-fn="UiTreatments.TargetsFromParams" target-param="unit" filter-fn="UnitRules.ShiftFromPush"></ui-effect>
+						</handler>
+						<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before">
+							<ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
+							<ui-effect type="banner" filter-fn="RoundRules.ActivateGroupHasCombo" content-fn="RoundRules.ActivateGroupBanner" extra-classes="slow"></ui-effect>
+							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay="1500"></ui-effect>
+						</handler>
+						<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before">
+							<ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
+						</handler>
+
+						<!-- Handlers for updating functional UI -->
+						<handler label="ActionButtonVolley" handler="EncounterRules.BlockBeforeVolleyIfPaused" event-types="Volley:before"></handler>
+						<handler label="ActionButtonVolley" handler="EncounterRules.RemovePauseBeforeRound" event-types="Round:before"></handler>
+						<handler label="TargetPicker" handler="TargetPicker.PickTarget" event-types="PickTarget"></handler>
+						<handler label="UnitPreAbility" handler="Unit.BeforeUseAbility" event-types="UseAbility:before"></handler>
+						<handler label="UnitPostAbility" handler="Unit.AfterUseAbility" event-types="UseAbility:after"></handler>
+						<handler label="VolleyTrackerRound" handler="VolleyCounter.AfterPlayRound" event-types="PlayRound:after"></handler>
+						<handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
+
+					</handlers>
+
+					<queue wh-c=".AddChild|.RemoveChild>GameEffect.OnChildChange">
+					</queue>
+				</effects>
+			</info>
+
+		</div>
+	</div>
+	
+	<!-- Temporary holding cell for screens not in use. -->
+	<div wt="ScreenHolder" class="holding_area" purpose="hidden">
+	
+	</div>	
+	<!-- Holding cell for where we keep game data (not state) -->
+	<div class="compendium">
+
+		<version hash="0.0.1">
+			<info-panel>
+				<h2>V0.0.1</h2>
+				<p>Initial demo!  What works:</p>
+				<ul>
+					<li>Unit cards can be played.</li>
+					<li>Initial Autobattling Structure</li>
+					<li>Units have scripts that allow them to act during autobattling.</li>
+					<li>Autobattling: <ul>
+						<li>Volley Structure: 8 volleys that units can act on.</li>
+						<li>Units act in block order.</li>
+						<li>Team order within a volley is configurable (e.g. do enemies or allies go first)</li>
+						<li>Units can combo when certain conditions are met.</li>
+					</ul></li>
+					<li>Unit Skills: Allow units to do things during autobattling. <ul>
+						<li>"Strike" skill: Player units do 8 damage, Rats do 2.</li>
+						<li>"Step" skill: Unit moves toward destination 1 square orthogonally.  If it can't, it gains 1 Agility instead (increases number of squares moved next time this is used).</li>
+						<li>"Retreat" skill: Unit removes 1 stack of Retreat status.  Once it's 0, the unit returns to your discard pile.</li>
+					</ul></li>					
+					<li>"Order" cards: Instructs a unit with a short-term goal.  Override each other.<ul>
+						<li>"Reposition": Instruct a unit to move to a given destination.  Temporarily overrides all skills to be "Step"</li>
+						<li>"Retreat": Instruct a unit to return to your discard pile.  Temporarily overrides all skills to be "Retreat", grants 3 stacks of the "Retreat" status.</li>
+					</ul></li>
+					<li>Encounters:<ul>
+						<li>"The Rats": 8 rats distributed between 2 blocks randomly.  Rats only use "Strike" for 2 damage each once per round.</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.2">
+			<info-panel>
+				<h2>V0.0.2</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Unit Skills:<ul>
+						<li>"Push" skill: Pushes a unit back in the direction the acting unit is facing.  If there is another unit in the way, they collide with one another dealing damage.  The distance a unit is pushed is based on the attack strength of the pushing unit against the weight of the defending unit.</li>
+						<li>"Defend" skill: Unit gains Defense, which is used to block damage from attacks and collisions.  This defense is lost at the end of a round.</li>
+						<li>"Bleed" skill: Target enemy gains the Bleed status based on 75% of the unit's attack damage.</li>
+					</ul></li>
+					<li>Player Units:<ul>
+						<li>Units with 🌪️ birth month have "Strike" and "Push" by default.</li>
+						<li>Units with 🔥 birth month have "Strike" and "Bleed" by default.</li>
+						<li>Units with ⛰️ birth month have "Strike" and "Defend" by default.</li>
+						<li>Units with 💧 birth month still only have "Strike".  Sorry, water benders!</li>
+					</ul></li>
+					<li>Enemies:<ul>
+						<li>"Rat": 2 activations: "Strike" from front row; "Step" from mid/back row.</li>
+						<li>"Golem": New enemy!</li>
+					</ul></li>
+					<li>Encounters:<ul>
+						<li>"The Golems": Maybe this is like an Elite combat?  Better kill them before they catch up to you!</li>
+					</ul></li>
+					<li>Gameplay:<ul>
+						<li>Basic Persistence: Your deck is saved after each combat, and is fed into the start of the next one.  Can't heal units yet though!</li>
+						<li>Gold: You get 50 gold when you win a combat now.  Neat!  You also start with 50 gold.  Not that it's particularly useful yet...</li>
+						<li>Card Mechanics: Updated to more closely resemble "normal" games:<ul>
+							<li>You start each combat with 5 cards, and draw 1 card at the start of each round.  (You will start each combat with 6 cards effectively)</li>
+							<li>You can no longer play cards to the discard pile to cycle your deck.  Instead, you can click on your deck icon to draw additional cards.  This costs an increasing amount of gold.</li>
+							<li>The cost of drawing cards caps at 10 gold and increases by 1 for each additional draw.</li>
+							<li>Your max hand size is 10 cards.  If you draw more, your leftmost card is discarded.</li>
+							</ul>
+						</ul></li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.3">
+			<info-panel>
+				<h2>V0.0.3</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Unit Skills:<ul>
+						<li>"Defend" skill: Updated to no longer stack: The largest source of block applies.  It also doesn't expire.</li>
+						<li>"Distract" skill: Delays an enemy's next skill.  Also applies a debuff that removes its ability to combo.</li>
+					</ul></li>
+					<li>Player Units:<ul>
+						<li>Units with 💧 birth month start with Distract.</li>
+					</ul></li>
+					<li>Gameplay:<ul>
+						<li>Rounds: Round structure has been changed.<ul>
+							<li>Rather than have 8 volleys per round, now it will continue playing volleys until you choose to pause.</li>
+							<li>There is a minimum number of volleys per play, however!  And that's 8.</li>
+							<li>Guitar-hero scroll on the left is gone.</li>
+						</ul></li>
+						<li>Targeting:<ul>
+							<li>Units now prioritize targets according to taunt status.</li>
+							<li>Just because a unit is taunted, doesn't mean they will target that unit if there's shit in the way!</li>
+						</ul></li>
+						<li>Taunting: Units can now be taunted, which will change targeting.</li>
+					</ul></li>
+					<li>Cards:<ul>
+						<li>"Hit That One!": Taunts an enemy unit.</li>
+						<li>"Hit Me!": Taunts an ally unit.</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.4">
+			<info-panel>
+				<h2>V0.0.4</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Unit Skills:<ul>
+						<li>Skills now have consistent activation rules (e.g. all Strikes have the same activation).</li>
+						<li>Skills have a new activation zone: Close Quarters.  This is indicated by the arrow portion of the activation icon, and applies to enemy units in the same cell block as the unit.  Units in foreign cell blocks only have Close Quarters abilities available.</li>
+						<li>"Strike": Attack. Front row and close quarters only.  Blocked entirely by barricades.</li>
+						<li>"Throw": Attack. Middle row.  Unblocked by obstacles in the same block.</li>
+						<li>"Shoot": Attack.  Back row.  If this unit has obstacles all up in its business, then it will hit that for half damage.  Otherwise, this will hit the intended target.</li>
+						<li>"Defend": Active everywhere but the middle cell.</li>
+						<li>"Protect": Active everywhere but the corner cells.  If an adjacent ally has low HP, gives them extra block.  Otherwise, applied to self.</li>
+						<li>"Push": Front-row only.</li>
+						<li>"Wind Blast": Back-row only version of Push.</li>
+						<li>"Bleed": Front-row and close quarters only.</li>
+						<li>"Sunder": Front-row and close quarters only.  Reduces block and applies vulnerability.</li>
+						<li>"Distract" skill: Middle-row and close-quarters only.</li>
+					</ul></li>
+					<li>Player Units:<ul>
+						<li>Units randomly have one of Strike, Throw, or Shoot. </li>
+						<li>🌪️ Units randomly have one of Push or Wind Blast. </li>
+						<li>🔥 Units randomly have one of Bleed or Sunder. </li>
+						<li>⛰️ Units randomly have one of Protect or Defend. </li>
+						<li>💧 Units only have Distract for now. </li>
+					</ul></li>
+					<li>Encounters:<ul>
+						<li>Golems: Now immune to Bleed.  You're welcome, Jake.</li>
+						<li>Jimmy, the Rat King: New boss fight to test Close Quarters mechanics.  Give it a try!</li>
+					</ul></li>
+					<li>Cards:<ul>
+						<li>Starter Deck: 10 units instead of 8.</li>
+						<li>"Barricade": The first preparation card!  Costs 3 gold to play, max 5 uses per combat, to drop a 30 HP barricade onto the battlefield.  The barricade can be taunted (either to direct enemies at it, or to direct allies at it to get it out of the way).</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.4.1">
+			<info-panel>
+				<h2>V0.0.4</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Basic Tutorial: Right-click the 👩‍🏫 in the upper left to jump to the most relevant tutorial.</li>
+					<li>Compendium Links are now underlined, and are either blue or yellow (depending on background).</li>
+					<li>Red text in the compendium implies if you hover over it, it might highlight things on screen. Keep an eye out!</li>
+					<li>If you hover over your abilities (either in cards or in combat), it will highlight the locations from which those abilities are active.</li>
+					<li>In the Town screen, Start buttons are now Prepare buttons, where you're able to choose which units go on that encounter.</li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<tutorial hash="title">
+			<info-panel>
+				<h2>Thank you for trying this!</h2>
+
+				<p>Welcome to my playtest, and thank you for trying this!</p>
+				<p>At any time, right-click on the 👩‍🏫 emoji in the upper-left to jump to a relevant tutorial!</p>
+				<p>To jump right into how-to-play, <span compendium="tutorial/title2">Right click on this text.</span></p>
+				<p>I am open to all constructive feedback.  Things I want you to focus on include: <ul>
+					<li>Missing pieces of critical functionality.  Examples include:<ul>
+						<li>"It's too difficult to engage with X part of the game because Y is missing."</li>
+					</ul></li>
+					<li>Issues with core mechanics, such as: <ul>
+						<li>"The volley structure is too fussy" (actual feedback that radically changed the game between 0.0.2 and 0.0.3!)</li>
+					</ul></li>
+					<li>Ideas for mechanics, cards, skills, encounters, or anything else, really!</li>
+					<li>If you would like an easter-egg unit, tell me:<ul>
+						<li>Your birthday</li>
+						<li>In preference order, 3 of the following emoji: 🤩😗😀😁🤣🙃😉😜🤑🤐😑😬😴🤮😵🤠🤓🧐😱🐱</li>
+						<li>What name you want your unit to have.</li>
+					</ul></li>
+				</ul></p>
+			</info-panel>
+		</tutorial>
+
+		<tutorial hash="title2">
+			<info-panel>
+				<h2>Getting Started</h2>
+
+				<p>Note that if text is underlined and yellow or blue (depending on background), right-click it and this panel should update!</p>
+				<p>If text in the compendium is red, hover over it to highlight things in the main play area to look at!</p>
+
+				<p>From the title screen, click the <span hover-help="[wt=StartButton]">Start button</span> to start a run!</p>
+			</info-panel>
+		</tutorial>
+		
+		<tutorial hash="townscreen">
+			<info-panel>
+				<h2>Town Screen</h2>
+
+				<p>The top bar shows current run info.  The only useful thing there for now is your <span hover-help=".run_bar .gold_container">current Gold</span>, represented by a yellow circle: 🟡</p>
+				<p>In general, 🟡 with a number in it indicates that it costs that much to do the thing.</p>
+
+				<p>For now, from this screen, you can start 3 combats:<ul>
+					<li>The Rats: A beginner fight that demonstrates being attacked from multiple directions.</li>
+					<li>The Golems: A harder fight that demonstrates enemies that are strong to some unit abilities and can combo with each other.</li>
+					<li>Jimmy the Rat King: A harder fight that demonstrates some mini-boss behaviors.</li>
+				</ul></p>
+
+				<p>Click one of the <span hover-help="[wt~=EncounterButton]">Prepare buttons</span> to prepare for that combat!</p>
+				<p>To prepare for combat, choose which units to send to that encounter.  In general, look for units that have similar numbers in their <span hover-help=".stumpy_cards [wt~=Ability]">action icons</span>, and similar non-face icons in their <span hover-help="[wt~=Unit] .appearance">appearances</span>.  When you've selected some units (try to pick at least 5), click <span hover-help="[wt~=Accept]">Accept</span>.</p>
+			</info-panel>
+		</tutorial>
+
+		<tutorial hash="encounterscreen">
+			<info-panel>
+				<h2>Encounter!!</h2>
+
+				<p>Each encounter has an objective and a losing condition.  In general, you win if all <span hover-help="[wt~=Unit][team=enemy] .appearance">enemies</span> are dead, and you lose if all <span hover-help="[wt~=Unit][team=player] .appearance">allies</span> die and you have no units left to play.</p>
+				<p>The screen is broken up into a few sections: <ul>
+					<li><span hover-help="[wt~=EncounterScreen] .preview_panel">Left Panel</span>: Under Construction!</li>
+					<li><span hover-help="[wt~=EncounterScreen] .battlefield_widget_container">Center Panel</span>: The Battlefield</li>
+					<li><span hover-help="[wt~=CardHud]">Bottom Panel</span>: The Card HUD</li>
+					<li><span hover-help="[wt~=ActionButton]">Bottom-Right Circle Bitton</span>: The Action Button</li>
+				</ul></p>
+
+				<p>During an Encounter, your goal is to play <span hover-help="[wt~=Card]">cards</span> onto the battlefield that will allow you to win the encounter.</p>
+
+				<p>To play a card, click it once.  If the card does not move up slightly, it means you can't play that card.  This generally means it has no valid targets, or you can't afford it.  Valid targets for the card will begin blinking obnoxiously.  Click one of the blinking targets to play the card on that target.</p>
+
+				<p>When a card hasn't been played yet, you can cancel by clicking the card again, or clicking the <span hover-help="[wt~=ActionButton]">Action Button containing a 🚫 symbol</span>.</p>
+
+				<p>Some targets blink more obnoxiously than others: Those are priority targets.  It's generally a good idea to play cards on priority targets.</p>
+
+				<p>If you don't like the cards in your hand, you can click the <span hover-help="[wt~=DrawPileUi]">Deck symbol</span> on the left side of the car UI.  Note that drawing cards out of turn costs gold!  You can have up to 10 cards in hand: if you would draw more, the leftmost card is discarded to the <span hover-help="[wt~=Discard]">discard pile</span>.  Once your draw pile runs out of cards, your discard pile is shuffled into a new draw pile.</p>
+
+				<p>For now, play a few <span hover-help="[wt~=Card] [wt~=Unit]">Unit cards</span> onto the battlefield.  If you have none, draw cards from the draw pile until you do.  Be sure to choose a location that blinks obnoxiously!</p>
+
+				<p>Once you've played some units, click the <span hover-help="[wt~=ActionButton]">Action Button with a ▶️ symbol</span> to start a round.  Units and enemies will take turns using their abilities.  Each of these turns is called a Volley.</p>
+
+				<p>To pause the action, click on the <span hover-help="[wt~=ActionButton]">Action Button with a ⏸️ symbol</span>.  Note that before you can play cards again, a minimum number of Volleys must pass.  This is represented by the top number in the <span hover-help=".volley_tracker">Volley Tracker hourglass symbol</span>.</p>
+
+				<p>If you've paused round before the minimum number of volleys, the <span hover-help="[wt~=ActionButton]">Action Button</span> will switch between a ⌛ symbol, which means to simply wait, or a ⏯️ symbol, which will play one volley.  Once the minimum volleys are reached, you will be able to play cards again.</p>				
+
+				<p>Above each unit on the battlefield, you'll see a <span hover-help="[wt~=Battlefield] [wt~=Ability]">vomit of icons</span>.  These icons represent the unit's Intents, which is what they plan to do during the battle.</p>
+
+				<p>The large icon on top is the category of move.  The small icon to the bottom-left is the actual move's icon.  The number is the cooldown for that move.  The move will be used in a volley if its cooldown value is 1.  If there are multiple such moves for a unit, the leftmost is used.  Once a move is used, its cooldown resets.</p>
+
+				<p>Some <span hover-help="[wt~=Battlefield] [wt~=Ability][inactive=true]">moves cannot be used because the unit is in the wrong position</span>.  Hover over those icons to highlight the correct positions for those moves.  If your units are unable to act, try to play a card that lets you move that unit to a better position.</p>
+
+				<p>When multiple compatible units use moves at the same time, they can <span compendium="concept/unit/concept/combo">combo</span>.  Combos have extra UI treatment and are simply more powerful versions of the same effect (e.g. Strike deals +25% damage for every additional unit that is part of the combo).  Check out the <span compendium="concept/unit/concept/combo">combo</span> page for more info on when units can combo, but the TL;DR is matching cooldowns and either matching element symbols or similar moon icons.</p>
+
+				<p>A few last points: <ul>
+					<li>If a unit dies, they are gone forever!</li>
+					<li>HP is not restored between combats/rounds.  Methods to heal them between combats are coming in a later version.</li>
+				</ul></p>
+			</info-panel>
+		</tutorial>
+
+
+		<concept hash="ideas">
+			<info-panel>
+				<h2>Idea Log</h2>
+				<ul>
+					<li>Unit Ideas: <ul>
+						<li>Armaments: Some slots are left-hand, some are right-hand.  Armaments determine what skills/activations go in those slots, along with damage, defense.</li>
+					</ul></li>
+					<li>Combo Ideas: <ul>						
+						<li>Lean into Chrono Trigger harder and have specific combos that are a single ability (e.g. instead of 2 Strikes being 2 powered-up strikes, have one X-Strike ability that factors in both participants).</li>
+						<li>Differentiate between combo contribution types: Additive (e.g. you Strike, I bless your weapon with Smite) vs Transformative (see previous bullet point), so you can not only combine 2 strikes, but you can add to it (e.g. Smiting X-Strike is X-Strike (which is Strike + Strike) + Bless or something).  "Basic" skills (like Strike) are the ones that form the special combos, while "Advanced" skills (like Bless) are the ones that augment them)</li>
+						<li>Maybe consider 3 combo vectors? <ul>
+							<li>Named Combination: Sets of basic skills that, when combined, create a sum greater than their parts.  This counts as a single skill for the purposes of activation (e.g. Shoot+Shoot+Shoot+Shoot+Shoot = "Block the Sun" (with arrows)).</li>
+							<li>Self-Modifiers: Advanced Skills augment your Basic Skills when they are used with Mana (e.g. my Wildfire advanced skill will turn my Shoot, when I have fire mana, into a Fireball).</li>
+							<li>Other-Modifiers: Advanced Skills augment an ally's basic skill or one of the Named Combinations above into a more powerful variant.</li>
+						</ul></li>
+					</ul></li>
+					<li>System Ideas: <ul>
+						<li>Build in a matcher system into the Event queue to allow richer / more specific matchers (e.g [handler event-types="Attack:before" matcher="UseAbility > Attack"] would only match Attack events if its immediate parent is a UseAbility)</li>
+						<li>Build a handler-set into a given activation that's cleaned up after.  This will allow for decoupled combo buffs (see additive combo stuff above).</li>
+					</ul></li>
+					<li>Outer Loop Ideas: <ul>
+						<li>Home Base has facilities that get visitors.  Those visitors are how you do things with those facilities: <ul>
+							<li>Dormitory: Allows you to heal units (visitors make it better/easier or provide buffs for their next adventure?)</li>
+							<li>Graveyard: View your fallen soldiers.  Maybe a mysterious visitor can help bring them back to life.</li>
+							<li>Reliquary: A place for your "save file" progression.  What relics you have found in your runs determine what visitors you get, which can include new troops and merchants to sell you cards and unit upgrades (e.g. you unlock the Wizard unit upgrades by recovering the Crystal Orb of Butts or whatever)</li>
+							<li>Armory: A place for you to change your units' weapon/armor (see Unit Ideas)</li>
+						</ul></li>
+						<li>Visitors provide Rumors, which is how you get new quests to go on.  </li>
+						<li>Visitor Ideas: <ul>
+							<li>Recruits: New soldiers for your deck.  This is required!</li>
+							<li>Teachers: Sell you Unit Promotions (e.g. Harvey the Wizard sells you Wizard upgrades), but also thematically appropriate tactics and gear.</li>
+							<li>Merchants: Sell you Preparation cards (e.g. a Potion Seller or a Trapper or whatever)</li>
+							<li>Craftspeople: Sell you Weapons or Armor for changing your units' basic abilities.</li>
+							<li>Mysterious Stranger: Sells you strange cards that suck at first, but once you "unlock" them through some achievement, become good.</li>
+							<li>Gossip: Sells you quests, bounties, etc.</li>
+						</ul></li>
+					</ul></li>
+				</ul>
+			</info-panel>
+
+		</concept>
+
+
+
+		<wiki hash="root">
+			<info-panel>
+				<h2> Nice Job! </h2>
+				You did it!  You right-clicked the test button!
+			</info-panel>
+		</wiki>
+
+		<concept hash="cards">
+			<info-panel>
+				<h2> Cards </h2>
+ 				Hurr Durr Curds
+			</info-panel>
+
+			<concept hash="card">
+				<info-panel>
+					<h2> Card </h2>
+					You play these.   
+				</info-panel>
+			</concept>
+			
+			<concept hash="drawpile">
+				<info-panel>
+					<h2> Draw Pile </h2>
+					When you draw cards, they from from this pile.  You don't know what order they are in by default, but you know how many there are.
+
+					You can draw additional cards by clicking the draw pile, but it will cost you money.
+				</info-panel>
+			</concept>
+
+			<concept hash="discard">
+				<info-panel>
+					<h2> Discard Pile </h2>
+					When you play a card, unless it goes somewhere else, it goes here.
+
+				</info-panel>
+			</concept>
+		</concept>
+
+		<concept hash="skills">
+			<info-panel>
+				<h2> Skills </h2>
+				<p>Units use these to do things during their <span compendium="concept/unit/concept/activation">activations</span>.</p>
+
+				<p>To read a <span hover-help="[wt~=Card] [wt~=Ability]">skill on a card</span>:<ul>
+					<li>Upper-left Icon: Ignore this icon for now.  This is the skill slot's type, which is for a future planned feature.</li>
+					<li>Bottom-left Icon: Ignore this icon for now.  This is the skill's category, which is for a future planned feature.</li>
+					<li>Hourglass: The left number is what the starting cooldown is when the unit is placed.  The right number is what the cooldown resets to after use.</li>
+					<li>Icon + Name right of Hourglass:  The skill's icon and name.</li>
+					<li><span compendium="concept/unit/concept/activation">Activation</span>: When the skill can be used.</li>
+				</ul></p>
+				<p>At the time of writing, the following skills exist:
+					<ul>
+						<li>Strike: Basic attack.  Rats do 2 damage.  Player units do 8 (+2 per combo).</li>
+						<li>Step: Move 1 (+1 per combo, +1 per <span compendium="concept/status">💨 stack</span>.  If the unit can't move, add 1 <span compendium="concept/status">💨 stack</span>.  While it benefits from combos, it does not contribute to them.</li>
+						<li>Retreat: Remove 1 <span compendium="concept/status">🏳️ stack</span> stack.  While it benefits from combos, it does not contribute to them.</li>
+						<li>Wind Blast: Attempts to push a unit backward within their cell block.  How far a unit is moved is based on how heavy the unit is, and the strength of the push.  Units that collide may take damage.</li>
+						<li>Push: Same as push, but in a different row.</li>
+						<li>Defend: Gain <span compendium="concept/block">block</span>.</li>
+						<li>Protect: The adjecent ally (or self) with the lowest HP gains <span compendium="concept/block">block</span>.  If this affects a different unit, more block is gained.</li>
+						<li>Bleed: Add 6 stacks of Bleed to an enemy.  Enemies lose HP (bypassing Block) equal to the number of Bleed stacks they have and lose half their bleed stacks every time the unit is activated.</li>
+						<li>Sunder: Remove a large amount of block, then apply <span compendium="concept/block">vulnerability</span>.</li>
+						<li>Distract: Adds 2 stacks of Distract to an enemy.  Each stack causes the enemy's abilities to activate on a later volley.  Enemies lose 1 stack of Distract every time they are activtaed.</li>
+					</ul>
+				</p>
+
+				<!-- Standard param functions.  -->
+				<skill-param-fn type="⚔️" fn="SkillParams.MeleeParams"></skill-param-fn>
+				<skill-param-fn type="⚾" fn="SkillParams.ThrownParams"></skill-param-fn>
+				<skill-param-fn type="🏹" fn="SkillParams.ShootParams"></skill-param-fn>
+				<skill-param-fn type="☄️" fn="SkillParams.MAttackParams"></skill-param-fn>
+				<skill-param-fn type="🛡️" fn="SkillParams.DefendParams"></skill-param-fn>
+				<skill-param-fn type="🔨" fn="SkillParams.ConstructParams"></skill-param-fn>
+				<skill-param-fn type="🔮" fn="SkillParams.SummonParams"></skill-param-fn>
+				<skill-param-fn type="🤲" fn="SkillParams.PushParams"></skill-param-fn>
+				<skill-param-fn type="🥾" fn="SkillParams.MoveParams"></skill-param-fn>
+				<skill-param-fn type="✨" fn="SkillParams.BuffParams"></skill-param-fn>
+				<skill-param-fn type="💫" fn="SkillParams.DebuffParams"></skill-param-fn>
+				<skill-param-fn type="🏳️" fn="SkillParams.RetreatParams"></skill-param-fn>
+
+				<!-- Actual player skills. -->
+				<skill-blueprint name="strike" label="Strike" short-label="⚔️" type="⚔️" invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="throw" label="Throw" short-label="⚾" type="⚾" invoke-fn="Strike.throwInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="shoot" label="Shoot" short-label="🏹" type="🏹" invoke-fn="Strike.shootInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" target-overhead="true" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="B1 B2 B3">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="push" label="Shove" short-label="🤲" type="🤲" invoke-fn="Push.invoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Push.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="wind-gust" label="Wind Gust" short-label="🌬️" type="🤲" invoke-fn="Push.invoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="B1 B2 B3">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Push.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="defend" label="Defend" short-label="🛡️" type="🛡️" invoke-fn="Defend.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M3 B1 B2 B3 CC">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Defend.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="protect" label="Protect" short-label="🛡️" type="🛡️" invoke-fn="Protect.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" extra-param-types="✨" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F2 M1 M2 M3 B2 CC">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Protect.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="bleed" label="Bleed" short-label="🩸" type="💫" invoke-fn="BleedAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" extra-param-types="⚔️" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="BleedAbility.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="sunder" label="Sunder" short-label="💔" type="💫" invoke-fn="SunderAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" extra-param-types="⚔️" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="SunderAbility.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="distract" label="Distact" short-label="💫" type="💫" invoke-fn="DistractAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 CC">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="DistractAbility.combo"></combo-effect>
+				</skill-blueprint>
+
+				<!-- Skills that happen because of orders or whatever. -->
+				<skill-blueprint name="retreat" label="Retreat" short-label="🏳️" type="🏳️" invoke-fn="RetreatAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="RetreatAbility.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="step" label="Step" short-label="🥾" type="🥾" invoke-fn="StepAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="StepAbility.combo"></combo-effect>
+				</skill-blueprint>
+
+				<!-- Enemy-only skill blueprints -->
+
+				<!-- Anyone who needs to move to a destination -->
+				<skill-blueprint name="scurry" label="Scurry" short-label="🥾" type="🥾" invoke-fn="ScurryAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3">
+				</skill-blueprint>
+
+				<!-- Golems -->
+				<skill-blueprint name="mindlessmarch" label="Mindless March" short-label="🥾" type="🥾" invoke-fn="MindlessMarch.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3">
+				</skill-blueprint>
+				
+				<!-- Jimmy the Rat King -->
+				<skill-blueprint name="rat-redirect" label="That one's scary!" short-label="🎯" type="🛡️" invoke-fn="JimmyAI.redirectInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+				</skill-blueprint>
+				
+				<skill-blueprint name="summon-rats" label="Come my pretties!" short-label="🐀" type="🔮" invoke-fn="JimmyAI.summonInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+				</skill-blueprint>
+				
+
+
+
+			</info-panel>
+		</concept>
+
+		<concept hash="preparations">
+			<info-panel>
+				<h2>Preparations</h2>
+
+				<p>Preparations are cards that you can play to create effects on the battlefield.</p>
+				<p>Preparations generally cost money to play.</p>
+			</info-panel>
+
+			<preparation-blueprint name="barricade" target-fn="Barricade.target" invoke-fn="Barricade.invoke">
+				<div label="Barricade" appearance_1="🧱"></div>
+				<div class="description">Drops a barricade onto the battlefield.  Barricades can be used to block squares.</div>
+				<div cost="3" uses="5"></div>
+			</preparation-blueprint>
+		</concept>
+
+		<concept hash="tactics">
+			<info-panel>
+				<h2>Tactics</h2>
+				Tactics are cards that direct your units in ways beyond what their abilities allow them to do. 
+
+				<div>
+					📜 indicates an Order.  A unit may only be affected by one order at a time, and any new orders will overwrite old orders.
+				</div>
+
+				<div>
+					📕 indicates a Maneuver.  Maneuvers have no other special properties.
+				</div>
+			</info-panel>
+
+			<!-- Orders -->
+			<tactic-blueprint name="retreat" card-icon="📜" label="Retreat" short-label="🏳️" target-fn="Retreat.target" invoke-fn="Retreat.invoke">
+				<div class="description">After 3 <span compendium="concept/unit/concept/activation">activations</span>, the unit is removed from the battlefield and placed to your discard pile.</div>
+			</tactic-blueprint>
+			
+			<tactic-blueprint name="reposition" card-icon="📜" label="Reposition" short-label="🥾" target-fn="Reposition.target" invoke-fn="Reposition.invoke">
+				<div class="description">During each activation, move towards the chosen location until it is reached or inaccessible.</div>
+			</tactic-blueprint>
+
+			<tactic-blueprint name="taunt-enemy" card-icon="📜" label="Hit That One!" short-label="🎯" target-fn="TauntEnemy.target" invoke-fn="TauntEnemy.invoke">
+				<div class="description">Choose an enemy.  That enemy is <span compendium="concept/taunt">taunted.</span></div>
+			</tactic-blueprint>
+
+			<tactic-blueprint name="taunt-ally" card-icon="📜" label="Hit Me!" short-label="🗣️" target-fn="TauntAlly.target" invoke-fn="TauntAlly.invoke">
+				<div class="description">Choose an ally.  That ally is <span compendium="concept/taunt">taunted.</span></div>
+			</tactic-blueprint>
+
+			<!-- Maneuvers -->
+			<tactic-blueprint name="pivot" card-icon="📕" label="Heel Turn" short-label="⦩" target-fn="Pivot.target" invoke-fn="Pivot.invoke">
+				<div class="description">Changes which way a squad is facing.</div>
+			</tactic-blueprint>
+		</concept>
+
+		<concept hash="unit">
+
+			<silly-unit matcher="🙃🔥🌓" name="Hammad"></silly-unit>
+			<silly-unit matcher="😵🔥🌓" name="Nikki"></silly-unit>
+			<silly-unit matcher="😴⛰️🌓" name="Chris"></silly-unit>
+			<silly-unit matcher="🙃🌪️🌖" name="Jill"></silly-unit>
+			<silly-unit matcher="😬⛰️🌒" name="Jake"></silly-unit>
+			<silly-unit matcher="🤠🌪️🌒" name="Ryan"></silly-unit>
+			<silly-unit matcher="😱💧🌓" name="Fiona"></silly-unit>
+			<silly-unit matcher="🧐💧🌘" name="Drewes"></silly-unit>
+			<silly-unit matcher="😬🔥🌑" name="Kellie"></silly-unit>
+			<silly-unit matcher="🐱💧🌑" name="Robin"></silly-unit>
+
+			<info-panel>
+				<h2>Unit</h2>
+
+				<p>Units are the folks who bash eachother until they stop moving.  Your units are either on the field (on a grid) or stuck in a <span compendium="concept/cards">card</span>.</p>
+				<p>You play units from cards onto the battlefield.  When units retreat, they return to your <span compendium="concept/cards/concept/discard">discard pile</span>.</p>
+				<p>Units have Hit Points, represented by a bar below them.  When this bar is empty, the unit is dead: gone forever!</p>
+				<p>Player units have Birthdays, represented by the other icons in their avatar bubble.  These determine how the units <span compendium="concept/unit/concept/combo">combo</span> together.</p>
+				
+			</info-panel>
+
+			<concept hash="block">
+				<info-panel>
+					<h2>Block and Vulnerability</h2>
+
+					<p>A unit with a 🛡️ next to their HP bar with a number in it has Block.  When receiving attack damage, Block is spent before HP is.</p>
+					<p>Sometimes a unit may have a 💥 next to their HP instead.  This unit is Vulnerable, and any attack damage they take will be increased by this amount.</p>
+					<p>Vulnerability can be directly reduced by gaining block.  For example, a unit with 5💥 will have 3🛡️ if they gained 8 block.</p>
+					<p>Block does not stack; the largest source of block will overwrite smaller sources of block.</p>
+					
+				</info-panel>
+			</concept>
+
+			<concept hash="taunt">
+				<info-panel>
+					<h2>Taunt</h2>
+
+					<p>A unit with a 🎯 next to their avatar is taunted.</p>
+					<p>Taunted enemies are prioritized by your units for attack, if possible.</p>
+					<p>Only one unit for a given team may be taunted in a given cell block.</p>
+					<p>New taunts take priority.  Old taunts are stored and are restored if the currently-taunted unit loses their taunt status.</p>
+				</info-panel>
+			</concept>
+
+
+			<concept hash="combo">
+				<info-panel>
+					<h2>Combo</h2>
+
+					<p>When 2 or more units Combo, they use their <span compendium="concept/skills">skills</span> as normal, but they will be powered up by each other.</p>
+					<p>2 units can combo if one more more of the following is true: <ul>
+						<li>They have the same birth month (🔥🌪️💧⛰️)</li>
+						<li>They have the same or adjacent birth days (🌕🌖🌗🌘🌑🌒🌓🌔)</li>
+					</ul>
+					Units that can't normally combo together can if there's a unit to act as social glue.</p>
+
+					<p>Units can only combo if they are using moves in the same volley.  In other words, look for moves that have the same cooldown!</p>
+
+					<p style="font-style: italic;">For example, 🔥🌕 and 💧🌑 can combo together if 🔥🌑 is there to help!</p>
+				</info-panel>
+
+			</concept>
+
+
+			<concept hash="activation">
+				<info-panel>
+					<h2>Activation</h2>
+
+					<p>A unit is activated whenever it could possibly act, regardless of whether it is in a valid position for a given ability.</p>
+					<p>The skill for an activation only occurs if the unit is in the right <span compendium="concept/position">position</span> or if close-quarters combat conditions are met.</p>
+					<p>Units may have up to 5 possible activations.  Activations have a cooldown.  Once an activation cooldown reaches 1, the unit will use that ability on their next volley.</p>
+					<p>If a unit has multiple activations with a cooldown of 1, the left-most one will be activated.</p>
+					<p>Under certain situations, units that activate together may <span compendium="concept/unit/concept/combo">combo</span>.</p>
+					<p></p>
+				</info-panel>
+			</concept>
+		</concept>
+
+		<concept hash="status">
+			<info-panel>
+				<h2>Status</h2>
+
+				<p>Units can have statuses, which are represented above their avatar on the battlefield.</p>
+				
+				<p>At the time of writing, the following statuses exist: <ul>
+					<li>🏳️: This unit will retreat once this reaches 0.  A retreated unit returns to your discard pile if it's yours, or simply leaves the battlefield if it's an enemy unit.</li>
+					<li>💨: This unit is moving, but was unable to move last time it tried.  Each stack can help the unit move further on a single activation.</li>
+					<li>🩸: This unit will take this amount of damage (bypasses block) whenever it attempts to use an ability.  After taking damage, the number of of stacks will reduce to half its current value.</li>
+					<li>💫: This unit cannot combo with other units.</li>
+				</ul></p>
+			</info-panel>
+
+
+			<!-- Orders -->
+			<status-blueprint type="retreat_order" exclusive="order" icon="" extra-classes="hidden" apply-fn="RetreatOrder.onApply" remove-fn="RetreatOrder.onRemove" merge-fn="RetreatOrder.merge"></status-blueprint>
+			<status-blueprint type="reposition_order" exclusive="order" icon="" extra-classes="hidden" apply-fn="RepositionOrder.onApply" remove-fn="RepositionOrder.onRemove">
+				<handler label="RepositionOrder" handler="RepositionOrder.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+
+			<!-- Statuses -->
+			<status-blueprint type="defend" icon="" extra-classes="hidden" extra-types="Defend" merge-fn="DefendStatus.merge" stack-fn="DefendStatus.stack">
+			</status-blueprint>
+
+			<status-blueprint type="retreating" icon="🏳️" extra-class="" merge-fn="RetreatStatus.merge">
+				<handler label="Retreating" handler="RetreatStatus.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+
+			<status-blueprint type="agility" icon="💨" extra-class="" merge-fn="AgilityStatus.merge">
+				<handler label="Agility" handler="AgilityStatus.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+
+			<status-blueprint type="bleed" icon="🩸" extra-class="" merge-fn="BleedStatus.merge">
+				<handler label="Bleed" handler="BleedStatus.OnAfterUseAbility" event-types="UseAbility:after"></handler>
+			</status-blueprint>
+
+			<status-blueprint type="distracted" icon="💫" extra-class="" merge-fn="DistractedStatus.merge" remove-fn="DistractedStatus.onRemove" apply-fn="DistractedStatus.onApply">
+				<handler label="Distracted" handler="DistractedStatus.TickDownMaybe" event-types="UseAbility:after"></handler>
+			</status-blueprint>
+
+			<!-- Enemy AI / etc -->
+			<status-blueprint type="rat_ai" exclusive="ai" icon="" extra-classes="hidden">
+				<handler label="DecideTargetLocation" handler="RatAI.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+			<status-blueprint type="jimmy_ai" exclusive="ai" icon="" extra-classes="hidden">
+				<handler label="DoJimmyThings" handler="JimmyAI.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+			<status-blueprint type="jimmy_blessing" icon="🤴" extra-classes="" apply-fn="JimmyBlessing.onApply" remove-fn="JimmyBlessing.onRemove" >
+			</status-blueprint>
+
+		</concept>
+
+		<concept hash="position">
+			<info-panel>
+				<h2>Position</h2>
+
+				<p>The position of a unit determines what <span compendium="concept/skills">skills</span> will <span compendium="concept/unit/concept/activation">activate</span>.</p>
+				<p>A unit's effective position (front, middle, back) is based on a combination of its literal position and the direction the squad is facing.</p>
+				<p style="font-style: italic;">For example, a unit facing up in the top row is in the front row.  If the squad then faces down, the unit is now in the back row.</p>
+				<p>Some abilities indicate activity on their directional arrow.  This implies the ability is active if there are enemy units in the unit's block, or if the unit is in an enemy block.</p>
+			</info-panel>
+		</concept>
+
+		<concept hash="round">
+			<info-panel>
+				<h2>Round</h2>
+
+				<p>A round begins once you push the big play button.  A round will continue until the combat ends, or you click the button again to stop the action.</p>
+				<p>The top number in the ⌛ indicates how many <span compendium="concept/volley">volleys</span> must occur before you can end the round.  You can still click the button to experience the combat one volley at a time, but the round will not end until this timer reaches 0.  Once it reaches 0, you will also draw a card.</p>
+				<p>The bottom number in the ⌛ indicates how many <span compendium="concept/volley">volleys</span> over the minimum have occurred.  This doesn't do anything yet, but I'm hoping to add a Push-your-luck sort of feature to the game around this.</p>
+			</info-panel>
+		</concept>
+
+		<concept hash="volley">
+			<info-panel>
+				<h2>Volley</h2>
+
+				<p>A single <span compendium="concept/round">round</span> is broken into a number of volleys.</p>
+				<p>During a volley, any unit actions that can be triggered (e.g. due to positioning) with a cooldown value of 1 or less will happen.</p>
+			</info-panel>
+		</concept>
+		
+
+		<concept hash="features">
+			<info-panel>
+				<h2>Future Features</h2>
+
+				<ul>
+					<li>Preparation Cards: Costs money to play, but provide immediate benefits for the unit/squad.</li>
+					<li>Unit Promotions: Allows you to add new activations/skills to units, along with passive abilities.</li>
+					<li>Skill Upgrades: Allows you to add special combo-powers to skills.</li>
+					<li>Outer Loop: A single run will be 1 year, cycling through 32 days, with a boss fight after each 8th day.</li>
+				</ul>
+
+			</info-panel>
+		</concept>
+	</div>	
+
+	<!-- Put them all in one place to hide them. -->
+	<div class="templates">
+
+		<template name="modal_dialog">
+			<div class="modal_screen modal_dialog">
+
+			</div>
+		</template>
+
+		<template name="unit_select_screen">
+			<div class="unit_select EXTRA_CLASSES" minimum_units="MINIMUM_UNITS" maximum_units="MAXIMUM_UNITS"
+			    wh-c="Accept.click>UnitSelect.Accept,
+					  Cancel.click>UnitSelect.Cancel,
+					  Card.Attr:selected>UnitSelect.OnSelected,
+					  Card.mouseover>UnitSelect.OnHover"
+				wh-b="Card.click>Card.ToggleSelected">
+				<div class="header"><span class="first"></span></div>
+				<div class="option_header">Select Cards</div>
+				<div class="option_holder stumpy_cards"></div>
+				<div class="unit_preview exploded_cards" facing="up"></div>
+				<div class="selected_header">Selected Cards</div>
+				<div class="selected_holder stumpy_cards"></div>
+				<div class="button_holder">
+					<div class="info">Select between MINIMUM_UNITS and MAXIMUM_UNITS units!</div>
+					<button wt="Accept">Accept</button>
+					<button wt="Cancel">Cancel</button>
+				</div>
+
+			</div>
+		</template>
+		
+		<template name="dialog_tester">
+			<div wh-c="Resolve.click>DialogTester.Resolve, Reject.click>DialogTester.Reject">
+				<button wt="Resolve">Resolve</button>
+				<button wt="Reject">Reject</button>
+			</div>
+		</template>
+
+		<template name="title_screen">
+			<div class="title_screen modal_screen" wt="Screen TitleScreen" screen-label="Title Screen" tutorial-label="tutorial/title2">
+				<h1> OB-CT Prototype</h1>
+
+				Welcome to the OB-CT prototype!
+
+				<p>Right click on things you want to learn more about.  Many of them have mini-wiki pages, which will show up on the panel to the right.</p>
+				<p style="background: rgba(0, 0, 255, 0.5); font-weight: bolder;"><span compendium="tutorial/title">Right-Click Here if you don't know how to play and look to the panel in the upper-right of your screen!</span></p>
+
+				<br />
+
+				<button wt="StartButton" wh-c="StartButton.click>TitleScreen.OnStart">Start!</button>
+
+
+				<p><span compendium="concept/ideas">Future Ideas</span></p>
+
+				<div>
+					<span>Version History</span>
+					<ul>
+						<li><span compendium="version/0.0.1">V0.0.1</span></li>
+						<li><span compendium="version/0.0.2">V0.0.2</span></li>
+						<li><span compendium="version/0.0.3">V0.0.3</span></li>
+						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
+					</ul>
+				</div>
+			</div>
+		</template>
+		
+		<template name="run_screen">
+			<div class="run_screen modal_screen" wt="Screen RunScreen" screen-label="New Run"
+					wh-c="RunInfo.Attr>RunScreen.OnRunInfoChange">
+				<info>
+
+				</info>
+				<div class="run_bar_container"></div>
+				<div class="body_container" wt="ScreenWrapper"></div>
+			</div>
+		</template>
+
+		<template name="town_screen">
+			<div class="town_screen modal_screen" wt="Screen TownScreen" screen-label="Town Screen" tutorial-label="tutorial/townscreen"
+			    wh-c="EncounterButton.click>TownScreen.OnEncounterClick,
+					  DialogTest.click>TownScreen.TestDialog">
+				This would be where things happen between encounters.  <span compendium="concept/features">Check out what I'm hoping to add!</span>
+
+				For now, though, here's the only one thing available:
+				<ul>
+					<li><span> The Rats: </span> <button wt="EncounterButton" encounter-fn="Encounters.theRats">Prepare!</button></li>
+					<li><span> The Golems: </span> <button wt="EncounterButton" encounter-fn="Encounters.theGolems">Prepare!</button></li>
+					<li><span> Jimmy, the Rat King: </span> <button wt="EncounterButton" encounter-fn="Encounters.jimmyTheRatKing">Prepare!</button></li>
+				</ul>
+			</div>
+		</template>
+
+		<!-- Structure of a combat encounter -->
+		<template name="encounter_screen">
+			<div  wt="Screen EncounterScreen" screen-label="Encounter Screen" tutorial-label="tutorial/encounterscreen" class="encounter_screen modal_screen"
+														wh-c="Card.Attr:selected>CardRules.OnCardSelected|EncounterRules.OnCardSelected,															  
+															  Battlefield.NewUnit>EncounterRules.OnUnitsChanged|Unit.OnUnit,
+															  Battlefield.RemovedUnit>EncounterRules.OnUnitsChanged|Unit.onUnitRemoved,
+															  Battlefield.UnitMoved>Unit.OnUnit,
+															  Unit.Attr:taunt-list>Unit.OnTauntListChange,
+															  ActionButton.giveup>EncounterRules.OnGiveUp,
+															  ActionButton.go>EncounterRules.OnGo,
+															  ActionButton.pause>EncounterRules.OnPause,
+															  ActionButton.step>EncounterRules.OnStep,
+															  ActionButton.cancel>EncounterRules.OnCancel,
+															  CellBlock.Attr:facing>EncounterScreenHandler.OnCellBlockFacingChange|Unit.OnCellBlockFacingChange|Grid.OnCellBlockFacingChange,
+															  CellBlock.mouseover>EncounterScreenHandler.OnCellBlockMouseOver,
+															  CellBlock.Attr:taunt-priority>Unit.OnTauntPriorityChange,
+															  DrawPileUi.click>CardRules.OnDrawPileClick,
+															  Unit.Attr:in-block>Unit.onMoveBlock"
+														wh-b="">
+				<!-- Info for battlefield things -->
+				<info class="encounter"></info>
+				<div class="battlefield_widget_container"></div>
+				<div class="preview_panel"></div>
+				<div class="tldr_panel"></div>
+				<div class="action_button" wt="ActionButton" mode="" wh-c=".click>ActionButton.OnClick">
+					<div class="content"></div>
+				</div>
+				<div class="volley_tracker" compendium="concept/round">
+					<div class="countdown" minimum-volleys="8" volleys-left="8"></div>
+					<div class="countup" volleys-over-min></div>
+				</div>
+				<div wt="BannerEffect" class="text_banner_effect"></div>
+				<div wt="CardHud" class="card_hud_widget full_size_cards" wh-c="CardSet.AddChild|CardSet.RemoveChild|CardSet.MoveFrom|CardSet.MoveTo>CardHud.OnContentChange"></div>
+			</div>
+		</template>
+		
+		<!-- Battlefield Root -->
+		<template name="battlefield">
+			<div wt="Battlefield" class="battlefield_widget" effect-container=":scope > .ui_effect_overlay"
+					wh-b=".Attr:smol-x|.Attr:smol-y|.Attr:beeg-x|.Attr:beeg-y>BattlefieldHandler.OnOverlayItemMove,
+						  BattleOverlay.AddChild>BattlefieldHandler.OnOverlayItemAdd,
+						  BattleOverlay.RemoveChild>BattlefieldHandler.OnOverlayItemRemove,
+						  BattleOverlay.MoveTo>BattlefieldHandler.OnOverlayItemMoveTo">
+				<div wt="Grid" class="battlefield_widget_inner"></div>
+				<div wt="BattleOverlay" class="battlefield_widget_overlay"></div>
+				<div class="ui_effect_overlay"></div>
+			</div>
+		</template>
+
+		<!-- Round Preview Panel -->
+		<template name="round_panel">
+			<div class="round_panel"
+					wh-c="">
+				<div class="volleys">
+					<div class="units_header">Units</div>
+
+					<div class="volley_header" volley-count="1">1</div><div class="volley_header" volley-count="2">2</div><div class="volley_header" volley-count="3">3</div><div class="volley_header" volley-count="4">4</div><div class="volley_header" volley-count="5">5</div><div class="volley_header" volley-count="6">6</div><div class="volley_header" volley-count="7">7</div><div class="volley_header" volley-count="8">8</div>
+				</div>
+				<div class="contents">
+					<div class="round_panel_team_group" for-team="player">
+					</div>			
+					<div class="round_panel_team_group" for-team="enemy">
+					</div>			
+					<div class="round_panel_team_group" for-team="neutral">
+					</div>			
+				
+				</div>
+			</div>
+		</template>
+
+		<template name="round_panel_group">
+			<div class="round_panel_group facing_override" for-block="BLOCK_LABEL">
+			</div>			
+		</template>
+
+		<template name="round_panel_row">
+			<div class="round_panel_row facing_override">
+				<div class="round_panel_avatar">
+
+				</div>
+				<div class="volley_box" volley-count="1"></div><div class="volley_box" volley-count="2"></div><div class="volley_box" volley-count="3"></div><div class="volley_box" volley-count="4"></div><div class="volley_box" volley-count="5"></div><div class="volley_box" volley-count="6"></div><div class="volley_box" volley-count="7"></div><div class="volley_box" volley-count="8"></div>
+			</div>			
+		</template>
+
+		<!-- For the engine. -->
+		<template name="game_effect">
+			<game-effect w-id="ID" wt="Effect" type="TYPE" phase="before">
+				<queue></queue>
+			</game-effect>
+		</template>
+		
+		<!-- Template for an icon that grows, then disappears. -->
+		<template name="icon_wub_ui_effect">
+			<div wt="UiEffect" class="wub_ui_effect" wh-b="UiEffect.Create>UiTreatments.OnTempIconCreate">
+			  CONTENT
+			</div>
+		</template>
+		
+		<!-- Template for an icon that grows, then disappears. -->
+		<template name="banner_contents">
+			<div wt="UiEffect" wh-b="UiEffect.Create>UiTreatments.OnBannerContentCreate" class="EXTRA_CLASSES"></div>
+		</template>
+
+		<template name="text_banner_wrapper">
+			<span>CONTENT</span>
+		</template>
+
+
+		<!-- Template for an icon that grows, then disappears. -->
+		<template name="text_ui_effect">
+			<div wt="UiEffect" class="text_ui_effect" wh-b="UiEffect.Create>UiTreatments.OnTempTextCreate"
+				style="color: COLOR; text-shadow: -1px -1px 0 SHADOW, 0 -1px 0 SHADOW, 1px -1px 0 SHADOW, 1px 0 0 SHADOW, 1px 1px 0 SHADOW, 0 1px 0 SHADOW, -1px 1px 0 SHADOW, -1px 0 0 SHADOW;">
+			  CONTENT
+			</div>
+		</template>
+		
+		<!-- Structure of our card HUD -->
+		<template name="card_hud">
+			<div wt="DrawPileUi" class="deck" compendium="concept/cards/concept/drawpile">
+			  <div wt="CardSet DrawPile" class="content" team-id="Player"></div>
+			  <div class="size"></div>
+			</div>
+			<div class="discard"  compendium="concept/cards/concept/discard">
+			  <div wt="CardSet Discard" class="content" team-id="Player"></div>
+			  <div class="size"></div>
+			</div>
+			<div wt="HandRules" class="hand" at-least="5" at-most="10" wh-c=".click>CardHud.OnCardSelect">
+			  <div wt="CardSet Hand" class="content" team-id="Player"></div>
+			  <div class="size"></div>
+			</div>
+			<div wt="CardPurgatory" class="purgatory"></div>
+		</template>
+		
+		<!-- Structure of a card -->
+		<template name="card">
+			<div wt="Card" class="card" compendium="concept/cards/concept/card" w-id="ID">			
+			</div>
+		</template>
+
+		<template name="token">
+			<div wt="Token" class="token" compendium="concept/token" w-id="ID">			
+			</div>
+		</template>
+		
+		<template name="tactic">
+			<div class="tactic" card-type="tactic" target-fn="TARGET_FN" invoke-fn="INVOKE_FN">
+				<div class="card_bubble" card-icon="CARD_ICON" compendium="concept/tactics"><div tactic-type="TACTIC_SHORTLABEL"></div></div>
+				<div class="name">TACTIC_LABEL</div>
+				<div class="description">TACTIC_DESCRIPTION</div>
+			</div>
+		</template>
+
+		<template name="preparation">
+			<div class="preparation" card-type="preparation" target-fn="TARGET_FN" invoke-fn="INVOKE_FN" compendium="concept/preparations">
+				<div class="appearance APPEARANCE_CLASS" appearance-1="APPEARANCE_1">
+					<div class="cost" cost="COST"></div>
+				</div> 
+				<div class="name" label="LABEL"></div>
+				<div class="uses" uses="USES"></div>
+				<div class="description">DESCRIPTION</div>
+			</div>
+		</template>
+
+		<template name="preparation_use">
+			<span class="use"></span>
+		</template>
+		
+		<!-- Structure of our message log -->
+		<template name="message_log">
+			<div wt="MessageLog" class="message_log" wh-c="TestConsoleInput.keydown>TestConsole.OnKeyDown,MessageLog.Attr:wlogger-allow>TestConsole.OnLoggerLevelChange,MLLS.change>TestConsole.OnLoggerLevelCheckboxChange" wlogger="TestConsole.PostMessage" wlogger-allow="RAW TRACE INFO WARN ERR">
+				<div class="log_history  text">
+				</div>
+				<input wt="TestConsoleInput" type="text" placeholder="Enter console command" class="console_input" />
+				<div class="log_level_selectors">
+				  <label><input wt="MLLS" type="checkbox" level="RAW" checked="false" />Raw</label>
+				  <label><input wt="MLLS" type="checkbox" level="TRACE" checked="false" />Trace</label>
+				  <label><input wt="MLLS" type="checkbox" level="INFO" checked="false" />Info</label>
+				  <label><input wt="MLLS" type="checkbox" level="WARN" checked="false" />Warn</label>
+				  <label><input wt="MLLS" type="checkbox" level="ERR" checked="false" />Err</label>
+				</div>
+				
+				<div class="message_log_past_entries" style="display:none"></div>
+			</div>
+		</template>
+		
+		<template name="message_log_history">
+			<div>VALUE</div>
+		</template>
+		
+		<!-- Structure of a single message -->
+		<template name="log_entry">
+			<div class="log_entry">
+				CONTENT
+			</div>
+		</template>
+
+		<!-- Grids -->
+		<template name="beegrow">
+			<div class="beeg_grid_row"></div>
+		</template>
+
+		<template name="beegcell">
+			<div class="beeg_grid_cell" wt="CellBlock" beeg-x="X-LU" beeg-y="Y-LU", beeg-label="LAY-BOH">
+				<div class="underlay">
+					<div class="direction_arrow"></div>
+				</div>
+			</div>
+		</template>
+
+		<template name="smolrow">
+			<div class="smol_grid_row"></div>
+		</template>
+
+		<template name="smolcell">
+			<div class="smol_grid_cell" wt="Cell" smol-x="X-LU" smol-y="Y-LU", smol-label="LAY-BOH"></div>
+		</template>
+		
+		<!-- Unit -->
+		<template name="unit">
+			<div class="battlefield_unit" wt="Unit" card-type="unit" w-id="UNIT_ID" highlight-scroll-to="true" compendium="concept/unit"
+					target-fn="UnitRules.TargetUnitPlacement" invoke-fn="UnitRules.InvokeUnitPlacement"
+					wh-c="HPBar.Attr:value|HPBar.Attr:max>Unit.OnHPBarUpdate,
+						Ability.Updated>Unit.OnUnit,
+						Ability.AddChild>Ability.HoverHelpRefresh,
+						Unit.Attr:month|Unit.Attr:day|Unit.Attr:avatar>Unit.RefreshAppearance"
+					month="MONTH" day="DAY" appearance="APPEARANCE" mana="MONTH" mana-fn="Mana.DefaultMana" hover-help="[hover-on-unit='UNIT_ID']">
+				<div class="appearance no_transition">
+					<div class="month" month="MONTH"></div>
+					<div class="day" day="DAY"><span></span></div>
+					<div class="avatar" appearance="APPEARANCE"></div>
+				</div>
+				<div class="name" name="NAME"></div>
+				<div class="help_taunt"><div class="decor"></div></div>
+				<div class="hurt_taunt"><div class="decor"></div></div>
+				<div class="hp_tracker">
+					<progress class="hp_bar" wt="HPBar" max="HP_AMOUNT" value="HP_AMOUNT"> </progress>
+					<div class="hp_text">HP_AMOUNT/HP_AMOUNT</div>
+					<div class="defend"><div class="decor"></div></div>
+				</div>
+				<div class="unit_script">
+				</div>
+				<div class="unit_status">
+				</div>
+				<info class="unit" base-damage="BASE_DAMAGE" base-defense="BASE_DEFENSE" mass="MASS">
+					<inventory>						
+					</inventory>
+				</info>				
+			</div>
+		</template>
+
+		<!-- Ability to go in a unit script -->
+		<template name="ability">
+			<div class="ability" wt="Ability" compendium="concept/skills"
+					wh-b=".Attr:volley_count>Ability.OnChange,
+						  .Attr:current-cooldown>Ability.OnCooldownChange,
+    					  .Attr:active-in>Ability.OnChange" slot-type="SLOT_TYPE">
+				<span class="volley_count" volley_count="VOLLEY" og_volley_count="VOLLEY" warmup-time="VOLLEY" cooldown-duration="8" current-cooldown="VOLLEY"><span class="useful_icon"></span></span>
+				<div class="activation_info" active-in="" compendium="concept/unit/concept/activation">
+					<div class="dir"></div>
+					<div class="box f1 front left"></div>
+					<div class="box f2 front center"></div>
+					<div class="box f3 front right"></div>
+					<div class="box m1 middle left"></div>
+					<div class="box m2 middle center"></div>
+					<div class="box m3 middle right"></div>
+					<div class="box b1 back left"></div>
+					<div class="box b2 back center"></div>
+					<div class="box b3 back right"></div>
+				</div>
+				<span class="label" label="" short-label=""></span>
+				<blueprints wh-b=".AddChild|.RemoveChild|.Attr>Ability.OnChange"></blueprints>
+			</div>
+		</template>
+
+		<template name="ability_blueprint">
+			<blueprint base="BASE" priority="PRIORITY" skill_name="SKILL_NAME" active-in="ACTIVATION"></blueprint>
+		</template>
+
+		<template name="unit_status">
+			<div wt="Status" class="status STATUS_CLASS" status_type="STATUS_TYPE"
+					wh-c="Status.Attr:stack_count>BaseStatus.OnStackCountChange">
+				<div class="status_icon" status_icon="STATUS_ICON"></div>
+				<div class="stack_count" stack_count="0"></div>
+			</div>
+		</template>
+
+		<template name="handler-set">
+			<handler-set></handler-set>
+		</template>
+
+		<template name="target_context">
+			<target-context context="CONTEXT" ticket="TICKET" effect="EFFECT"></target-context>
+		</template>
+		
+		<template name="run_bar">
+			<div class="run_bar">
+				Day: <div class="day_cycle" month="MONTH" day="DAY"></div>
+				<div class="gold_container">
+					<span class="icon_before" icon="🟡" current-gold="GOLD"></span>
+				</div>
+			</div>
+		</template>
+
+
+		<template name="run_info">
+			<run-info seed="seeds_not_supported_yet">
+				<!-- Where we track things for the run (like amount of gold, etc) -->
+				<info wt="RunInfo" current-gold="0" day="🌖" month="⛰️"></info>
+				<deck wh-c=".AddChild>Ability.HoverHelpRefresh">
+					<!-- Where we store cards between encounters. -->
+				</deck>
+			</run-info>
+		</template>
+		
+		<template name="combo_banner">
+			<div class="combo_banner">Combo:</div>
+		</template>
+
+	</div>
+	
+	<!-- Trigger code at the bottom -->
+	<script>
+	
+	requireAll(
+		// Base libs.
+		"woof/woof",
+		"woof/ui",
+
+		// Basic components.
+		"ui/actionbutton",
+		"ui/attrs",
+		"ui/battlefield",
+		"ui/card",
+		"ui/cardhud",
+		"ui/dialogscreen",
+		"ui/effects",
+		"ui/encounterscreen",
+		"ui/grids",
+		"ui/hoverhelper",
+		"ui/mainscreen",
+		"ui/roundpanel",
+		"ui/runbar",
+		"ui/runinfo",
+		"ui/runscreen",
+		"ui/screen",
+		"ui/titlescreen",
+		"ui/townscreen",
+		"ui/tutorialhelper",
+		"ui/unit",
+		"ui/volleycounter",
+		"ui/town/unitselect",
+
+		// Misc shit.
+		// TODO: Try to get rid of this one.
+		"controllers/cards",
+
+		// Gameplay rules
+
+		"rules/cardrules",
+		"rules/encounterrules",
+		"rules/gamerules",
+		"rules/targetpicker",
+		"rules/unitrules",
+
+		// Content
+		"content/constants",
+		"content/encounters",
+		"content/enemies",
+		"content/orders",
+		"content/preparations",
+		"content/skillutils",
+		"content/statuses",
+		"content/tactics",
+		"content/teams",
+		"content/units",
+		"content/unitskills",
+		"ob"
+		).then(function() {
+			// Register our document root to be handled by the framework.
+			WoofRootController.addRoot(document.body, [
+			"hashchange"
+			]);
+
+			// Create a console widget where appropriate.
+			var consoleContainerBoy = document.querySelector(".console_widget")
+			TestConsole.create(consoleContainerBoy);
+			TestConsole.focus(consoleContainerBoy);
+					
+			var mainScreen = document.getElementsByClassName("main_screen")[0];		
+			// Initialize our main screen handler.
+					
+			// Run whatever test you wanted to run.
+			
+			if (window.location.hash) {
+				InfoPanel.navigateTo(document.body, window.location.hash.toLowerCase().substring(1));
+			}
+
+			var titleScreen = TitleScreen.inflate();
+			Screen.showScreen(document.body, titleScreen);
+		});
+	
+	</script>
+</body>
+
+</html>

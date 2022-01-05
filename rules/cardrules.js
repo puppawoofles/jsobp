@@ -57,7 +57,7 @@ class CardRules {
             var toDiscard = [];
             var current = CardHud.firstCard(cardHud);
             while (delta-- > 0 && !!current) {
-                toDiscard.push(WoofType.buildSelectorFor(current));
+                toDiscard.push(current);
                 current = current.nextSiblingElement;
             }
 
@@ -134,7 +134,7 @@ class CardRules {
 
     static DiscardSingleCard = GameEffect.handle(function(handler, effect, params) {
         var cardHud = CardHud.find(handler);
-        var card = Utils.bfind(handler, 'body', params.card);
+        var card = params.card;
         CardHud.discardCard(card);
         return GameEffect.createResults(effect, {});
     });
@@ -146,7 +146,7 @@ class CardRules {
         }
 
         return GameEffect.push(effect, GameEffect.create("DiscardSingleCard", {
-            card: WoofType.buildSelectorFor(params.card)
+            card: params.card
         }));
     }
     
@@ -188,7 +188,7 @@ class CardRules {
         }
 
         return GameEffect.push(effect, GameEffect.create("DiscardCards", {
-            cards: params.cards.map(WoofType.buildSelectorFor)
+            cards: params.cards
         }));
     }
     

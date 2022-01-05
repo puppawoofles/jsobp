@@ -4,9 +4,9 @@ class TutorialHelper {
     static TutorialLabel = new ScopedAttr("tutorial-label", StringAttr);
 
     static OnScreenChange(event, handler) {
-        var debugScreenLabel = handler.querySelector(".debug_panel " + TutorialHelper.ScreenLabel.buildSelector());
-        var debugScreenCompendium = handler.querySelector(".debug_panel " + TutorialHelper.Compendium.buildSelector());
-        var screens = Array.from(handler.querySelectorAll(WoofType.buildSelector("Screen")));
+        var debugScreenLabel = qs(handler, ".debug_panel " + TutorialHelper.ScreenLabel.buildSelector());
+        var debugScreenCompendium = qs(handler, ".debug_panel " + TutorialHelper.Compendium.buildSelector());
+        var screens = qsa(handler, WoofType.buildSelector("Screen"));
         var title = '';
         var titleSet = false;
         while (screens.length > 0) {

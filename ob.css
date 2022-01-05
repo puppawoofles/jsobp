@@ -46,6 +46,12 @@ info {
 	overflow: scroll;
 }
 
+.start_button {
+    width: 300px;
+    height: 150px;
+    font-size: 80px;
+}
+
 .debug_wrapper > .main_screen {
 	right: 300px;
 }
@@ -233,18 +239,318 @@ info {
 	content: attr(volleys-over-min);
 }
 
-
-
 .action_button {
 	position: absolute;
 	right: 20px;
 	width: 80px;
 	height: 80px;
-	bottom: 280px;
 	border-radius: 50%;
 	background: red;
 	box-sizing: border-box;
 	border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.encounter_screen .action_button {
+	bottom: 280px;
+}
+
+.event_screen {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.event_screen > blueprint { display: none; }
+.event_screen > results { display: none; }
+.event_screen > units { display: none; }
+.event_screen > deck { display: none; }
+.event_screen > [wt~=ScreenWrapper] {
+	position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.vignette_screen {
+	position: absolute;
+	top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.vignette_screen .story {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 90px;
+	overflow-y: scroll;
+	text-align: center;
+}
+
+.vignette_screen .choices {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 90px;
+	text-align: center;
+}
+
+
+.vignette_screen .choices button {
+	width: 500px;
+	font-weight: bolder;
+}
+
+
+.town_screen {
+	overflow-y: scroll;
+	padding-bottom: 20px;
+	box-sizing: border-box;
+}
+
+.town_screen .action_button {
+	bottom: 20px;
+}
+
+.assignment_group .button_holder {
+	padding-top: 4px;
+	text-align: center;
+}
+
+.embark_button {
+	width: 200px;
+	font-weight: bolder;
+	height: 50px;
+}
+
+.rumor_holder {
+	margin-top: 12px;
+}
+
+.rumor_holder::before {
+	content: "Things You Can Do";
+	font-weight: bolder;
+	font-size: 24px;
+}
+
+.town_rumor {
+	position: relative;
+	margin-left: 16px;
+	margin-right: 16px;
+	margin-bottom: 4px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: rgba(255, 255, 255, 0.1);
+	height: 85px;	
+}
+
+.town_rumor .name {
+	position: absolute;
+	left: 16px;
+	top: 0;
+	width: 500px;
+	height: 20px;
+}
+
+.town_rumor .name::after {
+	content: attr(name);
+	position: relative;
+}
+
+.town_rumor .results {
+	position: absolute;
+	left: 16px;
+	bottom: 0;
+	width: 500px;
+	height: 65px;
+}
+
+.town_rumor .button_container {
+	position: absolute;
+	display: block;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 100px;
+}
+
+.town_rumor .button_container > button {
+	width: 100%;
+	height: 100%;
+}
+
+.town_rumor .button_container > button::before {
+    content: '🟡';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    font-size: 40px;
+}
+
+.town_rumor .button_container > button::after {
+    content: 'Assign Units!';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 24px;
+}
+
+.town_rumor .button_container > button[disabled] > .cost_appearance::before {
+	opacity: 0.5;
+}
+
+.town_rumor .button_container > button > .cost_appearance::before {
+    content: attr(min-cost);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 13px;
+    color: white;
+    text-shadow: var(--black-text-shadow);
+    font-size: 20px;
+}
+
+.town_rumor .button_container > button > .cost_appearance[unit]::before {
+	content: attr(min-cost) attr(unit);
+}
+
+.assignment_holder {
+	margin-top: 12px;
+}
+
+.assignment_holder::before {
+	content: "What Your Units Are Going To Do Today";
+	font-weight: bolder;
+	font-size: 24px;
+}
+
+.town_assignment {
+	position: relative;
+	margin-left: 16px;
+	margin-right: 16px;
+	margin-bottom: 4px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: rgba(255, 255, 255, 0.1);
+	height: 85px;
+}
+
+.town_assignment .details {
+	position: absolute;
+	left: 16px;
+	top: 0;
+	bottom: 0;
+	right: 500px;
+}
+
+.town_assignment .details .name {
+	position: absolute;
+	top: 0; left: 0; right: 0; height: 20px;
+}
+
+.town_assignment .details .name::after {
+	content: attr(label);
+}
+
+.town_assignment .details .results {
+	position: absolute;
+	left: 0; right: 0; bottom: 0; height: 65px; 
+}
+
+.town_assignment .units {
+	text-align: center;
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 500px;
+	overflow-x: auto;
+	white-space: nowrap;
+	overflow-y: hidden;
+}
+
+.town_screen result > * {
+	display: block;
+    width: 50px;
+    height: 50px;
+    background: darkslategray;
+    border-radius: 5px;
+	position: relative;
+	box-sizing: border-box;
+	border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+
+.town_screen result {
+	display: inline-block;
+	height: 50px;
+	white-space: nowrap;
+}
+
+/* Does not apply */
+.town_screen result[ignored="true"] {
+	display: none;
+}
+
+.town_screen result[victory="true"] > * {
+    background: darkgreen;
+}
+
+.town_screen result[victory="false"] > * {
+    background: darkred;
+}
+
+.town_screen result > add-rumor {
+	display: none;
+}
+
+.town_screen result > add-gold::before {
+    content: '🟡';
+}
+
+.town_screen result > *::before {
+    font-size: 39px;
+    text-align: center;
+    position: absolute;
+    top: -5px;
+    left: -3px;
+}
+
+.town_screen result > *::after {
+    position: absolute;
+    font-size: 20px;
+    top: 10px;
+    left: 0;
+    color: white;
+    text-align: center;
+    width: 50px;
+	font-weight: bolder;
+	text-shadow: var(--black-text-shadow);
+}
+
+.town_screen result > add-gold[amount]::after {
+	content: attr(amount);
+}
+
+.town_screen result > add-gold:not([amount])::after {
+    content: '?';
+}
+
+.town_screen result > heal-units::before {
+	content: '🩹'
+}
+
+.town_screen result > heal-units[amount]::after {
+	content: attr(amount);
+}
+
+.town_screen result > heal-units:not([amount])::after {
+    content: '?';
 }
 
 .action_button:hover {
@@ -1441,6 +1747,48 @@ span[compendium] {
 	margin-bottom: 10px;
 	margin-right: 4px;
 }
+
+.micro_cards .card {
+	display: inline-block;
+	height: 65px;
+	width: 65px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.2);
+	margin-right: 4px;
+}
+
+.micro_cards .card .battlefield_unit {
+    position: relative;
+    top: 6px;
+    left: 11px;
+}
+
+.micro_cards .card .battlefield_unit > * {
+	display: none;
+}
+
+.micro_cards .card .battlefield_unit .appearance {
+	display: inline-block;
+}
+
+.micro_cards .card .battlefield_unit .name {
+    position: absolute;
+    display: inline-block;
+    color: white;
+    left: -11px;
+    right: -13px;
+    bottom: -18px;
+    height: 15px;
+    text-align: center;
+    font-size: 10px;
+    overflow: hidden;
+}
+
+.micro_cards .card .battlefield_unit .name::after {
+	content: attr(name);
+}
+
+
 
 .stumpy_cards .card {
 	height: 90px;

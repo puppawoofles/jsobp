@@ -33,6 +33,7 @@ class TargetPicker {
         if (!contextElt) {
             return;
         }
+
         var ticket = TargetPicker.Ticket.get(contextElt);
         var effect = TargetPicker.Effect.get(contextElt);
 
@@ -43,17 +44,17 @@ class TargetPicker {
 
         // Set our results.
         contextElt.remove(); // Remove tis, since it's no longer needed.
-        var results = GameEffect.createResults(effect, result, []);
+        var results = GameEffect.createResults(effect, result);
         GameEffect.setResult(effect, results);
         PendingOpAttr.returnTicket(effect, ticket);
     }
 
     static OnPickGameEffectTarget(event, handler) {
-        // First, grab all info we need to resolve the effect.
-        var context = TargetPicker.TargetContext.findGet(event.target);
+        // First, grab all info we need to resolve the effect.        
         var target = WoofType.findUp(event.target, 'Target');        
+        var context = TargetPicker.TargetContext.findGet(target);
         TargetPicker._resolveTarget(handler, context, {
-            target: WoofType.buildSelectorFor(target)
+            target: target
         });
     }
 

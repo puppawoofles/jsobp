@@ -3,12 +3,10 @@
 
 <head>
 <meta charset="UTF-8">
+<title>JSOBP</title>
 
 <link rel="stylesheet" href="ob.css" />
 <style type="text/css"></style>
-
-
-
 	<!-- Load code at the top -->
 	<script src="woof/loader.js"></script>
 </head>
@@ -36,7 +34,11 @@
 					<handlers default="GameEffectImpls.HandleDefault">
 						<!-- Handlers for round structure -->
 						<handler handler="GameRules.NewRun" event-types="Run"></handler>
-
+						<handler handler="GameRules.NewDay" event-types="NewDay"></handler>
+						<handler handler="GameRules.ExecuteDay" event-types="ExecuteDay"></handler>
+						<handler handler="EventRules.Event" event-types="Event"></handler>
+						<handler handler="EventRules.Vignette" event-types="Vignette"></handler>
+						
 						<!-- Handlers for combat behavior -->
 						<!-- Encounter Structure -->
 						<handler handler="EncounterRules.Encounter" event-types="Encounter"></handler>
@@ -280,6 +282,29 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.5">
+			<info-panel>
+				<h2>V0.0.5</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Outer Loop:<ul>
+						<li>Added a day system.  A run now has 8 days (equivalent to one act).</li>
+						<li>Added a Rumor system in which the day's options are seeded by rumors, which can be resolved either by engaging with them (successfully or otherwise), or by being ignored.</li>
+						<li>Note that for now, every encounter re-adds itself, and Rats adds Jimmy.  See how many Jimmy's you can get in one run!</li>
+						<li>Added a Hangout daily activity for your unassigned units that gives you a pittance and minor healing.</li>
+						<li>Added a Doctor rumor that lets you heal 100 HP per unit for 20 gold per unit.</li>
+					</ul></li>
+					<li>Adventure Structure:<ul>
+						<li>Added a basic storyboarding system that you can use to build a quest state machine out of vignettes and encounters.  Variables aren't supported yet.</li>
+						<li>Updated Rats, Golems, and Jimmy to have a little set dressing.</li>
+					</ul></li>
+					<li>Guts:<ul>
+						<li>Rewrote how encounters are launched (instead of being hardcoded, the battlefield is spawned separately and is driven by blueprints in the dom instead of being hardcoded in JS;  Enemies are still hardcoded in JS).</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -378,7 +403,6 @@
 			</info-panel>
 		</tutorial>
 
-
 		<concept hash="ideas">
 			<info-panel>
 				<h2>Idea Log</h2>
@@ -422,13 +446,312 @@
 		</concept>
 
 
-
-		<wiki hash="root">
+		<concept hash="events">
 			<info-panel>
-				<h2> Nice Job! </h2>
-				You did it!  You right-clicked the test button!
+				<h2>Events</h2>
+				<p>Events are the implementation of assignments.  Basically:<ul>
+					<li>A rumor becomes an assignment</li>
+					<li>An assignment in progress is an event</li>
+				</ul></p>
+				<p>Events are basically like state machines.</p>
+
+				
 			</info-panel>
-		</wiki>
+
+			<default-event-state name="fail" custom-fn="Events.fail"></default-event-state>
+
+			<event-blueprint name="rats" label="The Rats">
+				<state type="vignette" start="true" name="start">
+					<flavor stand-ins="BLAH1 BLAH2">
+						<p>BLAH1 puts their ear to the door.  The stench of rat feces wafts through, only interrupted by the incessant squeaking.</p>
+						<p>"Good news is it only sounds like rats and nothing more."</p>
+						<p>"I hope you're right." BLAH2 says.</p>
+					</flavor>
+					<choice result="1" label="Fight!"></choice>
+					<event-result choice="1" next-state="encounter"></event-result>
+				</state>
+
+				<state type="encounter" name="encounter">
+					<encounter bp="rats"></encounter>
+					<event-result choice="victory" next-state="win"></event-result>
+					<event-result choice="wipe" next-state="wipe"></event-result>
+					<event-result choice="giveUp" next-state="retreat"></event-result>
+				</state>
+
+				<state type="vignette" name="wipe">
+					<flavor>
+						The rats grow fat gorging on their flesh.  This does not bode well for the town.
+					</flavor>
+					<choice result="1" label="Well, that sucks"></choice>
+					<event-result choice="1" victory="false">
+						<add-rumor blueprint="rats"></add-rumor>
+					</event-result>
+				</state>
+
+				<state type="vignette" name="retreat">
+					<flavor stand-ins="BLAH1 BLAH2">
+						<p>"Screw that!" BLAH1 says.  "Rats are disgusting anyway.  We've got better things to do."</p>
+						<p>"I'm sure this won't backfire" BLAH2 adds helpfully.</p>
+					</flavor>
+					<choice result="1" label="Return"></choice>					
+					<event-result choice="1" victory="false"></event-result>
+				</state>
+
+				<state type="vignette" name="win">
+					<flavor stand-ins="BLAH1 BLAH2 BLAH3">
+						<p>"Ha!  Nothing to it!" BLAH1 bellows triumphantly.</p>
+						<p>"But wait," says BLAH2.  "Where did they come from?"</p>
+						<p>"There!" BLAH3 points to a crack in the wall.  "Wasn't there an old acqueduct in that direction?"</p>
+						<p>"Clearly a problem for another day.  For now, let's regroup."</p>
+					</flavor>
+					<choice result="1" label="Return"></choice>
+					<event-result choice="1" victory="true">
+						<result>
+							<add-rumor>
+								<assignment bp="ratking"></assignment>
+							</add-rumor>
+						</result>
+					</event-result>
+				</state>
+			</event-blueprint>
+
+			<event-blueprint name="golems" label="The Golems">
+
+				<state type="vignette" start="true" name="start">
+					<flavor stand-ins="BLAH1 BLAH2">
+						<p>"Did you hear that?" BLAH1 snaps around.</p>
+						<p>BLAH2 snaps back. "You're just being paranoid.  These ruins have been empty for centuries."</p>
+						<p>"And don't any of the stories of how people never return bother you in the least?"</p>
+						<p>As BLAH2 grins confidently, the statues behind him raise their stone shields.</p>
+					</flavor>
+					<choice result="1" label="Fight!"></choice>
+					<event-result choice="1" next-state="encounter"></event-result>
+				</state>
+
+				<state type="encounter" name="encounter">
+					<encounter bp="golems"></encounter>
+					<event-result choice="victory" next-state="win"></event-result>
+					<event-result choice="wipe" next-state="wipe"></event-result>
+					<event-result choice="giveUp" next-state="giveUp"></event-result>
+				</state>
+
+				<state type="vignette" name="win">
+					<flavor stand-ins="BLAH1 BLAH2">
+						<p>"I think I know why people tend to not return from here." BLAH1 breathes a sign of relief.</p>
+						<p>"Let's make like leaves and get the fuck out of here while we can" BLAH2 helpfully offers.</p>
+					</flavor>
+					<choice result="1" label="Get the fuck out of there while you can."></choice>
+					<event-result choice="1" victory="true"></event-result>
+				</state>
+
+				<state type="vignette" name="giveUp">
+					<flavor stand-ins="BLAH1 BLAH2">
+						<p>"What the hell was that?" BLAH1 comes to a rest after sprinting out of the ruins.</p>
+						<p>"Clearly not something we were ready for" BLAH 2 chimes in.</p>
+						<p>"We should come back when we can break through their armor and coordinate our attacks better."</p>
+					</flavor>
+					<choice result="1" label="Head back"></choice>
+					<event-result choice="1" victory="false"></event-result>
+				</state>
+
+				<state type="vignette" name="wipe">
+					<flavor>
+						<p>The statues wipe the blood from their swords, and resume their endless post, still as stone.</p>
+					</flavor>
+					<choice result="1" label="Womp womp."></choice>
+					<event-result choice="1" victory="false"></event-result>
+				</state>
+
+			</event-blueprint>
+
+			<event-blueprint name="jimmyTheRatKing" label="Jimmy, the Rat King">
+				<state type="vignette" name="start" start="true">
+					<flavor stand-ins="BLAH1 BLAH2">
+						<p>"This is where a cutscene would go." BLAH1 looks frustrated with Chris's lack of creativity.</p>
+						<p>BLAH2 offers sympathy.  "He has to go to work tomorrow and it's past midnight.  Give him a break.  Let's go hit Jimmy instead."</p>
+					</flavor>
+					<choice result="1" label="Go hit Jimmy"></choice>
+					<event-result choice="1" next-state="encounter"></event-result>
+				</state>
+
+				<state type="encounter" name="encounter" start="true">
+					<encounter bp="jimmyTheRatKing"></encounter>
+					<event-result choice="victory" victory="true"></event-result>
+					<event-result choice="wipe" victory="false"></event-result>
+					<event-result choice="giveUp" victory="false"></event-result>
+				</state>
+			</event-blueprint>
+
+
+		</concept>
+
+		<concept hash="encounter">
+			<info-panel>
+				<h2>Encounters</h2>
+				<p>Encounters are combat.  I don't want to rename them all though.</p>
+			</info-panel>
+
+			<default-encounter end-condition-fns="EncounterRules.DefaultWin EncounterRules.DefaultWipe">
+			</default-encounter>
+
+			<encounter-blueprint name="rats">
+				<battlefield bp="basic_cross_minus_2"></battlefield>
+				<info encounter-fn="Encounters.rats"></info>
+			</encounter-blueprint>
+
+			<encounter-blueprint name="jimmyTheRatKing">
+				<battlefield bp="basic_cross"></battlefield>
+				<info encounter-fn="Encounters.jimmyTheRatKing"></info>
+			</encounter-blueprint>
+			
+			<encounter-blueprint name="golems">
+				<battlefield bp="team_duel"></battlefield>
+				<info encounter-fn="Encounters.golems"></info>
+			</encounter-blueprint>
+
+			<battlefield-blueprint name="basic_cross">
+				<info battlefield-fn="Battlefields.Standard"></info>
+				<generate fn="Battlefields.generateRect" width="3" height="3"></generate>
+				<modify labels="A2 B1 B3 C2" property="team" value="enemy"></modify>
+				<modify labels="B2" property="team" value="player"></modify>
+				<modify labels="A1 A3 C1 C3" property="disabled" value="true"></modify>
+			</battlefield-blueprint>
+			
+			<battlefield-blueprint name="basic_cross_minus_2">
+				<info battlefield-fn="Battlefields.Standard"></info>
+				<generate fn="Battlefields.generateRect" width="3" height="3"></generate>
+				<modify labels="A2 B1 B3 C2" property="team" value="enemy"></modify>
+				<modify labels="B2" property="team" value="player"></modify>
+				<modify labels="A1 A3 C1 C3" property="disabled" value="true"></modify>
+				<modify labels="A2 B1 B3 C2" label-set-modifier="Battlefields.labelSetModifierRandomSubset" subset-size="2" property="disabled" value="true"></modify>
+			</battlefield-blueprint>
+			
+			<battlefield-blueprint name="team_duel">
+				<info battlefield-fn="Battlefields.Standard"></info>
+				<generate fn="Battlefields.generateRect" width="2" height="1"></generate>
+				<modify labels="A2" property="team" value="enemy"></modify>
+				<modify labels="A2" property="facing" value="left"></modify>
+				<modify labels="A1" property="team" value="player"></modify>
+				<modify labels="A1" property="facing" value="right"></modify>
+			</battlefield-blueprint>		
+		</concept>
+		
+		<concept hash="assignments">
+			<info-panel>
+				<h2>Assignments</h2>
+
+				<p>Assignments are things you do each day to make money and prepare for boss fights.</p>
+			</info-panel>
+
+			<concept hash="results">
+				<info-panel>
+					<h2>Results</h2>
+					<p>Possible results from an adventure thing are money and healing.  More to come!</p>
+				</info-panel>
+			</concept>
+			
+			<concept hash="cost">
+				<info-panel>
+					<h2>Rumor Costs</h2>
+					<p>Some rumors cost money to buy.  If it's a flat cost, it's just listed.  If it's per-unit, there's a face added to it.</p>
+					<p>If the button is greyed out, you don't meet the requirements.  For example, medical help requires units that are missing HP.</p>
+				</info-panel>
+			</concept>
+
+			<starting-rumors>
+				<assignment bp="rats"></assignment>
+				<assignment bp="golems"></assignment>
+				<assignment bp="doctor"></assignment>
+			</starting-rumors>
+
+			<result-handlers>
+				<!-- In priority order! -->
+				<result-handler type="add-gold" fn="GameRules.AddGoldResult"></result-handler>
+				<result-handler type="add-rumor" fn="GameRules.AddRumorResult"></result-handler>
+				<result-handler type="heal-units" fn="GameRules.HealUnitsResult"></result-handler>
+			</result-handlers>
+
+			<default-assignment assignment-invoke-fn="GameRules.LaunchEvent"></default-assignment>
+			<assignment-blueprint name="rats">
+				<config></config>
+				<info label="The Rats"></info>
+				<event bp="rats"></event>
+				<assign min-units="1" max-units="8" cost="0"></assign>
+				<result>
+					<!-- Add self back to the list for now. -->
+					<add-rumor>
+						<assignment bp="rats"></assignment>
+					</add-rumor>
+				</result>
+				<result victory="true">
+					<add-gold amount="50"></add-gold>
+				</result>
+			</assignment-blueprint>
+			
+			<assignment-blueprint name="golems">
+				<config></config>
+				<info label="The Golems"></info>
+				<event bp="golems"></event>
+				<assign min-units="1" max-units="8" cost="0"></assign>
+				<result>
+					<!-- Add self back to the list for now. -->
+					<add-rumor>
+						<assignment bp="golems"></assignment>
+					</add-rumor>
+				</result>
+				<result victory="true">
+					<add-gold amount="50"></add-gold>
+				</result>
+			</assignment-blueprint>
+			
+			<assignment-blueprint name="ratking">
+				<config></config>
+				<info label="Jimmy, the Rat King"></info>
+				<event bp="jimmyTheRatKing"></event>
+				<assign min-units="1" max-units="8" cost="0"></assign>
+				<result>
+					<!-- Add self back to the list for now. -->
+					<add-rumor>
+						<assignment bp="ratking"></assignment>
+					</add-rumor>
+				</result>
+				<result victory="true">
+					<add-gold amount="100"></add-gold>
+				</result>
+			</assignment-blueprint>
+
+			<!-- Assignments that are otherwise later available. -->
+			<assignment-blueprint name="hangingout">
+				<config></config>
+				<info assignment-invoke-fn="GameRules.LaunchEffect"></info>
+				<info encounter-fn="Events.success"></info>
+				<info label="Do Chores (each unit heals 5 HP and gains 1 gold)"></info>
+				<result>
+					<add-gold amount-fn="Events.hangOutGold" amount="1+"></add-gold>
+ 				</result>
+				<result>
+					<heal-units amount="5"></heal-units>
+				</result>
+			</assignment-blueprint>
+
+			<assignment-blueprint name="doctor">
+				<config></config>
+				<info assignment-invoke-fn="GameRules.LaunchEffect"></info>
+				<info encounter-fn="Events.success"></info>
+				<info label="Get Medical Help"></info>
+				<assign min-units="1" cost-fn="Events.CostPerUnit" max-units-fn="Events.MaxUnitsByCost" cost-per-unit="20" unit-filter="Events.DamagedUnits" unit-sort="Events.MostDamage"></assign>
+				<result>
+					<heal-units amount="100"></heal-units>
+				</result>
+				<result>
+					<!-- The good doctor continues to be available. -->
+					<add-rumor>
+						<assignment bp="doctor"></assignment>
+					</add-rumor>
+				</result>
+			</assignment-blueprint>
+
+		</concept>
 
 		<concept hash="cards">
 			<info-panel>
@@ -846,16 +1169,16 @@
 
 		<template name="title_screen">
 			<div class="title_screen modal_screen" wt="Screen TitleScreen" screen-label="Title Screen" tutorial-label="tutorial/title2">
-				<h1> OB-CT Prototype</h1>
+				<h1> JSOBP Prototype</h1>
 
-				Welcome to the OB-CT prototype!
+				Welcome to the JSOBP prototype!
 
 				<p>Right click on things you want to learn more about.  Many of them have mini-wiki pages, which will show up on the panel to the right.</p>
 				<p style="background: rgba(0, 0, 255, 0.5); font-weight: bolder;"><span compendium="tutorial/title">Right-Click Here if you don't know how to play and look to the panel in the upper-right of your screen!</span></p>
 
 				<br />
 
-				<button wt="StartButton" wh-c="StartButton.click>TitleScreen.OnStart">Start!</button>
+				<button class="start_button" wt="StartButton" wh-c="StartButton.click>TitleScreen.OnStart">Start!</button>
 
 
 				<p><span compendium="concept/ideas">Future Ideas</span></p>
@@ -867,6 +1190,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span></li>
 					</ul>
 				</div>
 			</div>
@@ -885,17 +1209,92 @@
 
 		<template name="town_screen">
 			<div class="town_screen modal_screen" wt="Screen TownScreen" screen-label="Town Screen" tutorial-label="tutorial/townscreen"
-			    wh-c="EncounterButton.click>TownScreen.OnEncounterClick,
-					  DialogTest.click>TownScreen.TestDialog">
-				This would be where things happen between encounters.  <span compendium="concept/features">Check out what I'm hoping to add!</span>
+			    wh-c="BuyRumor.click>TownScreen.BuyRumor,
+					  Go.click>TownScreen.OnEmbark"
+				wh-b="AssignmentHolder.AddChild|AssignmentHolder.RemoveChild>TownScreen.RefreshEmbark">
+				<h2>Town</h2>
 
-				For now, though, here's the only one thing available:
-				<ul>
-					<li><span> The Rats: </span> <button wt="EncounterButton" encounter-fn="Encounters.theRats">Prepare!</button></li>
-					<li><span> The Golems: </span> <button wt="EncounterButton" encounter-fn="Encounters.theGolems">Prepare!</button></li>
-					<li><span> Jimmy, the Rat King: </span> <button wt="EncounterButton" encounter-fn="Encounters.jimmyTheRatKing">Prepare!</button></li>
-				</ul>
+				<b>Assign your units to rumors and facilities!</b>
+				
+				<div class="rumor_holder">
+
+				</div>
+
+				<div class="assignment_group">
+					<div wt="AssignmentHolder" class="assignment_holder">
+
+					</div>
+					<div class="button_holder">
+						<button class="embark_button" wt="Go" disabled>Embark!</button>
+					</div>
+				</div>
+
+
 			</div>
+		</template>
+
+		<!-- Structure of a rumor -->
+		<template name="town_rumor">
+			<div class="town_rumor" wt="Rumor">
+				<span class="name" name="NAME"></span>
+				<span class="results" compendium="concept/assignments/concept/results"></span>
+				<span class="button_container">
+					<button wt="BuyRumor" compendium="concept/assignments/concept/cost">
+						<span class="cost_appearance" min-cost max-cost bounded></span>
+					</button>
+				</span>
+				<info wt="BP">
+
+				</info>
+			</div>
+		</template>
+
+		<!-- Structure of an assignent.  -->
+		<template name="town_assignment">
+			<div class="town_assignment" wt="Assignment">
+				<span class="details">
+					<div class="name" label="NAME"></div>
+					<div class="results" compendium="concept/assignments/concept/results">
+					</div>
+				</span>
+				<span class="units micro_cards"></span>
+				<info wt="BP AssignmentBP">
+				</info>
+			</div>
+		</template>
+
+		<!-- Structure of an Event wrapper -->
+		<template name="event_screen">
+			<div wt="Screen EventScreen" screen-label="LABEL" class="event_screen">
+				<!-- Place to dump a copy of the event blueprint. -->
+				<blueprint></blueprint>
+				<!-- Place to dump additional results. -->
+				<results></results>
+				<!-- Place to dump units -->
+				<units></units>
+				<!-- Place to dump cards-->
+				<deck></deck>
+				<div wt="ScreenWrapper">
+				</div>
+			</div>
+		</template>
+		
+		<!-- Structure of an vignette -->
+		<template name="vignette_screen">
+			<div class="vignette_screen" wt="Screen VignetteScreen" screen-label="Vignette"
+					wh-b="Choice.click>EventRules.PickChoice">
+				<div class="story">
+					<div class="title"></div>
+					<div class="micro_cards units"></div>
+					<div class="flavor"></div>
+				</div>
+				<div class="choices"></div>
+			</div>
+		</template>
+		
+		<!-- Structure of a vignette choice. -->
+		<template name="vignette_choice">
+			<div><button wt="Choice" choice="CHOICE_ID" class="vignette_choice">LABEL</button></div>
 		</template>
 
 		<!-- Structure of a combat encounter -->
@@ -1209,6 +1608,15 @@
 				<deck wh-c=".AddChild>Ability.HoverHelpRefresh">
 					<!-- Where we store cards between encounters. -->
 				</deck>
+				<rumors>
+					<!-- Where we store options for random rumors between encounters. -->
+					
+				</rumors>
+				<reserved-units>
+					<dorm>
+
+					</dorm>
+				</reserved-units>				
 			</run-info>
 		</template>
 		
@@ -1235,6 +1643,7 @@
 		"ui/dialogscreen",
 		"ui/effects",
 		"ui/encounterscreen",
+		"ui/eventscreen",
 		"ui/grids",
 		"ui/hoverhelper",
 		"ui/mainscreen",
@@ -1248,7 +1657,11 @@
 		"ui/tutorialhelper",
 		"ui/unit",
 		"ui/volleycounter",
-		"ui/town/unitselect",
+
+		"ui/shared/unitselect",
+
+		"ui/town/assignment",
+		"ui/town/rumor",
 
 		// Misc shit.
 		// TODO: Try to get rid of this one.
@@ -1258,14 +1671,17 @@
 
 		"rules/cardrules",
 		"rules/encounterrules",
+		"rules/eventrules",
 		"rules/gamerules",
 		"rules/targetpicker",
 		"rules/unitrules",
 
 		// Content
+		"content/battlefields",
 		"content/constants",
 		"content/encounters",
 		"content/enemies",
+		"content/events",
 		"content/orders",
 		"content/preparations",
 		"content/skillutils",

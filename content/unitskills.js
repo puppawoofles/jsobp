@@ -21,8 +21,8 @@ class Strike {
 
         var promise = GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
-            source: WoofType.buildSelectorFor(unit),
-            target: WoofType.buildSelectorFor(target)
+            source: unit,
+            target: target
         })).then(function(result) {
             GameEffect.mergeResults(results, result);
         });
@@ -60,8 +60,8 @@ class Strike {
 
         var promise = GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
-            source: WoofType.buildSelectorFor(unit),
-            target: WoofType.buildSelectorFor(target)
+            source: unit,
+            target: target
         })).then(function(result) {
             GameEffect.mergeResults(results, result);
         });
@@ -104,8 +104,8 @@ class Strike {
 
         var promise = GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
-            source: WoofType.buildSelectorFor(unit),
-            target: WoofType.buildSelectorFor(target)
+            source: unit,
+            target: target
         })).then(function(result) {
             GameEffect.mergeResults(results, result);
         });
@@ -163,8 +163,8 @@ class StepAbility {
         }
 
         return GameEffect.push(effect, GameEffect.create("UnitMoveToward", {
-            unit: WoofType.buildSelectorFor(unit),
-            destination: WoofType.buildSelectorFor(targetCell),
+            unit: unit,
+            destination: targetCell,
             distance: distance
         })).then(function(result) {
             var agilityStacksUsed = result.result.distanceMoved - baseDistance;
@@ -199,8 +199,8 @@ class ScurryAbility {
 
         var distance = baseDistance;
         return GameEffect.push(effect, GameEffect.create("UnitMoveToward", {
-            unit: WoofType.buildSelectorFor(unit),
-            destination: WoofType.buildSelectorFor(targetCell),
+            unit: unit,
+            destination: targetCell,
             distance: distance
         })); 
     }
@@ -228,13 +228,13 @@ class MindlessMarch {
         if (unitInCell) {
             // Collide instead. :D
             return GameEffect.push(effect, GameEffect.create("UnitCollision", {
-                firstUnit: WoofType.buildSelectorFor(unit),
-                secondUnit: WoofType.buildSelectorFor(unitInCell)
+                firstUnit: unit,
+                secondUnit: unitInCell
             }));
         }
         return GameEffect.push(effect, GameEffect.create("UnitMoveToward", {
-            unit: WoofType.buildSelectorFor(unit),
-            destination: WoofType.buildSelectorFor(destCell),
+            unit: unit,
+            destination: destCell,
             distance: 10
         })); 
     }
@@ -260,7 +260,7 @@ class Push {
         var target = targets[0];
 
         return GameEffect.push(effect, GameEffect.create("PushUnit", {
-            target: WoofType.buildSelectorFor(target),
+            target: target,
             direction: facing,
             amount: params.pushForce
         })).then(function(result) {
@@ -342,7 +342,14 @@ class DistractAbility {
         if (targets.length == 0) {
             return GameEffect.createResults(effect);
         }
-        var target = targets[0];
+        // Find a target that has abilities.
+        var target = targets.filter(function(t) {
+            return Ability.findAll(t).length > 0;
+        })[0];
+
+        if (!target) {
+            return;
+        }
 
         var amount = params.debuffSize;
 

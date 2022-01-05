@@ -14,6 +14,7 @@ class Unit {
     static Month = new ScopedAttr('month', StringAttr);
     static Day = new ScopedAttr('day', StringAttr);
     static Appearance = new ScopedAttr('appearance', StringAttr);
+    static Name = new ScopedAttr('name', StringAttr);
 
     static Ephemeral = new ScopedAttr("ephemeral", BoolAttr);
     static Construct = new ScopedAttr("construct", BoolAttr);
@@ -26,19 +27,23 @@ class Unit {
 	static CellBlock = new ScopedAttr("in-block", StringAttr);
 
     static findById(parent, id) {
-        return parent.querySelector("[wt~='Unit'][w-id='" + id + "']");
+        return qs(parent, "[wt~='Unit'][w-id='" + id + "']");
+    }
+
+    static getName(unit) {
+        return Unit.Name.findGet(unit);
     }
 
     static statusContainer(unit) {
-        return unit.querySelector(".unit_status");
+        return qs(unit, ".unit_status");
     }
 
     static findAllByTeam(parent, team) {
-        return Array.from(parent.querySelectorAll("[wt~='Unit'][team='" + team + "']"));
+        return qsa(parent, "[wt~='Unit'][team='" + team + "']");
     }
 
     static _findScript(base) {
-        return base.querySelector(".unit_script");
+        return qs(base, ".unit_script");
     }
 
     static baseDamage(unit) {
@@ -54,12 +59,12 @@ class Unit {
     }
 
     static cloneAppearance(unit) {
-        return unit.querySelector(".appearance").cloneNode(true);
+        return qs(unit, ".appearance").cloneNode(true);
     }
 
 	static OnHPBarUpdate(event, handler) {
-		var text = handler.querySelector(".hp_text");
-		var progressBar = handler.querySelector("progress.hp_bar");
+		var text = qs(handler, ".hp_text");
+		var progressBar = qs(handler, "progress.hp_bar");
 		text.innerHTML = progressBar.getAttribute("value") + "/" + progressBar.getAttribute("max");
 	}
 
@@ -67,7 +72,7 @@ class Unit {
     static Vulnerable = new ScopedAttr("vulnerable", BoolAttr);
 
     static setDefend(unit, stacks) {
-        var defend = unit.querySelector(".defend");
+        var defend = qs(unit, ".defend");
         if (!stacks) {
             Unit.Defend.set(defend);
             Unit.Vulnerable.set(defend, false);
@@ -83,36 +88,46 @@ class Unit {
     static findAllInBlock(cellBlock) {
         var coords = BigCoord.extract(cellBlock);
         var selector = BigCoord.selector(coords);
-        return Array.from(BattlefieldHandler.find(cellBlock)
-                .querySelectorAll(selector + "[wt~='Unit']"));
+        return qsa(BattlefieldHandler.find(cellBlock), selector + "[wt~='Unit']");
+    }
+    
+    static findTeamInBlock(cellBlock, team) {
+        return Unit.findAllInBlock(cellBlock).filter(function(unit) {
+            return TeamAttr.get(unit) == team;
+        });
     }
 
     static reduceHP(unit, byAmount) {
-        var hpBar = unit.querySelector('progress[wt~="HPBar"]');
+        var hpBar = qs(unit, 'progress[wt~="HPBar"]');
         var current = CurrentHPAttr.get(hpBar);
         current = Math.max(0, current - byAmount);
         CurrentHPAttr.set(hpBar, current);
     }
 
     static currentHP(unit) {
-        var hpBar = unit.querySelector('progress[wt~="HPBar"]');
+        var hpBar = qs(unit, 'progress[wt~="HPBar"]');
         return CurrentHPAttr.get(hpBar);
     }
 
     static maxHP(unit) {
-        var hpBar = unit.querySelector('progress[wt~="HPBar"]');
+        var hpBar = qs(unit, 'progress[wt~="HPBar"]');
         return MaxHPAttr.get(hpBar);
     }
 
     static setMaxHP(unit, value) {
-        var hpBar = unit.querySelector('progress[wt~="HPBar"]');
+        var hpBar = qs(unit, 'progress[wt~="HPBar"]');
         return MaxHPAttr.set(hpBar, value);
     }
 
     static setCurrentHP(unit, value) {
-        var hpBar = unit.querySelector('progress[wt~="HPBar"]');
+        var hpBar = qs(unit, 'progress[wt~="HPBar"]');
         var hp = Math.min(value, Unit.maxHP(unit));
         return CurrentHPAttr.set(hpBar, hp);
+    }
+
+    static heal(unit, amount) {
+        if (amount <= 0) return;
+        Unit.setCurrentHP(unit, Math.min(Unit.currentHP(unit) + amount, Unit.maxHP(unit)));
     }
 
     static setTargetLocation(unit, cellOrLabel) {
@@ -163,6 +178,9 @@ class Unit {
         Unit.CurrentTaunt.clear(unit);
         Unit.TauntList.clear(unit);
         Unit.CellBlock.set(unit);
+
+        // Remove extra junk.
+        Unit.setDefend(unit, 0);
 
         // Remove extra blueprints.
         AbilityBlueprint.findAll(unit).filter(function(blueprint) {
@@ -218,14 +236,14 @@ class Unit {
     static Used = new ScopedAttr("used", BoolAttr); 
     static BeforeUseAbility = GameEffect.handle(function(handler, effect, params) {
         for (var i = 0; i < params.components.length; i++) {
-            var ability = Utils.bfind(effect, 'body', params.components[i].ability);
+            var ability = params.components[i].ability;
             Unit.Active.set(ability, true);
         }
     });
 
     static AfterUseAbility = GameEffect.handle(function(handler, effect, params) {
         for (var i = 0; i < params.components.length; i++) {
-            var ability = Utils.bfind(effect, 'body', params.components[i].ability);
+            var ability = params.components[i].ability;
             Unit.Active.set(ability, false);
             Unit.Used.set(ability, true);
         }
@@ -407,9 +425,9 @@ class Unit {
     static RefreshAppearance(event, handler) {
         if (event.target != handler) return;
 
-        Unit.Month.copy(handler.querySelector(".month"), handler);
-        Unit.Day.copy(handler.querySelector(".day"), handler);
-        Unit.Appearance.copy(handler.querySelector(".avatar"), handler);
+        Unit.Month.copy(qs(handler, ".month"), handler);
+        Unit.Day.copy(qs(handler, ".day"), handler);
+        Unit.Appearance.copy(qs(handler, ".avatar"), handler);
     }
 }
 WoofRootController.register(Unit);
@@ -442,13 +460,12 @@ Utils.classMixin(Unit, AbstractDomController, {
 class VolleyCountAttr {
     static lowestAtLeast(handler, value) {
         var volley = null;
-        new Stream()
-            .forEach(VolleyCountAttr.findAll(handler), function(elt) {
-                var volleyCount = VolleyCountAttr.get(elt);
-                if (volleyCount >= value && (volley === null || volley > volleyCount)) {
-                    volley = volleyCount;
-                }
-            });
+        VolleyCountAttr.findAll(handler).forEach(function(elt) {
+            var volleyCount = VolleyCountAttr.get(elt);
+            if (volleyCount >= value && (volley === null || volley > volleyCount)) {
+                volley = volleyCount;
+            }
+        });
         return volley;
     }
 }
@@ -498,15 +515,15 @@ class Ability {
     static CurrentCooldown = new ScopedAttr("current-cooldown", IntAttr);
     
     static volley(elt) {
-        return VolleyCountAttr.get(elt.querySelector("[volley_count]"));
+        return VolleyCountAttr.get(qs(elt, "[volley_count]"));
     }
 
     static blueprintsContainer(elt) {
-        return elt.querySelector('blueprints');
+        return qs(elt, 'blueprints');
     }
 
     static labelElt(elt) {
-        return elt.querySelector(".label");
+        return qs(elt, ".label");
     }
 
     static label(elt) {
@@ -641,11 +658,11 @@ class Ability {
     }
 
     static helpersThatComboWith(thisAbility, thatAbility) {
-        return Array.from(thatAbility.querySelectorAll('combo-helper[universal="true"], combo-helper[for-type="' + Ability.Type.get(thisAbility) + '"]'));
+        return qsa(thatAbility, 'combo-helper[universal="true"], combo-helper[for-type="' + Ability.Type.get(thisAbility) + '"]');
     }
 
     static getActiveIn(ability) {
-        return Ability.ActiveIn.get(ability.querySelector(".activation_info"));
+        return Ability.ActiveIn.get(qs(ability, ".activation_info"));
     }
 
     static TargetTravel = new ScopedAttr("target-travel", StringAttr);
@@ -684,7 +701,7 @@ class AbilityBlueprint {
     static Base = new ScopedAttr("base", BoolAttr);
 
     static findBase(elt) {
-        return elt.querySelector('blueprint[base="true"]');
+        return qs(elt, 'blueprint[base="true"]');
     }
 
     static applySkill(elt, skillBp) {
@@ -744,11 +761,11 @@ class UnitStatus {
     static StatusType = new ScopedAttr("status_type", StringAttr);
 
     static findOnUnit(unit, type) {
-        return unit.querySelector('[wt~="Status"][status_type="' + type + '"]');
+        return qs(unit, '[wt~="Status"][status_type="' + type + '"]');
     }
 
     static findAll(elt, type) {
-        return Array.from(elt.querySelectorAll('[wt~="Status"][status_type="' + type + '"]'));
+        return qsa(elt, '[wt~="Status"][status_type="' + type + '"]');
     }
 
     static getType(status) {

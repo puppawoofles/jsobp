@@ -5,30 +5,30 @@ class VolleyCounter {
 
     static minVolleysLeft(elt) {
         var counter = VolleyCounter.find(elt);
-        var countDown = counter.querySelector(".countdown");
+        var countDown = qs(counter, ".countdown");
         return VolleyCounter.VolleysLeft.get(countDown) || 0;
     }
 
     static volleysOverMin(elt) {
         var counter = VolleyCounter.find(elt);
-        var countUp = counter.querySelector(".countup");
+        var countUp = qs(counter, ".countup");
         return VolleyCounter.VolleysOverMin.get(countUp) || 0;
     }
 
     static AfterPlayRound = GameEffect.handle(function(handler) {
         // We want to reset.
         var counter = VolleyCounter.find(handler);
-        var countDown = counter.querySelector(".countdown");
+        var countDown = qs(counter, ".countdown");
         VolleyCounter.VolleysLeft.set(countDown, VolleyCounter.MinimumVolleys.get(countDown));
 
-        var countUp = counter.querySelector(".countup");
+        var countUp = qs(counter, ".countup");
         VolleyCounter.VolleysOverMin.set(countUp);
     });
 
     static AfterVolley = GameEffect.handle(function(handler) {
         // Do some counting.
         var counter = VolleyCounter.find(handler);
-        var countDown = counter.querySelector(".countdown");
+        var countDown = qs(counter, ".countdown");
         var volleysLeft = VolleyCounter.VolleysLeft.get(countDown);
         if (!!volleysLeft) {
             if (volleysLeft == 1) {
@@ -39,7 +39,7 @@ class VolleyCounter {
             return;
         }
 
-        var countUp = counter.querySelector(".countup");
+        var countUp = qs(counter, ".countup");
         var newVolleys = VolleyCounter.VolleysOverMin.get(countUp);
         if (!newVolleys) {
             newVolleys = 1;

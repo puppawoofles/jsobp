@@ -24,7 +24,7 @@ class UiTreatments {
 	static ExtraClasses = new ScopedAttr("extra-classes", StringAttr);
 
 	static OnAfterUiEffect = GameEffect.after(function(handler, event, params, result) {
-		var effects = handler.querySelectorAll("ui-effect");
+		var effects = qsa(handler, "ui-effect");
 		var targeting = function(effect) {
 			if (UiTreatments.TargetFn.has(effect)) return UiTreatments.TargetFn.invoke(effect, effect, event, params, result);
 			if (UiTreatments.TargetFn.has(handler)) return UiTreatments.TargetFn.invoke(handler, handler, event, params, result);
@@ -112,7 +112,7 @@ class UiTreatments {
 	static __findEffectContainer(elt) {
 		var up = Utils.findUp(elt, '[effect-container]');
 		if (!up) throw boom("Unable to find redirect to effect container", elt);
-		var down = up.querySelector(up.getAttribute('effect-container'));
+		var down = qs(up, up.getAttribute('effect-container'));
 		if (!down) throw boom("Unable to find effect container", elt);
 		return down;
 	}

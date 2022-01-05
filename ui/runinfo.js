@@ -6,14 +6,24 @@ class RunInfo {
 
     static addToDeck(elt, card) {
         var runInfo = RunInfo.find(elt);
-        var deck = runInfo.querySelector("deck");
+        var deck = qs(runInfo, "deck");
         deck.appendChild(card);
     }
 
     static getDeck(elt) {
         var runInfo = RunInfo.find(elt);
-        var deck = runInfo.querySelector("deck");
+        var deck = qs(runInfo, "deck");
         return Array.from(deck.children);
+    }
+
+    static addRumor(elt, rumor) {
+        var runInfo = RunInfo.find(elt);
+        var holder = qs(runInfo, "rumors");
+        holder.appendChild(rumor);
+    }
+
+    static getRumors(elt) {
+        return qsa(RunInfo.find(elt), "rumors > *");
     }
 
     static setMonth(elt, month) {
@@ -47,6 +57,20 @@ class RunInfo {
     static getCurrentGold(elt) {
         var runInfo = RunInfo.find(elt);        
         return RunInfo.CurrentGold.findGet(runInfo)
+    }
+
+    static addGold(elt, amount) {
+        var currentGold = RunInfo.getCurrentGold(elt);
+        RunInfo.setCurrentGold(elt, currentGold + amount);
+    }
+
+    static hasEnoughGold(elt, amount) {
+        return RunInfo.getCurrentGold(elt) >= amount;
+    }
+
+    static spendGold(elt, amount) {
+        var currentGold = RunInfo.getCurrentGold(elt);
+        RunInfo.setCurrentGold(elt, Math.max(0, currentGold - amount));
     }
 }
 Utils.classMixin(RunInfo, AbstractDomController, {

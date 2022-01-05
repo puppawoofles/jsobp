@@ -32,6 +32,7 @@ Array.prototype["clone"] = function() {
 
 Array.prototype["extend"] = function(newArr) {
 	if (this == newArr) return;
+	if (newArr === null || newArr === undefined) return;
 	while (newArr.length > 0) {
 		this.push(newArr.shift());
 	}
@@ -43,6 +44,24 @@ Array.prototype["toObject"] = function(keyFn, opt_valueFn) {
 		toPut[keyFn(this[i], i)] = !!opt_valueFn ?
 				opt_valueFn(this[i], i) :
 				this[i]
+	}	
+	return toPut;
+}
+
+Array.prototype["groupBy"] = function(groupFn) {
+	var toPut = {};
+	for (var i = 0; i < this.length; i++) {
+		var key = groupFn(this[i]);
+		toPut[key] = toPut[key] || [];
+		toPut[key].push(this[i]);
+	}	
+	return toPut;
+}
+
+Array.prototype["expandToObject"] = function(valueFn) {
+	var toPut = {};
+	for (var i = 0; i < this.length; i++) {
+		toPut[this[i]] = valueFn(this[i]);
 	}	
 	return toPut;
 }
@@ -72,6 +91,56 @@ Array.prototype["peek"] = function() {
 	if (this.length == 0) return undefined;
 	return this[this.length - 1];
 }
+
+Array.prototype["merge"] = function(mergeFn) {
+	var toReturn = null;
+	for (var i = 0; i < this.length; i++) {
+		if (!toReturn) {
+			toReturn = this[i];
+			continue;
+		}
+		toReturn = mergeFn(toReturn, this[i]);
+	}
+
+	return toReturn;
+}
+
+Array.prototype["findFirst"] = function(predicateFn) {
+	for (var i = 0; i < this.length; i++) {
+		if (predicateFn(this[i])) return this[i];
+	}
+	return null;
+}
+
+/* Normalize queryselectorall */
+qsa = function(element, matcher) {
+	return Array.from(element.querySelectorAll(matcher) || []);
+}
+
+/* Shorten queryselector */
+qs = function(element, matcher) {
+	return element.querySelector(matcher) || null;
+}
+
+/* Simplify boomerang-find */
+bf = function(element, downMatcher, opt_upMatcher) {
+	var up = opt_upMatcher ? matchParent(element, opt_upMatcher) : (element.ownerDocument || element);
+	return qs(up, downMatcher);
+}
+
+/* Simplify boomerang-find-all */
+bfa = function(element, downMatcher, opt_upMatcher) {
+	var up = opt_upMatcher ? matchParent(element, opt_upMatcher) : (element.ownerDocument || element);
+	return qsa(up, downMatcher);
+}
+
+a = function(thing) {
+	return Array.from(thing);
+}
+
+sumMerge = function(a, b) {
+	return a + b;
+};
 
 NodeList.prototype["map"] = Array.prototype["map"];
 
@@ -120,137 +189,6 @@ randomValue = function(arr) {
 }
 
 
-/** Java stream equivalent. */
-class Stream {
-	constructor() {
-		this.processors = [];
-	}
-
-	/** Converters */
-	filter(predicate) {
-		this.processors.push(function(array, index) {
-			if (predicate(array[index])) return 1;
-			array.splice(index, 1);
-			return 0;
-		});
-		return this;
-	}
-	
-	map(mapFn) {
-		this.processors.push(function(array, index) {
-			array[index] = mapFn(array[index]);
-			return 1;
-		});
-		return this;		
-	}
-		
-	expand(expandFn) {
-		this.processors.push(function(array, index) {
-			var results = expandFn(value);
-			array.splice(index, 1, results);
-			return results.length;
-		});
-		return this;
-	}
-
-	/** Finalizers. */
-	toArray(input) {
-		input = Array.from(input);
-		
-		for (var i = 0; i < this.processors.length; i++) {
-			var processor = this.processors[i];
-			for (var j = 0; j < input.length;) {
-				j += this.processors[i](input, j);							
-			}			
-		}
-		
-		return input;
-	}
-	
-	toObject(input, toKey) {
-		return arrayToObject(this.toArray(input), toKey);		
-	}
-
-    forEach(input, fn) {
-        this.processors.push(function(array, index) {
-            fn(array[index]);
-            return 1;
-        });
-
-        input = Array.from(input);
-
-        for (var i = 0; i < this.processors.length; i++) {
-            var processor = this.processors[i];
-            for (var j = 0; j < input.length;) {
-                j += this.processors[i](input, j);
-            }
-        }
-    }
-}
-
-class PriorityQueue {
-	constructor(scoreFn) {
-		this.elements_ = [];
-		this.scoreFn_ = scoreFn;
-	}
-	
-	length() {
-		return this.elements_.length;
-	}
-	
-	insert(element) {
-		var left = 0;
-		var right = this.elements_.length - 1;
-		var eltScore = this.scoreFn_(element);
-		
-		while (true) {
-			if (left > right) {
-				this.elements_.splice(0, 0, element);
-				return;
-			}
-			if (left == right) {
-				if (eltScore > this.scoreFn_(this.elements_[left])) {
-					this.elements_.splice(left + 1, 0, element);					
-				} else {
-					this.elements_.splice(left, 0, element);					
-				}
-				return;
-			}
-			var middle = Math.floor((left + right) / 2);
-			var midScore = this.scoreFn_(this.elements_[middle]);
-			if (midScore > eltScore) {
-				if (right == middle) {
-					right = middle + 1;
-				} else right = middle;				
-			} else if (midScore < eltScore) {
-				if (left == middle) {
-					left = middle + 1;
-				} else left = middle;
-			} else {
-				// Equal priority, good enough.
-				this.elements_.splice(middle, 0, element);
-				return;
-			}			
-		}
-	}
-	
-	peekLowest(element) {
-		return this.elements_[0];
-	}
-	
-	peekHighest(element) {
-		return this.elements_[this.elements_.length - 1];
-	}
-	
-	popLowest(element) {
-		return this.elements_.shift();
-	}
-	
-	popHighest(element) {
-		return this.elements_.pop();
-	}	
-}
-
 /** Super barebones template inflation class. */
 class Templates {
 	
@@ -258,7 +196,7 @@ class Templates {
 		// Empty map otherwise.
 		var substitutions = opt_subMap || {};
 		
-		var elt = document.querySelector(".templates > template[name='" + name + "']");
+		var elt = qs(document, ".templates > template[name='" + name + "']");
 		if (!elt) throw boom("Unknown template: " + name);
 		var clone = elt.cloneNode(true);
 		var html = clone.innerHTML;
@@ -744,9 +682,7 @@ class Logger {
 		for (var i = 0; i < roots.length; i++) {
 			var root = roots[i];
 			var selector = '[wlogger]';
-			var results = root.querySelectorAll ? root.querySelectorAll(selector) :
-					(root.document ? root.document.querySelectorAll(selector) : []);
-			if (results) returnMe.push(...results);
+			returnMe.push(...qsa(root, selector));			
 		}
 		
 		return returnMe;
@@ -809,9 +745,21 @@ class WoofType {
 	static find(element, type) {
 		return Utils.find(element, "[wt~='" + type + "']");
 	}
+
+	static findDown(element, type, opt_strict) {
+		var selector = WoofType.buildSelector(type);
+		if (!opt_strict) {
+			if (element.matches(selector)) return element;
+		}
+		return qs(element, selector);
+	}
+
+	static findAll(element, value) {
+		return Array.from(WoofType.queryAll(element, value));
+	}
 	
 	static queryAll(element, value) {
-		return element.querySelectorAll(WoofType.buildSelector(value));
+		return qsa(element, WoofType.buildSelector(value));
 	}
 
 	static buildSelector(type) {
@@ -833,6 +781,34 @@ class WoofType {
 		var id = IdAttr.generate(element);
 		return WoofType.buildSelectorFrom(type, id);
 	}
+}
+
+/** Used for objects used to store relative scores of things. */
+class Counters {
+	static Increment(object, key) {
+		object[key] = (object[key] || 0) + 1;
+	}
+
+	static Decrement(object, key) {
+		object[key] = (object[key] || 0) - 1;
+	}
+
+	static MaxKey(object) {
+		var winner = null;
+		for (var [key, value] of Object.entries(object)) {
+			if (winner === null || object[winner] < value) winner = key;
+		}
+		return winner;
+	}
+
+	static MinKey(object) {
+		var winner = null;
+		for (var [key, value] of Object.entries(object)) {
+			if (winner === null || object[winner] > kvalueey) winner = key;
+		}
+		return winner;
+	}
+
 }
 
 class ParamList {
@@ -949,11 +925,11 @@ class Utils {
 		
 	static find(element, matcher) {
 		if (element.matches(matcher)) return element;
-		var found = element.querySelector(matcher);
+		var found = qs(element, matcher);
 		if (found) return found;
 		found = matchParent(element, matcher);
 		if (found) return found;		
-		return element.ownerDocument.querySelector(matcher);		
+		return qs(element.ownerDocument, matcher);		
 	}
 	
 	static findUp(element, matcher) {
@@ -964,25 +940,25 @@ class Utils {
 		if (!element) element = document.body;
 		var up = Utils.findUp(element, upMatcher);
 		if (!up) {
-			var ups = element.querySelectorAll(upMatcher);
+			var ups = qsa(element, upMatcher);
 			if (ups.length == 1) {
 				up = ups[0];
 			}
 		}
 		if (!up) return null;
-		return up.querySelector(downMatcher);
+		return qs(up, downMatcher);
 	}
 	
 	static bfindAll(element, upMatcher, downMatcher) {
 		var up = Utils.findUp(element, upMatcher);
 		if (!up) {
-			var ups = element.querySelectorAll(upMatcher);
+			var ups = qsa(element, upMatcher);
 			if (ups.length == 1) {
 				up = ups[0];
 			}
 		}
 		if (!up) return null;
-		return Array.from(up.querySelectorAll(downMatcher));
+		return qsa(up, downMatcher);
 	}
 		
 	static UUID() {
@@ -1010,86 +986,6 @@ class Utils {
 }
 WoofRootController.register(Utils);
 
-class AbstractDomController {
-	static bfind(config, elt, matcher) {
-		return Utils.bfind(elt, matcher || config.upStop || 'body', config.matcher);
-	}
-
-	static bfindAll(config, elt, matcher) {
-		return Utils.bfindAll(elt, matcher || config.upStop || 'body', config.matcher);
-	}
-
-	static find(config, elt){
-		return Utils.find(elt, config.matcher);
-	}
-
-	static findDown(config, elt) {
-		return elt.querySelector(config.matcher);
-	}
-	
-	static findAll(config, elt) {
-		return Array.from(elt.querySelectorAll(config.matcher));
-	}
-	
-	static findUp(config, elt) {
-		return matchParent(elt, config.matcher);
-	}
-
-    static inflate(config, ...args) {
-        return AbstractDomController.__inflate(config, args);
-    }
-
-    static __inflate(config, args) {
-        if (!config.template) {
-            Logger.err("Unable to inflate template");
-            return;
-        }
-		var params = !!config.params ? config.params.apply(null, args) : {};
-        var elts = Templates.inflate(config.template, params);
-        if (!!config.decorate) {
-            var args2 = Array.from(args);
-            args2.unshift(elts);
-            config.decorate.apply(null, args2);
-        }
-
-        return elts;
-    }
-
-    static inflateIn(config, parentElt, ...args) {
-        var fragment = AbstractDomController.__inflate(config, args)
-        parentElt.appendChild(fragment);
-        return fragment;
-    }
-
-    static normalize(config, thing) {
-        if (thing instanceof Element) {
-            return AbstractDomController.findUp(config, thing);
-        }
-        if (!config.normalize) {
-            Logger.err("Unable to normalize");
-            return undefined;
-        }
-        var params = Array.from(arguments);
-        params.shift();
-        return config.normalize.apply(null, params);
-    }
-}
-
-class BlueprintFunction {
-	static find(elt, type) {
-		var string;
-		if (elt.hasAttribute(type)) string = elt.getAttribute(type);
-		else {
-			var found = elt.querySelector(type + "[fn]");
-			if (!found) throw boom("Uh oh");
-			string = found.getAttribute("fn");
-		}
-				
-		return WoofRootController.controller(string);
-	}
-}
-
-
 class BoolAttr {
 	static key(config) {
 		return config;
@@ -1111,6 +1007,10 @@ class BoolAttr {
 		}		
 	}
 
+	static has(config, element) {
+		return element.hasAttribute(config);
+	}
+
 	static true(config, element) {
 		BoolAttr.set(config, element, true);
 	}
@@ -1118,16 +1018,21 @@ class BoolAttr {
 	static false(config, element) {
 		BoolAttr.set(config, element, false);
 	}
+
+	static findGet(config, element) {
+		var toFind = BoolAttr.find(config, element);
+		if (!toFind) return null;
+		return BoolAttr.get(config, toFind);
+	}
 	
 	static find(config, element, value) {
-		if (value) {
-			return element.querySelector('[' + config + ']');
-		}
-		return element.querySelector(':not([' + config + '])');
+		var selector = BoolAttr.buildSelector(config, value);
+		if (element.matches(selector)) return element;
+		return qs(element, selector);
 	}
 	
 	static findAll(config, element, value) {
-		return element.querySelectorAll('[' + config +'=' + value + ']');		
+		return qsa(element, '[' + config +'=' + value + ']');		
 	}
 
 	static copy(config, to, from) {
@@ -1145,6 +1050,10 @@ class BoolAttr {
 
 
 class IntAttr {
+	static has(config, elt) {
+		return elt.hasAttribute(config);
+	}
+
 	static key(config) {
 		return config;
 	}
@@ -1182,26 +1091,21 @@ class IntAttr {
 	}
 	
 	static find(config, element, value) {
-		if (value !== undefined) {
-			return element.querySelector('[' + config +'="' + value + '"]');		
-		} else {
-			return element.querySelector('[' + config + ']');
-		}
+		var selector = IntAttr.selector(config, value);
+		if (element.matches(selector)) return element;
+		return qs(element, selector);
 	}
 
 	static findDown(config, element, value) {
-		if (value !== undefined) {
-			return element.querySelector('[' + config +'="' + value + '"]');		
-		} else {
-			return element.querySelector('[' + config + ']');
-		}
+		var selector = IntAttr.selector(config, value);
+		return qs(element, selector);
 	}
 	
 	static findAll(config, element, value) {
 		if (value !== undefined) {
-			return Array.from(element.querySelectorAll('[' + config +'="' + value + '"]'));		
+			return qsa(element, '[' + config +'="' + value + '"]');		
 		} else {
-			return Array.from(element.querySelectorAll('[' + config + ']'));
+			return qsa(element, '[' + config + ']');
 		}
 	}
 
@@ -1240,7 +1144,7 @@ class StringAttr {
 	}
 
 	static findGet(config, element) {
-		var elt = StringAttr.find(config, element);
+		var elt = StringAttr.findDown(config, element);
 		return !!elt ? StringAttr.get(config, elt) : null;
 	}
 
@@ -1249,7 +1153,7 @@ class StringAttr {
 		if (element.matches(matcher)) {
 			return element;
 		}
-		return element.querySelector(matcher);
+		return qs(element, matcher);
 	}
 	
 	static find(config, element, value) {
@@ -1261,9 +1165,9 @@ class StringAttr {
 	
 	static findAll(config, element, value) {
 		if (value === undefined) {
-			return Array.from(element.querySelectorAll('[' + config + ']'));
+			return qsa(element, '[' + config + ']');
 		}
-		return Array.from(element.querySelectorAll('[' + config + '="' + value + '"]'));
+		return qsa(element, '[' + config + '="' + value + '"]');
 	}
 
 	static findUp(config, element, opt_value) {
@@ -1298,6 +1202,12 @@ class FunctionAttr {
 		return config;
 	}
 
+	static bind(config, elt) {
+		return function(...args) {
+			return FunctionAttr.aInvoke(config, elt, args);
+		};
+	}
+
 	static _invoke(config, elt, args) {
 		var fnName = FunctionAttr.get(config, elt);
 		return WoofRootController.invokeController(fnName, args);
@@ -1312,13 +1222,22 @@ class FunctionAttr {
 		return FunctionAttr._invoke(config, elt, args);
 	}
 
+	static aInvoke(config, elt, args) {
+		return FunctionAttr._invoke(config, elt, args);
+	}
+
 	static findInvoke(...args) {
 		var config = args[0];
 		var elt = args[1];
 		var args = args.slice(2);
 
-		var realElt = FunctionAttr.find(config, elt);
+		var realElt = FunctionAttr.findDown(config, elt);
 		return FunctionAttr._invoke(config, realElt, args);	
+	}
+
+	static findAInvoke(config, elt, args) {
+		var realElt = FunctionAttr.findDown(config, elt);
+		return FunctionAttr.aInvoke(config, realElt, args);
 	}
 
 }
@@ -1350,10 +1269,9 @@ class ListAttr {
 	}
 
 	static find(param, element, value) {
-		if (value === undefined) {
-			return element.querySelector('[' + param + ']');
-		}
-		return element.querySelector('[' + param + '~="' + value + '"]');
+		var selector = ListAttr.buildSelector(param, value);
+		if (element.matches(selector)) return element;
+		return qs(element, selector);
 	}
 
 	static findGet(param, element, value) {
@@ -1364,9 +1282,9 @@ class ListAttr {
 
 	static findAll(param, element, value) {
 		if (value === undefined) {
-			return element.querySelectorAll('[' + param + ']');
+			return qsa(element, '[' + param + ']');
 		}
-		return element.querySelectorAll('[' + param + '~="' + value + '"]');
+		return qsa(element, '[' + param + '~="' + value + '"]');
 	}
 
 	static add(param, element, type) {
@@ -1425,6 +1343,82 @@ class ScopedAttr {
 	}
 }
 
+class AbstractDomController {
+	static Tag = new ScopedAttr('tag', StringAttr);
+
+	static tag(config, elt, tag) {
+		var thing = AbstractDomController.find(config, elt);
+		AbstractDomController.Tag.set(thing, tag);
+	}
+
+	static findByTag(config, elt, tag, upMatcher) {
+		return Utils.bfind(elt, upMatcher || config.upStop || 'body', config.matcher + AbstractDomController.Tag.buildSelector(tag));
+	}
+
+	static bfind(config, elt, matcher) {
+		return Utils.bfind(elt, matcher || config.upStop || 'body', config.matcher);
+	}
+
+	static bfindAll(config, elt, matcher) {
+		return Utils.bfindAll(elt, matcher || config.upStop || 'body', config.matcher);
+	}
+
+	static find(config, elt){
+		return Utils.find(elt, config.matcher);
+	}
+
+	static findDown(config, elt) {
+		return qs(elt, config.matcher);
+	}
+	
+	static findAll(config, elt) {
+		return qsa(elt, config.matcher);
+	}
+	
+	static findUp(config, elt) {
+		return matchParent(elt, config.matcher);
+	}
+
+    static inflate(config, ...args) {
+        return AbstractDomController.__inflate(config, args);
+    }
+
+    static __inflate(config, args) {
+        if (!config.template) {
+            Logger.err("Unable to inflate template");
+            return;
+        }
+		var params = !!config.params ? config.params.apply(null, args) : {};
+        var elts = Templates.inflate(config.template, params);
+        if (!!config.decorate) {
+            var args2 = Array.from(args);
+            args2.unshift(elts);
+            config.decorate.apply(null, args2);
+        }
+
+        return elts;
+    }
+
+    static inflateIn(config, parentElt, ...args) {
+        var fragment = AbstractDomController.__inflate(config, args)
+        parentElt.appendChild(fragment);
+        return fragment;
+    }
+
+    static normalize(config, thing) {
+        if (thing instanceof Element) {
+            return AbstractDomController.findUp(config, thing);
+        }
+        if (!config.normalize) {
+            Logger.err("Unable to normalize");
+            return undefined;
+        }
+        var params = Array.from(arguments);
+        params.shift();
+        return config.normalize.apply(null, params);
+    }
+}
+
 class PendingOpAttr {
 	static ForEffect = new ScopedAttr("for-effect", StringAttr);
 	static EffectTicket = new ScopedAttr("effect-ticket", StringAttr);
@@ -1453,85 +1447,35 @@ class PendingOpAttr {
 		PendingOpAttr.ForEffect.set(element);
 		PendingOpAttr.EffectTicket.set(element);
 	}
+
+	static getPendingEffect(element) {
+		var effect = PendingOpAttr.ForEffect.get(element);
+		return Utils.bfind(element, 'body', effect);
+	}
 }
 Utils.classMixin(PendingOpAttr, ListAttr, "pending-operation");
 
+class Blueprint {
+	// Basically, what we do is:
+	// - Look for an element with tagname == "type".
+	// - Look if it has a [bp] attr.
+	// - If it does, bfind for <type-bp name=[value of bp]>
+	// - Otherwise return element.
+	static Bp = new ScopedAttr("bp", StringAttr);
+	static find(element, type) {
+		return Blueprint.findAll(element, type)[0] || null;
+	}
 
-class Predicates {	
-	// Combinatorics
-	static and(...theArgs) {
-		return function() {
-			for (var i = 0; i < theArgs.length; i++) {
-				if (!theArgs[i].apply(this, arguments)) return false;
+	static findAll(element, type) {
+		return qsa(element, type).map(function(candidate) {
+			if (Blueprint.Bp.has(candidate)) {
+				var bpName = Blueprint.Bp.get(candidate);
+				return Utils.bfind(element, 'body', type + '-blueprint[name="' + bpName + '"]');
 			}
-			return true;
-		};
-	}
-	
-	static or(...theArgs) {
-		return function() {
-			for (var i = 0; i < theArgs.length; i++) {
-				if (theArgs[i].apply(this, arguments)) return true;
-			}
-			return false;
-		};
-	}
-	
-	static not(fn) {
-		return function() {
-			return !fn.apply(this, arguments);
-		}
-	}	
-}
-
-// Info types, which live under info roots.  These two work together to allow you to
-// find info elements wherever they're hiding.
-class BaseInfo {
-	static findAll(config, element, opt_matcher) {
-		var root = config.infoRoot.find(element);
-		return Array.from(root.querySelectorAll(config.matcher)).
-				filter(elt => !opt_matcher || elt.matches(opt_matcher));		
-	}
-	
-	static find(config, element, name) {		
-		var value = name || config.refFn(element);
-		var root = config.infoRoot.find(element);
-		var selector = config.matcher + (!!name ? value : config.refSelectorFn(value));
-		return root.querySelector(selector);
-	}
-	
-	static findMap(config, element, opt_matcher) {
-		return BaseInfo.findAll(config, element, opt_matcher).toObject(config.idFn)
-	}
-	
-	static put(config, element, inflateConfig) {
-		var root = config.infoRoot.find(element);
-		var toAppendTo = !!config.parentSelector ?
-				root.querySelector(config.parentSelector) :
-				root;
-		var child = Templates.inflate(config.templateName, inflateConfig);
-		toAppendTo.appendChild(child);
-		return child;		
+			return candidate;	
+		});		
 	}
 }
-
-class BaseInfoRoot {
-	static find(config, element) {
-		var relativeTo = element;
-		if (config.relativeTo) {
-			relativeTo = config.relativeTo.find(element);
-		}
-		
-		return relativeTo.querySelector(config.relativeMatcher);
-	}
-}
-
-
-class TypeAttr {}
-Utils.classMixin(TypeAttr, StringAttr, "type");
-
-class HandlerAttr {}
-Utils.classMixin(HandlerAttr, StringAttr, "handler");
 
 class PromiseIdAttr {
 	static generate(elt) {
@@ -1546,6 +1490,7 @@ Utils.classMixin(PromiseIdAttr, StringAttr, "promise-id");
 
 class EffectQueue {
 	static InvokePhase = new ScopedAttr("invoke-phase", StringAttr);
+	static Phase = new ScopedAttr("phase", StringAttr);
 
 	static find(elt) {
 		return Utils.bfind(elt, 'body', "[woof-queue]");
@@ -1558,11 +1503,11 @@ class EffectQueue {
 		found = Utils.findUp(elt, "[woof-queue]");
 		if (!found) return null;
 		
-		return found.querySelector(found.getAttribute('woof-queue'));		
+		return qs(found, found.getAttribute('woof-queue'));		
 	}
 	
 	static findDown(elt) {
-		return elt.querySelector('[wt="EffectQueue"]');
+		return qs(elt, '[wt="EffectQueue"]');
 	}
 
 	static getHandlerContainer(elt) {
@@ -1570,13 +1515,13 @@ class EffectQueue {
 		if (!queue) {
 			queue = EffectQueue.findDown(elt);
 		}
-		return queue.querySelector('handlers');
+		return qs(queue, 'handlers');
 	}
 	
 	static findHandlersFor(element) {
 		var queue = EffectQueue.findUp(element);
 		var eventType = GameEffect.getType(element);
-		var phase = PhaseAttr.get(element) || 'before';
+		var phase = EffectQueue.Phase.get(element) || 'before';
 		var type;
 		if (phase == 'started') {
 			type = eventType;
@@ -1585,11 +1530,11 @@ class EffectQueue {
 		}
 		Logger.trace("Attempting " + type );
 		
-		return Array.from(queue.querySelectorAll("[event-types~='" + type + "']"));
+		return qsa(queue, "[event-types~='" + type + "']");
 	}
 	
 	static findDefaultHandler(element) {
-		return WoofRootController.controller(element.querySelector('effects > handlers').getAttribute("default"));
+		return WoofRootController.controller(qs(element, 'effects > handlers').getAttribute("default"));
 	}
 
 	static currentQueue(element) {
@@ -1598,14 +1543,14 @@ class EffectQueue {
 	}
 	
 	static findCurrentEvent(element) {		
-		var current = element.querySelector('queue > game-effect');
+		var current = qs(element, 'queue > game-effect');
 		if (!current) return null;
-		var next = current.querySelector('queue > game-effect');
+		var next = qs(current, 'queue > game-effect');
 		if (!next) return current;
 		
 		while (next) {
 			current = next;
-			next = current.querySelector('queue > game-effect');
+			next = qs(current, 'queue > game-effect');
 		}
 		return current;		
 	}
@@ -1618,8 +1563,10 @@ class EffectQueue {
 		return event;
 	}
 	
+
+	static Handler = new ScopedAttr("handler", FunctionAttr);
 	static invokeHandler(handler, current, args) {
-		var result = WoofRootController.controller(HandlerAttr.get(handler)).apply(this, args);
+		var result = EffectQueue.Handler.findAInvoke(handler, args);
 		if (!!result && typeof(result["then"]) == "function") {
 			// This is a promise.  We should do our ticketing BS.
 			var ticket = PendingOpAttr.takeTicket(current, "auto");
@@ -1637,7 +1584,7 @@ class EffectQueue {
 		var id = IdAttr.generate(event);
 		var promiseId = PromiseIdAttr.generate(event);
 		if (!element.matches('queue')) {
-			element = element.querySelector('queue');
+			element = qs(element, 'queue');
 		}
 		if (!EffectQueue.pendingPromises[promiseId]) {
 			EffectQueue.pendingPromises[promiseId] = new PromiseSetter();
@@ -1645,7 +1592,8 @@ class EffectQueue {
 		element.appendChild(event);
 		return EffectQueue.pendingPromises[promiseId].promise();
 	}
-			
+		
+	static Invoked = new ScopedAttr("invoked", BoolAttr);
 	static evoke(queue) {
 		var current = EffectQueue.findCurrentEvent(queue);
 		if (!current) return;
@@ -1653,7 +1601,7 @@ class EffectQueue {
 		if (!id) IdAttr.generate(current);				
 		var children = GameEffect.getChildEvents(current);
 		if (children.length > 0) throw boom("EffectQueue got non-bottom child", current);		
-		var pending = IsPendingAttr.get(current);
+		var pending = GameEffect.IsPending.get(current);
 		
 		if (pending) {
 			// Blocked on something else.  Gotta wait for that.
@@ -1666,14 +1614,14 @@ class EffectQueue {
 			return;
 		}
 		
-		var phase = PhaseAttr.get(current);
+		var phase = EffectQueue.Phase.get(current);
 		var result;
 		var promiseId = PromiseIdAttr.get(current);
 		var promiseSetter = !!promiseId ? EffectQueue.pendingPromises[promiseId] : null;
 		
 		switch (phase) {
 			case null:
-			    PhaseAttr.set(current, 'before');
+			    EffectQueue.Phase.set(current, 'before');
 			case 'before':
 				// First phase: Basically for pre-empting / counterspelling.
 				if (EffectQueue.InvokePhase.get(current) != 'before') {
@@ -1685,7 +1633,8 @@ class EffectQueue {
 				}
 
 				// If it's cancelled, finish canceling it.
-				if (CancelledAttr.get(current)) {
+
+				if (GameEffect.cancelled(current)) {
 					// Event was cancelled.
 					if (!!promiseSetter) {
 						promiseSetter.reject("cancelled");
@@ -1695,14 +1644,14 @@ class EffectQueue {
 				}
 
 				// If it's pending, wait for it to wrap up.
-				if (IsPendingAttr.get(current)) break;
-				if (PendingOpAttr.get(current).length > 0) break;
+				if (GameEffect.IsPending.get(current)) break;
+				if (GameEffect.IsPending.get(current).length > 0) break;
 
 				// Hooray, we can move on.
-				PhaseAttr.set(current, 'started');
+				EffectQueue.Phase.set(current, 'started');
 			case 'started':
 				// Second phase: Actually invoking it.
-				if (!InvokedAttr.get(current)) {
+				if (!EffectQueue.Invoked.get(current)) {
 					if (EffectQueue.InvokePhase.get(current) != 'started') {
 						var handlers = EffectQueue.findHandlersFor(current);
 					
@@ -1710,27 +1659,27 @@ class EffectQueue {
 						// with results easier.
 						if (handlers.length != 1) throw boom("Unexpected number of invocation handlers", handlers);	
 						var resultPromise = EffectQueue.invokeHandler(handlers[0], current, [current, handlers[0]])
-						InvokedAttr.set(current, true);
+						EffectQueue.Invoked.set(current, true);
 						EffectQueue.InvokePhase.set(current, 'started');
 						resultPromise.then(function(actualResult) {
 							// Set our result.
 							if (!!actualResult) {
 								GameEffect.setResult(current, actualResult);
-								PhaseAttr.set(current, 'after');
+								EffectQueue.Phase.set(current, 'after');
 							}
 						});
 					}
 				}
 
 				// If it's pending, wait for it to wrap up.
-				if (IsPendingAttr.get(current)) break;
-				if (PendingOpAttr.get(current).length > 0) break;
+				if (GameEffect.IsPending.get(current)) break;
+				if (GameEffect.IsPending.get(current).length > 0) break;
 				result = GameEffect.getResult(current);
 				// No result?  We gotta wait.
 				if (result === undefined || result === null) break;
 
 				// Hooray, we can move on.
-				PhaseAttr.set(current, 'after');				
+				EffectQueue.Phase.set(current, 'after');				
 			case 'after':
 				// Third phase: Posting the results.
 				result = result || GameEffect.getResult(current);				
@@ -1743,10 +1692,10 @@ class EffectQueue {
 					EffectQueue.InvokePhase.set(current, 'after');
 				}
 				
-				if (IsPendingAttr.get(current)) break;
+				if (GameEffect.IsPending.get(current)) break;
 				if (PendingOpAttr.get(current).length > 0) break;
 				
-				PhaseAttr.set(current, 'complete');				
+				EffectQueue.Phase.set(current, 'complete');				
 			case 'complete':
 				// We already did a pending check above.  Only thing left
 				// is to get rid of this element once we resolve the promise.				
@@ -1761,9 +1710,6 @@ class EffectQueue {
 		}		
 	}
 }
-
-class PhaseAttr{}
-Utils.classMixin(PhaseAttr, StringAttr, "phase");
 
 class PromiseSetter {
 	constructor() {
@@ -1890,16 +1836,43 @@ class GameEffect {
 		}
 		return elt;
 	}
-	
-	static normalize(elt, params) {
-		// Update our keys to be wooftypes.
-		Object.keys(params).forEach(function(key) {
-			var value = params[key];
-			if (value instanceof HTMLElement) {
-				params[key] = WoofType.buildSelectorFor(value);
+
+	static __simpleClone(obj) {
+		var clone;
+		if (obj instanceof HTMLElement || obj == null) {
+			clone = obj; // No clone.
+		} else if (Array.isArray(obj)) {
+			clone = [];
+			for (var i = 0; i < obj.length; i++) {
+				clone[i] = GameEffect.__simpleClone(obj[i]);
 			}
-			params["____selector_" + key] = true;
-		});
+		} else if (typeof obj === 'object') {
+			clone = {};
+			for (var [key, value] of Object.entries(obj)) {
+				if (obj.hasOwnProperty(key)) clone[key] = GameEffect.__simpleClone(value);
+			}
+		} else {
+			clone = obj; // No clone.
+		}
+		return clone;
+	}
+	
+	static normalize(elt, params) {	
+		params = GameEffect.__simpleClone(params);
+		var serializeFn = function(obj) {
+			Object.keys(obj).forEach(function(key) {
+				var value = obj[key];
+				if (value instanceof HTMLElement) {
+					obj[key] = {
+						____: true,
+						element: WoofType.buildSelectorFor(value)
+					}
+				} else if (typeof obj[key] === 'object' && obj[key] !== null) {
+					serializeFn(obj[key]);
+				}
+			});	
+		}
+		serializeFn(params);
 
 		if (!params.type) {
 			params.type = GameEffect.getType(elt);
@@ -1908,23 +1881,17 @@ class GameEffect {
 	}
 
 	static denormalize(elt, params) {
-		// Look up all of our wooftypes.
-		Object.keys(params).forEach(function(key) {
-			// Skip these ones.
-			if (key.startsWith("____")) return;
-			var value = params[key];
-			if (value instanceof String) {
-				if (params["____selector_" + key]) {
-					params[key] = Utils.bfind(elt, 'body', value);
-				}
-			}
-		});
 
-		// Remove our denormalization hints.
-		Object.keys(params).forEach(function(key) {
-			// Remove our hints.
-			if (key.startsWith("____")) delete params[key];
-		});
+		var deserializeFn = function(obj) {
+			Object.keys(obj).forEach(function(key) {
+				if (obj[key] !== null && obj[key]["____"] && obj[key].element) {
+					obj[key] = Utils.bfind(elt, 'body', obj[key].element);
+				} else if (typeof obj[key] === 'object' && obj[key] !== null) {
+					deserializeFn(obj[key]);
+				}
+			});
+		};
+		deserializeFn(params);
 
 		return params;
 	}
@@ -1952,7 +1919,7 @@ class GameEffect {
 	}
 	
 	static getChildEvents(base) {
-		return base.querySelectorAll(":scope > queue > game-effect");
+		return qsa(base, ":scope > queue > game-effect");
 	}
 	
 	static before(actualFn) {
@@ -1976,11 +1943,13 @@ class GameEffect {
 			return Promise.resolve(actualFn(handler, current, params, result));
 		}
 	}
-		
+	
+	static Type = new ScopedAttr("type", StringAttr);
 	static getType(event) {
-		return TypeAttr.get(event);
+		return GameEffect.Type.findGet(event);
 	}
 	
+	static IsPending = new ScopedAttr("is-pending", BoolAttr);
 	static OnChildChange(event, handler) {
 		var parent;
 		if (WoofType.has(event.target, "Effect")) {
@@ -1989,28 +1958,27 @@ class GameEffect {
 			parent = WoofType.findUp(event.target, "Effect");
 		}
 		if (!parent) return;
-		IsPendingAttr.set(parent, !!event.target.childElementCount);		
+		GameEffect.IsPending.set(parent, !!event.target.childElementCount);		
 	}
 
 	static findById(relativeElt, id) {
 		return Utils.bfind(relativeElt, 'body', WoofType.buildSelectorFrom('Effect', id));
 	}
+
+	static Cancelled = new ScopedAttr("cancelled", BoolAttr);
+	static cancel(effect) {
+		GameEffect.Cancelled.set(effect, true);
+	}
+
+	static cancelled(effect) {
+		return !!GameEffect.Cancelled.get(effect);
+	}
 }
 WoofRootController.register(GameEffect);
 
-class TimeoutAttr {}
-Utils.classMixin(TimeoutAttr, IntAttr, 'timeout');
-
-class CancelledAttr {}
-Utils.classMixin(CancelledAttr, BoolAttr, 'cancelled');
-
-class IsPendingAttr {}
-Utils.classMixin(IsPendingAttr, BoolAttr, "is-pending");
-
-class InvokedAttr {}
-Utils.classMixin(InvokedAttr, BoolAttr, "invoked");
-
 class GameEffectInvoker {	
+	static Timeout = new ScopedAttr("timeout", IntAttr);
+
 	static start(queueElt) {
 		try {
 			var start = window.performance.now();
@@ -2021,18 +1989,18 @@ class GameEffectInvoker {
 		} catch (e) {
 			Logger.err(e);
 		}
-		TimeoutAttr.set(queueElt, null);
+		GameEffectInvoker.Timeout.set(queueElt, null);
 		var current = EffectQueue.findCurrentEvent(queueElt);
 		if (!!current && PendingOpAttr.size(current) == 0) {
 			// Set a timeout if we want to pick this up, but only if there are no pending
 			// operations.
 			var timeout = window.setTimeout(GameEffectInvoker.start.bind(this, queueElt), 0);	
-			TimeoutAttr.set(queueElt, timeout);
+			GameEffectInvoker.Timeout.set(queueElt, timeout);
 		}
 	}	
 	
 	static stopTimer(queueElt) {
-		var timer = TimeoutAttr.get(queueElt);
+		var timer = GameEffectInvoker.Timeout.get(queueElt);
 		if (typeof(timer) == 'number') {
 			window.clearTimeout(timer);
 		}		
@@ -2043,7 +2011,7 @@ class GameEffectInvoker {
 		
 		var event = EffectQueue.findCurrentEvent(handler);
 		if (event) {
-			var timeout = TimeoutAttr.get(handler);
+			var timeout = GameEffectInvoker.Timeout.get(handler);
 			if (isNaN(timeout)) {
 				GameEffectInvoker.start(queue);
 			}
@@ -2053,4 +2021,3 @@ class GameEffectInvoker {
 	}
 }
 WoofRootController.register(GameEffectInvoker);
-

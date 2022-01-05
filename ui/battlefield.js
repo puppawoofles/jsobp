@@ -2,13 +2,13 @@
 class BattlefieldHandler {
 
     static findGridContainer(elt) {
-        return BattlefieldHandler.find(elt).querySelector(".battlefield_widget_inner");
+        return qs(BattlefieldHandler.find(elt), ".battlefield_widget_inner");
     }
 
     static findCells(elt, blockSelector, cellSelector) {
         blockSelector = blockSelector || "";
         cellSelector = cellSelector || "";
-        return BattlefieldHandler.find(elt).querySelectorAll(blockSelector + "[wt~='CellBlock']:not([disabled='true']) [wt~='Cell']" + cellSelector)
+        return qsa(BattlefieldHandler.find(elt), blockSelector + "[wt~='CellBlock']:not([disabled='true']) [wt~='Cell']" + cellSelector);
     }
 
 	static CellBlock = new ScopedAttr("in-block", StringAttr);
@@ -25,7 +25,7 @@ class BattlefieldHandler {
 
     static unitAt(battlefield, uberCoord) {
 		var overlay = BattlefieldHandler.findOverlay(battlefield);
-        return overlay.querySelector(UberCoord.selector(uberCoord));
+        return qs(overlay, UberCoord.selector(uberCoord));
     }
 
 	static cellAt(battlefield, uberCoord) {		
@@ -35,7 +35,7 @@ class BattlefieldHandler {
 
     static unitsOn(battlefield, bigCoord) {
 		var overlay = BattlefieldHandler.findOverlay(battlefield);
-        return Array.from(overlay.querySelectorAll(BigCoord.selector(bigCoord)));
+        return qsa(overlay, BigCoord.selector(bigCoord));
     }
 
     static findOverlay(mainElt) {
@@ -106,9 +106,12 @@ class BattlefieldHandler {
 		// We need to factor in the offset from our screen containers.
 		var heightOffset = 0;
 
+		// Deal with nested screens.
 		var screen = WoofType.findUp(battlefield, "ScreenWrapper");
-		if (screen) {			
-			heightOffset += -screen.offsetTop;
+		while (screen) {
+			// Weird hack.  Who cares.
+			if (!WoofType.has(screen, "MainScreen")) heightOffset += -screen.offsetTop;
+			screen = WoofType.findUp(screen.parentNode, "ScreenWrapper")
 		}
 
         var rect = cell.getClientRects()[0];

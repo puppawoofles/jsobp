@@ -11,35 +11,151 @@ WoofRootController.addListeners(Utils.constantValues(ActionMode));
 
 class EncounterRules {
 
+    static setDefaultFacingOnBlock(block, opt_allBlocks) {
+        var blocks = opt_allBlocks;
+        if (!blocks) {
+            blocks = CellBlock.findAll(BattlefieldHandler.find(block)).filter(function(block) {
+                return !DisabledAttr.get(block);
+            });
+        }
+        var priorityTargetMap = Teams.allTeams().expandToObject(Teams.opposed);
+        var team = TeamAttr.get(block);
+        if (!team) throw boom("All non-disabled blocks should have a team.");
+        var thisCoord = BigCoord.extract(block);
+
+        // Sort blocks into canadidates by priority.
+        var targetBlock = blocks.filter(function(a) {
+            // Filter out same-team.
+            return TeamAttr.get(a) != team;
+        }).sort(function(a, b) {
+            // Enemy teams are a higher priority than neutral teams.
+            var aTeam = TeamAttr.get(a);
+            var bTeam = TeamAttr.get(b);
+            if (aTeam != bTeam) {
+                var aTeamPriority = priorityTargetMap[team].includes(aTeam);
+                var bTeamPriority = priorityTargetMap[team].includes(bTeam);
+                if (aTeamPriority != bTeamPriority) {
+                    if (aTeamPriority) return -1;
+                    if (bTeamPriority) return 1;
+                }
+            }
+
+            // Next up, proximity!!
+            var aCoord = BigCoord.extract(a);
+            var bCoord = BigCoord.extract(b);
+            var aDiag = BigCoord.diagDistance(aCoord, thisCoord);
+            var aDist = BigCoord.distance(aCoord, thisCoord);
+            var bDiag = BigCoord.diagDistance(bCoord, thisCoord);
+            var bDist = BigCoord.distance(bCoord, thisCoord);
+            if (aDist != bDist) {
+                // Ortho distance is the winner!
+                return aDist - bDist;
+            }
+            // However, if they're equal, the LARGEST diag distance wins (straighter line, since equal ortho!)
+            if (aDiag != bDiag) {
+                return bDist - aDist;
+            }
+
+            // Next up, higher enemy counts.
+            var aCount = priorityTargetMap[team].map(function(sTeam) {
+                return Unit.findTeamInBlock(a, sTeam).length;
+            }).merge(sumMerge);
+            var bCount = priorityTargetMap[team].map(function(sTeam) {
+                return Unit.findTeamInBlock(b, sTeam).length;
+            }).merge(sumMerge);
+
+            // Whichever one has more enemies is higher priority.
+            if (aCount != bCount) {
+                return bCount - aCount;
+            }
+
+            return 0;
+        })[0];
+
+        var delta = BigCoord.minus(BigCoord.extract(targetBlock), thisCoord);
+        FacingAttr.set(block, BigCoord.directionsOf(delta)[0]);
+    }
+
+    // Sets the default facing direction of a block if it's not already set.
+    static setDefaultFacing(encounter) {
+        var blocks = CellBlock.findAll(encounter).filter(function(block) {
+            return !DisabledAttr.get(block);
+        });
+        blocks.forEach(function(block) {
+            // Skip if it's already set.
+            if (FacingAttr.get(block)) return;
+            EncounterRules.setDefaultFacingOnBlock(block, blocks);
+        });
+    }
+
+    static GetEncounterResult(encounter) {
+        var fns = EncounterRules.EndConditions.findGet(encounter);
+        return fns.map(function(controller) {
+            return WoofRootController.invokeController(controller, [encounter]);
+        }).findFirst(function(result) {
+            return !!result;
+        });
+    }
+
     static WinConditionFn = new ScopedAttr("win-condition-fn", FunctionAttr);
     static LoseConditionFn = new ScopedAttr("lose-condition-fn", FunctionAttr);
-
+    static Battlefield = new ScopedAttr("battlefield", StringAttr);
+    static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
+    static EndConditions = new ScopedAttr("end-condition-fns", ListAttr);
 
     /**
      * Populates the screen.
      * {
      *   encounter: fn for creating the battlefield.
+     *   encounterBp: <encounter-blueprint>
      * 
      * }
      */
     static Encounter = GameEffect.handle(function(handler, effect, params) {
 
+        // TODO: Try to get most of this screen management shit into the LaunchEncounter handler in GameRules
         var encounter = EncounterScreenHandler.inflate({});
-        var parentScreen = Utils.bfind(handler, 'body', params.container);
+        var parentScreen = params.container;
         Screen.showScreen(parentScreen, encounter);
-        EncounterRules.WinConditionFn.set(encounter, 'EncounterRules.DefaultWinCondition');
-        EncounterRules.LoseConditionFn.set(encounter, 'EncounterRules.DefaultLoseCondition');
-        var teams = [Teams.Player, Teams.Enemy];
-        InitiativeOrderAttr.put(encounter, teams);
+
+        var defaultEncounter = Utils.bfind(handler, 'body', 'default-encounter');
+        var endConditions = EncounterRules.EndConditions.get(defaultEncounter);
 
         var battlefield = BattlefieldHandler.inflateIn(EncounterScreenHandler.findBattlefieldContainer(encounter));
+
+        var encounterBp = params.encounterBp;
+
+        var bfBp = Blueprint.find(encounterBp, 'battlefield');
+        // Generate our battlefield.
+        Battlefields.Generate(encounter, bfBp);
+        // Spawn our enemies.
+        var encounterBpElt = EncounterRules.EncounterFn.find(encounterBp);            
+
+        EncounterRules.EncounterFn.findInvoke(encounterBpElt, encounter, encounterBpElt);
+
+        // Update initial facing.
+        EncounterRules.setDefaultFacing(encounter);
+
+        var newEndConditions = EncounterRules.EndConditions.findGet(encounterBp);
+        endConditions.extend(newEndConditions);
+        EncounterRules.EndConditions.set(encounter, endConditions);
+
+        var teams = [Teams.Player, Teams.Enemy];
+        InitiativeOrderAttr.put(encounter, teams);
 
         // TODO: Copy this deck over from somewher else.
         var cardHud = CardHud.find(encounter);
         CardHud.inflateIn(cardHud, []);
-        var cards = params.deck.map(function(matcher) {
-            return Utils.bfind(handler, 'body', matcher);
-        });
+
+        // Clean this up!!!!  Favor the version where we get a deck element to read cards out of.
+        var cards;
+        if (isElement(params.deck)) {
+            cards = Array.from(params.deck.children);
+        } else {
+            cards = params.deck.map(function(matcher) {
+                return Utils.bfind(handler, 'body', matcher);
+            });    
+        }
 
         // Put units at the top.
         cards.sort(function(a, b) {
@@ -57,8 +173,6 @@ class EncounterRules {
 
         CardHud.populateDrawPile(cardHud, cards);
         CardHud.setDrawCost(cardHud, 1);
-
-        WoofRootController.invokeController(params.encounter, [encounter]);
 
         // Next up, try to determine the overall facing.
         var blocks = CellBlock.findAllByTeam(battlefield, Teams.Player);
@@ -90,20 +204,9 @@ class EncounterRules {
                     result: "giveUp"
                 };
             }
-            // Prioritize winning above losing.
-            if (EncounterRules.WinConditionFn.invoke(encounter, encounter)) {
-                // Maybe do something pretty here.
-                return {
-                    win: true,
-                    result: "victory"
-                };
-            }
-            if (EncounterRules.LoseConditionFn.invoke(encounter, encounter)) {
-                // Uh oh.
-                return {
-                    win: false,
-                    result: "wipe"
-                };
+            var result = EncounterRules.GetEncounterResult(encounter);
+            if (result) {
+                return result;
             }
 
             return GameEffect.push(effect, GameEffect.create("Round", {
@@ -127,12 +230,17 @@ class EncounterRules {
                 cards.push(card);
             });
 
+            // Clean up our preparations.
             cards.forEach(function(card) {
                 if (Preparation.findDown(card)) {
                     Preparation.resetUses(card);
                 }
 
-                RunInfo.addToDeck(handler, card);
+                if (isElement(params.deck)) {
+                    params.deck.appendChild(card);
+                } else {
+                    RunInfo.addToDeck(handler, card);
+                }
             });
 
             return GameEffect.createResults(effect, winOrLoss);            
@@ -152,31 +260,34 @@ class EncounterRules {
         return result.result.win ? "Victory!" : "Defeat!";
     }
 
-    static DefaultWinCondition(encounter) {
-        return encounter.querySelectorAll("[team='enemy'][wt~='Unit'").length == 0;
+    static DefaultWin(encounter) {
+        if (qsa(encounter, "[team='enemy'][wt~='Unit'").length == 0) {
+            return {
+                success: true,
+                result: "victory"
+            };
+        }
     }
-    
 
-    static DefaultLoseCondition(encounter) {
+    static DefaultWipe(encounter) {
         var battlefield = BattlefieldHandler.find(encounter);
-        var playerUnits = battlefield.querySelectorAll("[team='player'][wt~='Unit']:not([ephemeral='true'])");
-        if (playerUnits.length > 0) return false;
-        return encounter.querySelectorAll(".card > .battlefield_unit").length == 0;
+        var playerUnits = qsa(battlefield, "[team='player'][wt~='Unit']:not([ephemeral='true'])");
+        if (playerUnits.length > 0) return;
+        if (qsa(encounter, ".card > .battlefield_unit").length == 0) {
+            return {
+                success: false,
+                result: "wipe"
+            };
+        }
     }
 
-    static RoundTicket = new ScopedAttr('round-ticket', StringAttr);
-    static RoundEffect = new ScopedAttr('round-effect', StringAttr);
     static Round = GameEffect.handle(function(handler, effect, params) {
         // We wait for the player to click buttons here.
-        var ticket = PendingOpAttr.takeTicket(effect, "Round");
         var encounter = EncounterScreenHandler.find(handler);
 
-        // First thing we want to do is draw a card.
         return Promise.resolve().then(function() {
             // Write down our ticket info, basically.
-            EncounterRules.RoundTicket.set(encounter, ticket);
-            EncounterRules.RoundEffect.set(encounter, WoofType.buildSelectorFor(effect));
-
+            PendingOpAttr.storeTicketOn(encounter, effect);
             EncounterRules._adjustActionButton(handler);
             DisabledAttr.false(CardHud.find(handler));            
         });
@@ -229,12 +340,11 @@ class EncounterRules {
 
     static OnGiveUp(evt, handler) {
         var encounter = EncounterScreenHandler.find(handler);
-        var effect = Utils.bfind(handler, 'body', EncounterRules.RoundEffect.get(encounter));
-        var ticket = EncounterRules.RoundTicket.get(encounter);
+        var effect = PendingOpAttr.getPendingEffect(encounter);
         GameEffect.setResult(effect, GameEffect.createResults(effect, {
             giveUp: true
         }));
-        PendingOpAttr.returnTicket(effect, ticket);
+        PendingOpAttr.returnTicketOn(encounter);
     }
 
     static IsGo = new ScopedAttr("is-go", BoolAttr);
@@ -247,16 +357,15 @@ class EncounterRules {
 
         // Game effect queue:
         var encounter = EncounterScreenHandler.find(handler);
-        var effect = Utils.bfind(handler, 'body', EncounterRules.RoundEffect.get(encounter));
-        var ticket = EncounterRules.RoundTicket.get(encounter);
+        var effect = PendingOpAttr.getPendingEffect(encounter);
 
         EncounterRules.IsGo.set(encounter, true);
         GameEffect.push(effect, GameEffect.create("PlayRound", {
             minimumVolleys: 8
         })).then(function() {
             GameEffect.setResult(effect, GameEffect.createResults(effect, {}));
-            PendingOpAttr.returnTicket(effect, ticket);
             EncounterRules.IsGo.set(encounter, false);
+            PendingOpAttr.returnTicketOn(encounter);
         });
     }
 
@@ -323,12 +432,9 @@ class RoundRules {
                 GameEffect.mergeResults(results, result);
             }
 
-            // First short-circuit: If we win!
-            if (EncounterRules.WinConditionFn.invoke(encounter, encounter)) {
-                return GameEffect.createResults(effect, {
-                }, results);                
-            }
-            if (EncounterRules.LoseConditionFn.invoke(encounter, encounter)) {
+            // Short-circuit if the combat is over.
+            var result = EncounterRules.GetEncounterResult(encounter);
+            if (result) {
                 return GameEffect.createResults(effect, {
                 }, results);                
             }
@@ -368,9 +474,9 @@ class RoundRules {
         var abilitySelector = Ability.CurrentCooldown.selector(1);
         var teamSelector = TeamAttr.buildSelector(team);
 
-        return Array.from(battlefield.querySelectorAll(teamSelector + bigCoord + " .ability" + abilitySelector).map(function(elt) {
+        return qsa(battlefield, teamSelector + bigCoord + " .ability" + abilitySelector).map(function(elt) {
             return Ability.find(elt);
-        })).filter(function(a) {
+        }).filter(function(a) {
             return Ability.shouldTriggerSkill(a, Unit.findUp(a));
         });
     }
@@ -413,26 +519,23 @@ class RoundRules {
             for (var i = 0; i < toAdjust.length; i++) {
                 var block = toAdjust[i];
                 var team = TeamAttr.get(block);
-                var candidates = new Stream()
-                        .map(function(dir) {
-                            return [dir, CellBlock.findFacing(block, dir)];
-                        })
-                        .filter(function(b2) {
-                            // Only ones that exist.
-                            if (!b2[1]) {
-                                return false;
-                            }
-                            // Only for ones that have a team.
-                            if (!TeamAttr.has(b2[1])) {
-                                return false;
-                            }
-                            // Only ones not for the same team.                        
-                            if (TeamAttr.get(b2[1]) == team) {
-                                return false;
-                            }
-                            return true;
-                        })
-                        .toArray([FacingAttr.Up, FacingAttr.Down, FacingAttr.Left, FacingAttr.Right]);
+                var candidates = [FacingAttr.Up, FacingAttr.Down, FacingAttr.Left, FacingAttr.Right].map(function(dir) {
+                    return [dir, CellBlock.findFacing(block, dir)];
+                }).filter(function(b2) {
+                    // Only ones that exist.
+                    if (!b2[1]) {
+                        return false;
+                    }
+                    // Only for ones that have a team.
+                    if (!TeamAttr.has(b2[1])) {
+                        return false;
+                    }
+                    // Only ones not for the same team.                        
+                    if (TeamAttr.get(b2[1]) == team) {
+                        return false;
+                    }
+                    return true;
+                });
                 if (candidates.length == 0) {
                     // No candidates?  No facing.
                     FacingAttr.set(block, FacingAttr.None);
@@ -542,9 +645,7 @@ s     * }
                 }
 
                 return GameEffect.push(effect, GameEffect.create("BlockActivation", {
-                    abilities: activation.abilities.map(function(a) {
-                        return WoofType.buildSelectorFor(a);
-                    })
+                    abilities: activation.abilities
                 })).then(baseFn.bind(this, true), baseFn.bind(this, false));
             };
 
@@ -571,14 +672,13 @@ s     * }
         var battlefield = BattlefieldHandler.find(handler);
         var foundUnits = {};
         var activations = params.abilities.map(function(ability) {
-            var a = Utils.bfind(handler, 'body', ability);
-            var unit = Unit.findUp(a);
+            var unit = Unit.findUp(ability);
             var unitId = IdAttr.generate(unit);
             // Ensure each unit only acts once per activation.
             if (foundUnits[unitId]) return null;
             foundUnits[unitId] = true;
             return {
-                ability: a,
+                ability: ability,
                 unit: unit
             };
         }).filter(function(a) {
@@ -631,12 +731,7 @@ s     * }
 
 
             return GameEffect.push(effect, GameEffect.create("ActivateGroup", {
-                blorbs: largestGroup.map(function(b) {
-                    return {
-                        unit: WoofType.buildSelectorFor(b.unit),
-                        ability: WoofType.buildSelectorFor(b.ability)
-                    };
-                })
+                blorbs: largestGroup
             })).then(applyFn);
         };
 
@@ -660,12 +755,7 @@ s     * }
     static ActivateGroup = GameEffect.handle(function(handler, effect, params) {
         var battlefield = BattlefieldHandler.find(effect);
         // Normalize our blorbs back to elements.
-        var blorbs = params.blorbs.map(function(b) {
-            return {
-                ability: Utils.bfind(handler, 'body', b.ability),
-                unit: Utils.bfind(handler, 'body', b.unit)
-            };
-        });
+        var blorbs = params.blorbs;
         var toActivate = Array.from(blorbs);
         var activatedUnits = [];
         var results = [];
@@ -710,15 +800,10 @@ s     * }
             return GameEffect.push(effect, GameEffect.create("UseAbility", {
                 ability: next.ability,
                 unit: next.unit,
-                comboUnits: comboUnits.map(function(blorb) {
-                    return {
-                        unit: WoofType.buildSelectorFor(blorb.unit),
-                        ability: WoofType.buildSelectorFor(blorb.ability)
-                    };
-                }),
+                comboUnits: comboUnits,
                 components: [{
-                    unit: WoofType.buildSelectorFor(next.unit),
-                    ability: WoofType.buildSelectorFor(next.ability)
+                    unit: next.unit,
+                    ability: next.ability
                 }],
                 mana: mana
             })).then(applyFn);
@@ -730,20 +815,20 @@ s     * }
                 if (result) {
                     GameEffect.mergeResults(results, result);                
                 }
-                var deadUnits = battlefield.querySelectorAll("progress.hp_bar[value='0']");
+                var deadUnits = qsa(battlefield, "progress.hp_bar[value='0']");
                 if (deadUnits.length == 0) {
                     return GameEffect.createResults(effect, {
                     }, results);
                 }
     
                 return GameEffect.push(effect, GameEffect.create("UnitDeath", {
-                    unit: WoofType.buildSelectorFor(Unit.findUp(deadUnits[0]))
+                    unit: Unit.findUp(deadUnits[0])
                 })).then(deadFn.bind(this, true), deadFn.bind(this, false));
             };
             return deadFn(true);
         }).then(function() {
             return GameEffect.createResults(effect, {
-                activatedUnits: activatedUnits.map(WoofType.buildSelectorFor)
+                activatedUnits: activatedUnits
             }, results);
         });
 
@@ -755,7 +840,7 @@ s     * }
 
     static ActivateGroupUnits(handler, effect, params) {
         return params.blorbs.map(function(blorb) {            
-            return Utils.bfind(effect, 'body', blorb.unit);
+            return blorb.unit;
         });
     }
 
@@ -763,8 +848,8 @@ s     * }
         // Normalize our blorbs back to elements.
         var banner = Templates.inflate('combo_banner');
         params.blorbs.forEach(function(b) {
-            banner.appendChild(Unit.cloneAppearance(Utils.bfind(handler, 'body', b.unit)));
-            banner.appendChild(effect.ownerDocument.createTextNode(Ability.Label.findGet(Utils.bfind(handler, 'body', b.ability))));
+            banner.appendChild(Unit.cloneAppearance(b.unit));
+            banner.appendChild(effect.ownerDocument.createTextNode(Ability.Label.findGet(b.ability)));
         });
         return banner;
     } 

@@ -5,7 +5,7 @@ class EncounterScreenHandler {
     static BlockHintAttr = new ScopedAttr("block-hover-hint", StringAttr);
 
     static findBattlefieldContainer(parent) {
-        return parent.querySelector(".battlefield_widget_container");
+        return qs(parent, ".battlefield_widget_container");
     }
 
     static OnCellBlockFacingChange(event, encounterScreen) {

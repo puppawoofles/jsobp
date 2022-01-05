@@ -14,19 +14,19 @@ class Compendium {
 			else { current += " > "; }
 			current += "concept[hash='" + parts[i] + "']";
 		}
-		return parent.querySelector(current);		
+		return qs(parent, current);		
 	}
 	
 	static getValues(parentElt, path, opt_key) {
 		var spot = Compendium.find(parentElt, path);
 		if (!spot) return null;
-		return spot.querySelectorAll('values > ' + (opt_key || '*'));
+		return qsa(spot, 'values > ' + (opt_key || '*'));
 	}
 	
 	static getValue(parentElt, path, key) {
 		var spot = Compendium.find(parentElt, path);
 		if (!spot) return null;
-		return spot.querySelector('values > ' + key);		
+		return qs(spot, 'values > ' + key);		
 	}
 }
 
@@ -76,7 +76,7 @@ class InfoPanel {
 		if (!node) {
 			return Logger.warn("No compendium found.");
 		}
-		node = node.querySelector(current);
+		node = qs(node, current);
 		if (!node) {
 			return Logger.warn("Didn't find anything for", page);
 		}
@@ -86,7 +86,7 @@ class InfoPanel {
 		}
 		
 		var copy = node.cloneNode(true);
-		var inner = self.querySelector('.info_panel_contents');				
+		var inner = qs(self, '.info_panel_contents');				
 		Utils.clearChildren(inner);
 		
 		while (copy.firstChild) {
@@ -108,7 +108,7 @@ class DomHighlighter {
 		var ref = target.getAttribute("highlight-ref");
 		if (!ref) return;
 		
-		var elt = handler.querySelector(ref);
+		var elt = qs(handler, ref);
 		if (!elt) return;
 
 		DomHighlighter.highlight(elt);	
@@ -158,7 +158,7 @@ class TargetController {
 		if (context) {
 			selector += "[target-context~='" + context + "']";
 		}
-		var allTheBoys = root.querySelectorAll(selector);
+		var allTheBoys = qsa(root, selector);
 		for (var i = 0; i < allTheBoys.length; i++) {
 			TargetContextAttr.remove(allTheBoys[i], context, true);
 			if (TargetContextAttr.size(allTheBoys[i]) == 0) {
@@ -341,7 +341,7 @@ class TestConsole {
 	static focus(parentElt) {
 		var root = TestConsole.find(parentElt);
 		if (!root) return Logger.err("Can't focus the test console if we can't find it in", parentElt);
-		var input = root.querySelector("input.console_input");
+		var input = qs(root, "input.console_input");
 		if (!input) return Logger.err("Can't find input!");
 		input.focus();
 	}
@@ -380,16 +380,14 @@ class TestConsole {
 	
 	static syncAttrToCheckboxes(elt) {		
 		var levels = ParamList.get(elt, 'wlogger-allow');
-		var checkboxes = new Stream()
-			.filter(function(elt) { return elt.checked })
-			.map(function(elt) { return elt.getAttribute('level').trim(); })
-			.toArray(TestConsole.checkboxes(elt));	
+		TestConsole.checkboxes(elt).filter(function(elt) { return elt.checked })
+			.map(function(elt) { return elt.getAttribute('level').trim(); });
 	
 		ParamList.put(elt, 'wlogger-allow', checkboxes);		
 	}
 
 	static checkboxes(elt) {
-		return elt.querySelectorAll('input[level]');
+		return qsa(elt, 'input[level]');
 	}
 
 	static OnKeyDown(evt, handler) {
@@ -421,7 +419,7 @@ class TestConsole {
 				var fragment = Templates.inflate("message_log_history", { "VALUE": command});
 				history.appendChild(fragment);
 				input.setAttribute("scrolling", "false");
-				var elts = history.querySelector("[active]");
+				var elts = qs(history, "[active]");
 				if (elts) elts.removeAttribute("active");
 			}
 		} else if (evt.keyCode == 38) { // Up arrow
@@ -454,7 +452,7 @@ class TestConsole {
 	}
 	
 	static __findActive(parent) {
-		return parent.querySelector("[active=true]");		
+		return qs(parent, "[active=true]");		
 	}
 		
 	static __setActive(next, previous) {

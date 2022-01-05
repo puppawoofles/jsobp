@@ -27,7 +27,7 @@ ConsoleCommands.register("targetcheck", function(handler, params) {
         return;
     }
     var blockSelector = CellBlock.labelSelector(coordParts[0]);
-    var cellBlock = handler.querySelector(blockSelector);
+    var cellBlock = qs(handler, blockSelector);
     if (!cellBlock) {
         Logger.info("Can't find cell block", coordParts[0]);
         return;
@@ -118,10 +118,10 @@ class TestSetup {
         FacingAttr.set(CellBlock.findByCoord(battlefield, [1, 2]), FacingAttr.Up);
 
         // Grab 2 blocks to put enemies in.
-        var blocks = Array.from(battlefield.querySelectorAll("[team='enemy']"));
+        var blocks = qsa(battlefield, "[team='enemy']");
         blocks.shuffle();
-        var cells = Array.from(blocks[0].querySelectorAll("[wt~='Cell']"));
-        cells = cells.concat(Array.from(blocks[1].querySelectorAll("[wt~='Cell']")));
+        var cells = qsa(blocks[0], "[wt~='Cell']");
+        cells = cells.concat(qsa(blocks[1], "[wt~='Cell']"));
         cells.shuffle();
 
         // Enemy counters

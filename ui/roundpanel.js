@@ -5,7 +5,7 @@ class RoundPanel {
 
 
     static volleysElt(parentElt) {
-        return parentElt.querySelector(".volleys");
+        return qs(parentElt, ".volleys");
     }
 
     static _createBlockPanel(parent, label, team) {
@@ -39,7 +39,7 @@ class RoundPanel {
         var block = CellBlock.findByCoord(handler, BigCoord.extract(unit));
         var team = TeamAttr.get(block);
 
-        var contents = roundPanel.querySelector(".contents [for-team='" + team + "']");
+        var contents = qs(roundPanel, ".contents [for-team='" + team + "']");
         var newRow = RoundPanelRow.forUnit(unit);
         contents.appendChild(newRow);
 
@@ -203,8 +203,8 @@ class RoundPanelRow {
         // Copy over some stuff.
         TeamAttr.copy(elt, unit);
         ForUnitAttr.set(elt, IdAttr.get(unit));
-        var appearance = unit.querySelector(".appearance").cloneNode(true);
-        elt.querySelector(".round_panel_avatar").appendChild(appearance);
+        var appearance = qs(unit, ".appearance").cloneNode(true);
+        qs(elt, ".round_panel_avatar").appendChild(appearance);
         var tile = Grid.getEffectiveTile(unit);
         RoundPanelRow.EffectivePosition.set(elt, tile);
         RoundPanelRow.updateForUnit(elt, unit);

@@ -39,7 +39,7 @@ Utils.classMixin(Tactic, AbstractDomController, {
             CARD_ICON: Tactic.CardIconAttr.get(blueprint),
             TACTIC_LABEL: Tactic.LabelAttr.get(blueprint),
             TACTIC_SHORTLABEL: Tactic.ShortLabelAttr.get(blueprint),
-            TACTIC_DESCRIPTION: blueprint.querySelector('.description').innerHTML,
+            TACTIC_DESCRIPTION: qs(blueprint, '.description').innerHTML,
             TARGET_FN: Tactic.TargetFnAttr.get(blueprint),
             INVOKE_FN: Tactic.InvokeFnAttr.get(blueprint)
         };
@@ -83,7 +83,7 @@ Utils.classMixin(Preparation, AbstractDomController, {
             APPEARANCE_CLASS: "",
             TARGET_FN: Preparation.TargetFnAttr.get(blueprint),
             INVOKE_FN: Preparation.InvokeFnAttr.get(blueprint),
-            DESCRIPTION: blueprint.querySelector('.description').innerHTML,
+            DESCRIPTION: qs(blueprint, '.description').innerHTML,
             COST: Preparation.Cost.findGet(blueprint),
             USES: Preparation.Uses.findGet(blueprint)
         };

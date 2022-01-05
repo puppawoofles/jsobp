@@ -39,8 +39,6 @@ class Barricade {
                 },
                 function(elt) {
                     return false;
-                }).then(function(target) {
-                    return Utils.bfind(card, 'body', target);
                 });
 
     }

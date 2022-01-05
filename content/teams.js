@@ -17,6 +17,7 @@ class Teams {
         return [];
     }
 
+    // In order of of hostility.
     static not(team) {
         switch (team) {
             case Teams.Player:

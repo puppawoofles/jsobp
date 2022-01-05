@@ -24,7 +24,7 @@ class RetreatStatus {
             RetreatStatus.Remove(unit, retreat);
 
             return GameEffect.push(effect, GameEffect.create("UnitRetreat", {
-                unit: WoofType.buildSelectorFor(unit)
+                unit: unit
             })).then(retreatFn.bind(this, true), retreatFn.bind(this, false));
         }
 
@@ -128,7 +128,7 @@ class BleedStatus {
 
     static OnAfterUseAbility = GameEffect.handle(function(handler, effect, params, result) {
         for (var i = 0; i < params.components.length; i++) {
-            var unit = Utils.bfind(handler, 'body', params.components[i].unit);
+            var unit = params.components[i].unit;
             var results = [];
             var stacks = BleedStatus.StackCount(unit);
             if (stacks) {
@@ -165,7 +165,7 @@ Utils.classMixin(BleedStatus, BaseStatus, 'bleed');
 class DistractedStatus {
     static TickDownMaybe = GameEffect.handle(function(handler, effect, params, result) {
         var units = params.components.map(function(a) {
-            return Utils.bfind(effect, 'body', a.unit);
+            return a.unit;
         });
         units.forEach(function(u) {
             var stack = DistractedStatus.findInstances(u)[0];

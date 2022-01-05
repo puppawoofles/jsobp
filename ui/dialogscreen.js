@@ -12,9 +12,9 @@ class DialogScreen {
         return new Promise(function(resolve, reject) {
             // This basically applies itself on top of the current screen.
 
-            var screens = Utils.bfindAll(elt, "[wt~=MainScreen]", "[wt~=Screen]");
+            var screens = Utils.bfindAll(elt, "[wt~=MainScreen]", "[wt~=ScreenWrapper]");
             if (!screens) {
-                screens = Utils.bfindAll(elt, '[wt~=MainScreen]', '[wt~=ScreenHolder]');
+                screens = Utils.bfindAll(elt, '[wt~=MainScreen]', '[wt~=ScreenWrapper]');
             }
             if (!screens) throw boom("Unable to show a dialog, couldn't find a screen.");
 

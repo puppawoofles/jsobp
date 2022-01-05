@@ -14,23 +14,22 @@ class CardHud {
 
 	static allCards(parentElt) {
 		var hud = CardHud.find(parentElt);
-		return Array.from(hud.querySelectorAll(WoofType.buildSelector("Card")));
+		return qsa(hud, WoofType.buildSelector("Card"));
 	}
 
 	static getDrawCost(parentElt) {
 		var hud = CardHud.find(parentElt);
-		return CardHud.Cost.get(hud.querySelector(WoofType.buildSelector("DrawPileUi"))) || 0;
+		return CardHud.Cost.get(qs(hud, WoofType.buildSelector("DrawPileUi"))) || 0;
 	}
 	
 	static setDrawCost(parentElt, newCost) {
 		var hud = CardHud.find(parentElt);
-		return CardHud.Cost.set(hud.querySelector(WoofType.buildSelector("DrawPileUi")), newCost);
+		return CardHud.Cost.set(qs(hud, WoofType.buildSelector("DrawPileUi")), newCost);
 	}
 
 	static unselectCards(parentElt) {
 		var hud = CardHud._findHandContent(parentElt);
-		var elts = SelectedAttr.findAll(hud, 'true');
-		new Stream().forEach(elts, function(e) {
+		SelectedAttr.findAll(hud, 'true').forEach(function(e) {
 			SelectedAttr.false(e);
 		});
 	}
@@ -42,45 +41,45 @@ class CardHud {
 
 	static findCardById(parentElt, id) {
 		var hud = CardHud.find(parentElt);
-		return hud.querySelector('.hand [w-id="' + id + '"]');
+		return qs(hud, '.hand [w-id="' + id + '"]');
 	}
 	
 	static findSelectedCards(parentElt) {
 		var hud = CardHud.find(parentElt);
-		return hud.querySelectorAll('.hand .card[selected]');
+		return qsa(hud, '.hand .card[selected]');
 	}
 	
 	static _findDeckContent(parentElt) {
 		var root = CardHud.bfind(parentElt);
 		if (!root) return null;
-		return root.querySelector('.deck > .content');
+		return qs(root, '.deck > .content');
 	}
 	
 	static _findDiscardContent(parentElt) {
 		var root = CardHud.bfind(parentElt);
 		if (!root) return null;
-		return root.querySelector('.discard > .content');		
+		return qs(root,'.discard > .content');		
 	}
 	
 	static _findHandContent(parentElt) {
 		var root = CardHud.bfind(parentElt);
 		if (!root) return null;
-		return root.querySelector('.hand > .content');		
+		return qs(root, '.hand > .content');		
 	}
 	
 	static _findPurgatory(parentElt) {
 		var root = CardHud.bfind(parentElt);
 		if (!root) return null;
-		return root.querySelector(WoofType.buildSelector("CardPurgatory"));		
+		return qs(root, WoofType.buildSelector("CardPurgatory"));		
 	}
 		
 	static __resetSize(parentElt) {
-		var children = parentElt.querySelector(".content");
-		var size = parentElt.querySelector(".size");
+		var children = qs(parentElt,".content");
+		var size = qs(parentElt, ".size");
 		while ((!size || !children) && parentElt != parentElt.parentNode) {
 			parentElt = parentElt.parentNode;
-			children = parentElt.querySelector(".content");
-			size = parentElt.querySelector(".size");
+			children = qs(parentElt, ".content");
+			size = qs(parentElt, ".size");
 		}
 		if (size.innerHTML == children.childElementCount) return null;
 		var current = parseInt(size.innerHTML);		
@@ -204,14 +203,14 @@ Utils.classMixin(CardHud, AbstractDomController, {
     template: "card_hud",
     params: emptyObjectFn,
     decorate: function(fragment, cards) {
-        var deck = fragment.querySelector('.deck > .content');
+        var deck = qs(fragment, '.deck > .content');
 		for (var card of cards) {
             var cardElt = Card.inflateIn(deck, Utils.UUID());
             cardElt.appendChild(card);
 		}		
 		
-		CardHud.__resetSize(fragment.querySelector('.deck'));
-		CardHud.__resetSize(fragment.querySelector('.discard'));		
+		CardHud.__resetSize(qs(fragment, '.deck'));
+		CardHud.__resetSize(qs(fragment, '.discard'));		
     }
 });
 

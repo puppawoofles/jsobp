@@ -7,8 +7,6 @@ class Retreat {
                 },
                 function(elt) {
                     return false;
-                }).then(function(target) {
-                    return Utils.bfind(card, 'body', target);
                 });
     }
 
@@ -32,8 +30,6 @@ class TauntEnemy {
                 },
                 function(elt) {
                     return false;
-                }).then(function(target) {
-                    return Utils.bfind(card, 'body', target);
                 });
     }
 
@@ -59,8 +55,6 @@ class TauntAlly {
                 },
                 function(elt) {
                     return false;
-                }).then(function(target) {
-                    return Utils.bfind(card, 'body', target);
                 });
     }
 
@@ -84,7 +78,6 @@ class Reposition {
                     return false;
                 }).then(function(unit) {
                     // Bail if bullshit.
-                    unit = Utils.bfind(card, 'body', unit);
                     if (!unit) {
                         return null;
                     }
@@ -105,8 +98,7 @@ class Reposition {
                             },
                             function(elt) {
                                 return WoofType.has(elt, 'Cell') && unitPrefs.contains(Grid.getEffectiveTile(elt));
-                            }).then(function(location) {
-                                location = Utils.bfind(card, 'body', location);        
+                            }).then(function(location) {  
                                 return {
                                     unit: unit,
                                     destination: location
@@ -164,7 +156,6 @@ class Pivot {
                         // If it has enemy units in it.
                         return Unit.findAllInBlock(elt).length > 0;
                     }).then(function(result) {
-                        result = Utils.bfind(card, 'body', result);
                         return {
                             target: block,
                             facing: result

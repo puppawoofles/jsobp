@@ -21,7 +21,8 @@ class Screen {
         if (!wrapper) wrapper = WoofType.find(elt, "ScreenWrapper");
         var currentScreen = null;
         if (foundScreen) {
-            currentScreen = Screen.hideScreen(elt);
+            var screenToHide = WoofType.findDown(wrapper, 'Screen');
+            if (screenToHide) currentScreen = Screen.hideScreen(WoofType.findDown(wrapper, 'Screen'));
             wrapper.appendChild(foundScreen);
         }
         WoofRootController.dispatchNativeOn(wrapper, "ScreenChange", {});

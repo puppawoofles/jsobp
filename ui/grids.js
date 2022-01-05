@@ -17,6 +17,26 @@ class FacingAttr {
     static Down = "down";
     static None = "none";
 
+    static fromUnit(c) {
+
+        if (c[0] == 0) {
+            if (c[1] < 0) {
+                return FacingAttr.Up;
+            }
+            if (c[1] > 0) {
+                return FacingAttr.Down;
+            }
+        } else if (c[1] == 0) {
+            if (c[0] < 0) {
+                return FacingAttr.Left;
+            }
+            if (c[0] > 0) {
+                return FacingAttr.Right;
+            }
+        }
+        return FacingAttr.None;
+    }
+
     static fromTo(fromCoords, toCoords) {
         var x = fromCoords[0] - toCoords[0];
         var y = fromCoords[1] - toCoords[1];
@@ -198,6 +218,27 @@ class UberCoord {
 }
 
 class BaseCoord {
+    static directionsOf(config, delta) {
+        var xDist = Math.abs(delta[0]);
+        var yDist = Math.abs(delta[1]);
+        // No directions if the delta is 0.
+        if (xDist == 0 && yDist == 0) return [];
+        var toReturn = [];
+        if (xDist > yDist) {
+            toReturn.push(FacingAttr.fromUnit([delta[0], 0]));
+            if (yDist > 0) {
+                toReturn.push(FacingAttr.fromUnit([0, delta[1]]));
+            }
+        } else {
+            toReturn.push(FacingAttr.fromUnit([0, delta[1]]));
+            if (yDist > 0) {
+                toReturn.push(FacingAttr.fromUnit([delta[0], 0]));
+            }
+        }
+
+        return toReturn;
+    }
+
     static extract(config, cell) {
         return [
             config.x.get(cell), config.y.get(cell)
@@ -239,12 +280,20 @@ class BaseCoord {
         return BaseCoord.plus(config, a, FacingAttr.unitDelta(direction));
     }
 
-    static distance(config, a, b) {
+    static distance(config, a, b) {        
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
 
     static diagDistance(config, a, b) {
         return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
+    }
+
+    static orthoLength(config, coord) {
+        return Math.abs(coord[0]) + Math.abs(coord[1]);
+    }
+
+    static diagLength(config, coord) {
+        return Math.max(Math.abs(coord[0]), Math.abs(coord[1]));
     }
 
     static clone(config, coord) {
@@ -407,7 +456,7 @@ class CellBlock {
     }
 
     static findAllByTeam(elt, team) {
-        return elt.querySelectorAll("[wt~='CellBlock'][team='" + team + "']");
+        return qsa(elt, "[wt~='CellBlock'][team='" + team + "']");
     }
 
     static findByRef(elt, otherElt) {
@@ -415,7 +464,7 @@ class CellBlock {
     }
 
     static findByCoord(elt, coords) {
-        return elt.querySelector(CellBlock.coordSelector(coords));
+        return qs(elt, CellBlock.coordSelector(coords));
     }
 
     static findByLabel(elt, label) {
@@ -430,8 +479,9 @@ class CellBlock {
         return "[wt~='CellBlock'][beeg-x='" + coords[0] + "'][beeg-y='" + coords[1] + "']";
     }
 
+    // TODO: Remove?
     static findEnabled(elt) {
-        return elt.querySelectorAll("");
+        return qsa(elt, "");
     }
 
     static findFacing(block, opt_direction) {
@@ -484,16 +534,16 @@ Utils.classMixin(CellBlock, AbstractDomController, {
 
 class Cell {
     static findAllInBlock(block) {
-        return Array.from(block.querySelectorAll("[wt~='Cell']"));
+        return qsa(block, "[wt~='Cell']");
     }
 
 
     static findByCoord(elt, coords) {
-        return elt.querySelector("[wt~='Cell'][smol-x='" + coords[0] + "'][smol-y='" + coords[1] + "']");
+        return qs(elt, "[wt~='Cell'][smol-x='" + coords[0] + "'][smol-y='" + coords[1] + "']");
     }
 
     static findByLabel(elt, label) {
-        return elt.querySelector("[wt~='Cell'][smol-label='" + label + "']")
+        return qs(elt, "[wt~='Cell'][smol-label='" + label + "']")
     }
 
     static uberCoord(cell) {

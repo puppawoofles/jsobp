@@ -23,8 +23,6 @@ class UnitRules {
                 },
                 function(elt) {
                     return WoofType.has(elt, 'Cell') && unitPrefs.contains(Grid.getEffectiveTile(elt));
-                }).then(function(cell) {
-                    return Utils.bfind(card, 'body', cell);
                 });
     }
 
@@ -55,10 +53,10 @@ class UnitRules {
      */
     static UseAbility = GameEffect.handle(function(handler, effect, params) {
         var units = params.components.map(function(a) {
-            return Utils.bfind(effect, 'body', a.unit);
+            return a.unit;
         });
         var team = TeamAttr.get(units[0]);
-        var ability = Utils.bfind(effect, 'body', params.ability);
+        var ability = params.ability;
         var skill = SkillAttr.get(ability);
         
         var bp = Ability.findSkill(handler, skill);
@@ -69,7 +67,7 @@ class UnitRules {
         var params = ParamFnAttr.invoke(bp, units, ability, bp, params.mana);
         var mana = params.mana;
 
-        var allEffects = Array.from(ability.querySelectorAll('combo-effect')).sort(function(a, b) {
+        var allEffects = qsa(ability, 'combo-effect').sort(function(a, b) {
             // Reverse sort.
             return (PriorityAttr.get(b) || 0) - (PriorityAttr.get(a) || 0);
         });
@@ -133,19 +131,16 @@ class UnitRules {
 
     static UseAbilityUnit = function(handler, effect, params) {
         return params.components.map(function(c) {
-            return Utils.bfind(effect, 'body', c.unit);
+            return c.unit;
         });
     }
     
     static UseAbilityComboUnits = function(handler, effect, params) {
-        return params.comboUnits.map(function(c) {
-            return Utils.bfind(effect, 'body', c);
-        });
+        return params.comboUnits;
     }
 
     static UseAbilityName = function(handler, effect, params) {
-        var ability = Utils.bfind(effect, 'body', params.ability);
-        return Ability.Label.findGet(ability);
+        return Ability.Label.findGet(params.ability);
     }
 
     static UseAbilityHasCombo = function(handler, effect, params) {
@@ -161,7 +156,7 @@ class UnitRules {
      * }
      */
     static Attack = GameEffect.handle(function(handler, effect, params) {
-        var target = Utils.bfind(effect, 'body', params.target);
+        var target = params.target;
         var defend = DefendStatus.StackCount(target) || 0;
         var change = Math.min(Math.abs(defend), params.amount) * Math.sign(defend) * -1;
         var newDamage = params.amount + change;
@@ -191,7 +186,7 @@ class UnitRules {
      */
     static TakeDamage = GameEffect.handle(function(handler, effect, params) {
 
-        var target = Utils.bfind(effect, 'body', params.target);
+        var target = params.target;
         var amount = params.amount;
         var results = [];
 
@@ -204,7 +199,7 @@ class UnitRules {
 
         return promise.then(function(result) {
             return GameEffect.createResults(effect, {
-                unit: WoofType.buildSelectorFor(target),
+                unit: target,
                 damageTaken: damageTaken,
                 finalHP: newCurrent,
                 overkill: amount - damageTaken
@@ -213,7 +208,7 @@ class UnitRules {
     });
 
     static TakeDamageUnit(handler, event, params, result) {
-        return Utils.bfind(handler, 'body', params.target);
+        return params.target;
     }
 
     static TakeDamageAmount(handler, event, params, result) {
@@ -230,7 +225,7 @@ class UnitRules {
      */
     static PushUnit = GameEffect.handle(function(handler, effect, params) {
         var battlefield = BattlefieldHandler.find(handler);
-        var target = Utils.bfind(handler, 'body', params.target);
+        var target = params.target;
         var direction = params.direction;
         var amount = params.amount;
 
@@ -275,8 +270,8 @@ class UnitRules {
                 if (!!unitAt) {
                     pushStack.unshift(unitAt);
                     return GameEffect.push(effect, GameEffect.create("UnitCollision", {
-                        firstUnit: WoofType.buildSelectorFor(current),
-                        secondUnit: WoofType.buildSelectorFor(unitAt),
+                        firstUnit: current,
+                        secondUnit: unitAt,
                     })).then(pushFn);
                 } else {
                     // We collided with the "wall", which means there's nobody to transfer
@@ -285,7 +280,7 @@ class UnitRules {
                         pushStack.shift();
                     }
                     return GameEffect.push(effect, GameEffect.create("UnitCollision", {
-                        firstUnit: WoofType.buildSelectorFor(current),
+                        firstUnit: current,
                     })).then(pushFn);
                 }
             } else {
@@ -297,8 +292,8 @@ class UnitRules {
 
                 // Move our unit.
                 return GameEffect.push(effect, GameEffect.create("ShiftUnit", {
-                    unit: WoofType.buildSelectorFor(current),
-                    destination: WoofType.buildSelectorFor(cellAt)
+                    unit: current,
+                    destination: cellAt
                 })).then(pushFn);
             }
         };
@@ -321,8 +316,8 @@ class UnitRules {
      * }
      */
     static UnitCollision = GameEffect.handle(function(handler, effect, params) {
-        var unit = Utils.bfind(effect, 'body', params.firstUnit);
-        var secondUnit = !!params.secondUnit ? Utils.bfind(effect, 'body', params.secondUnit) : null;
+        var unit = params.firstUnit;
+        var secondUnit = params.secondUnit || null;
         var results = []
 
         return GameEffect.push(effect, GameEffect.create("Attack", {
@@ -352,7 +347,7 @@ class UnitRules {
      * }
      */
     static UnitDeath = GameEffect.handle(function(handler, effect, params) {
-        var unit = Utils.bfind(effect, 'body', params.unit);
+        var unit = params.unit;
 
         // Remove the unit.
         unit.parentNode.removeChild(unit);
@@ -361,12 +356,12 @@ class UnitRules {
     });
 
     static UnitDeathUnit(handler, event, params) {
-        return Utils.bfind(handler, 'body', params.unit);
+        return params.unit;
     }
 
 
     static UnitRetreat = GameEffect.handle(function(handler, effect, params) {
-        var unit = Utils.bfind(effect, 'body', params.unit);
+        var unit = params.unit;
 
         // Need to reset the unit first.
         Unit.retreat(unit);
@@ -388,8 +383,8 @@ class UnitRules {
      */
     static UnitMoveToward = GameEffect.handle(function(handler, effect, params) {
         var battlefield = BattlefieldHandler.find(handler);
-        var unit = Utils.bfind(effect, 'body', params.unit);
-        var destination = Utils.bfind(effect, 'body', params.destination);
+        var unit = params.unit;
+        var destination = params.destination;
         var block = CellBlock.findUp(destination);
         var bigCoord = BigCoord.extract(block);
 
@@ -436,7 +431,7 @@ class UnitRules {
         var location = candidates[0];
         return GameEffect.push(effect, GameEffect.create("ShiftUnit", {
             unit: params.unit,
-            destination: WoofType.buildSelectorFor(location.cell)
+            destination: location.cell
         })).then(function(result) {
             return GameEffect.createResults(effect, {
                 distanceMoved: location.distanceFromStart
@@ -451,8 +446,8 @@ class UnitRules {
      * }
      */
     static ShiftUnit = GameEffect.handle(function(handler, effect, params) {
-        var unit = Utils.bfind(handler, 'body', params.unit);
-        var cell = Utils.bfind(handler, 'body', params.destination);
+        var unit = params.unit;
+        var cell = params.destination;
 
         SmallCoord.write(unit, SmallCoord.extract(cell));
         return GameEffect.createResults(effect, {});

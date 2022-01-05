@@ -46,7 +46,7 @@ class Encounters {
         var jimmyBlock = blocks.sort(function(a, b) {
             return BigCoord.extract(a)[1] - BigCoord.extract(b)[1] ||
                     BigCoord.extract(b)[0] - BigCoord.extract(a)[0];
-        })
+        })[0];
 
         // Enemy counters
         var ratsIn = [[0,0], [0, 1], [0,2], [1,1], [1,2], [2,0], [2,1], [2,2]];

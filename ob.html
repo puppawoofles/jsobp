@@ -305,6 +305,19 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.5.1">
+			<info-panel>
+				<h2>V0.0.5.1</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Bug Fixes:<ul>
+						<li>Jimmy was broken.  Put Jimmmy back in his place.</li>
+						<li>Town tutorial was busted due to a few shenanigans in how the town screen was initially rendered.</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -353,8 +366,9 @@
 					<li>Jimmy the Rat King: A harder fight that demonstrates some mini-boss behaviors.</li>
 				</ul></p>
 
-				<p>Click one of the <span hover-help="[wt~=EncounterButton]">Prepare buttons</span> to prepare for that combat!</p>
+				<p>Click one of the <span hover-help="[wt~=BuyRumor]">Prepare buttons</span> to prepare for that combat!</p>
 				<p>To prepare for combat, choose which units to send to that encounter.  In general, look for units that have similar numbers in their <span hover-help=".stumpy_cards [wt~=Ability]">action icons</span>, and similar non-face icons in their <span hover-help="[wt~=Unit] .appearance">appearances</span>.  When you've selected some units (try to pick at least 5), click <span hover-help="[wt~=Accept]">Accept</span>.</p>
+				<p>Once you've prepared for combat, scroll down and click the <span hover-help="[wt~=Go]">Embark button</span>. </p>
 			</info-panel>
 		</tutorial>
 
@@ -957,7 +971,8 @@
 			<silly-unit matcher="😴⛰️🌓" name="Chris"></silly-unit>
 			<silly-unit matcher="🙃🌪️🌖" name="Jill"></silly-unit>
 			<silly-unit matcher="😬⛰️🌒" name="Jake"></silly-unit>
-			<silly-unit matcher="🤠🌪️🌒" name="Ryan"></silly-unit>
+			<silly-unit matcher="🤠🌪️🌒" name="Ryan"></silly-unit> <!-- Climb'n'Game'n'Mountain Ryan -->
+			<silly-unit matcher="🤠🔥🌔" name="Ryan"></silly-unit> <!-- Work'n'Graphics Ryan -->
 			<silly-unit matcher="😱💧🌓" name="Fiona"></silly-unit>
 			<silly-unit matcher="🧐💧🌘" name="Drewes"></silly-unit>
 			<silly-unit matcher="😬🔥🌑" name="Kellie"></silly-unit>
@@ -1190,7 +1205,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5">V0.0.5.1</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1203,7 +1218,9 @@
 
 				</info>
 				<div class="run_bar_container"></div>
-				<div class="body_container" wt="ScreenWrapper"></div>
+				<div class="body_container" wt="ScreenWrapper">
+					<div wt="PlaceholderScreen Screen"></div>
+				</div>
 			</div>
 		</template>
 

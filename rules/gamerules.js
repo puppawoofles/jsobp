@@ -88,7 +88,9 @@ class GameRules {
 
         var townScreen = TownScreen.bfind(handler, 'body');
         if (!townScreen) {
-            townScreen = TownScreen.inflateIn(container, {});
+            townScreen = TownScreen.inflate(container, {});
+            var currentSCreen = qs(runScreen, '[wt~=ScreenWrapper] [wt~=Screen]');
+            Screen.showScreen(currentSCreen, townScreen);
         } else {
             container.appendChild(townScreen);
         }

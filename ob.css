@@ -2849,18 +2849,6 @@ span[compendium] {
 	display: none;
 }
 
-
-
-
-
-
-
-
-	
-
-
-
-
 /* Console */
 .console_input {
 	position: absolute;
@@ -2877,6 +2865,7 @@ span[compendium] {
 	right: 0;
 	height: 20px;
 	bottom: 26px;
+	font-size: 14px;
 }
 
 .log_history {

@@ -351,7 +351,7 @@ class TestConsole {
 
         var found = ConsoleCommands.find(command.type);
         if (!found) {
-            Logger.log("Unknown Command", command);
+            Logger.warn("Unknown Command", command);
         } else {
             found(handler, command.detail);
         }
@@ -380,10 +380,10 @@ class TestConsole {
 	
 	static syncAttrToCheckboxes(elt) {		
 		var levels = ParamList.get(elt, 'wlogger-allow');
-		TestConsole.checkboxes(elt).filter(function(elt) { return elt.checked })
+		var checkboxes = TestConsole.checkboxes(elt).filter(function(elt) { return elt.checked })
 			.map(function(elt) { return elt.getAttribute('level').trim(); });
 	
-		ParamList.put(elt, 'wlogger-allow', checkboxes);		
+		ParamList.put(elt, 'wlogger-allow', checkboxes);
 	}
 
 	static checkboxes(elt) {

@@ -1543,16 +1543,16 @@
 		
 		<!-- Structure of our message log -->
 		<template name="message_log">
-			<div wt="MessageLog" class="message_log" wh-c="TestConsoleInput.keydown>TestConsole.OnKeyDown,MessageLog.Attr:wlogger-allow>TestConsole.OnLoggerLevelChange,MLLS.change>TestConsole.OnLoggerLevelCheckboxChange" wlogger="TestConsole.PostMessage" wlogger-allow="RAW TRACE INFO WARN ERR">
-				<div class="log_history  text">
+			<div wt="MessageLog" class="message_log" wh-c="TestConsoleInput.keydown>TestConsole.OnKeyDown,MessageLog.Attr:wlogger-allow>TestConsole.OnLoggerLevelChange,MLLS.change>TestConsole.OnLoggerLevelCheckboxChange" wlogger="TestConsole.PostMessage" wlogger-allow="GAME ERR">
+				<div class="log_history text">
 				</div>
 				<input wt="TestConsoleInput" type="text" placeholder="Enter console command" class="console_input" />
 				<div class="log_level_selectors">
-				  <label><input wt="MLLS" type="checkbox" level="RAW" checked="false" />Raw</label>
-				  <label><input wt="MLLS" type="checkbox" level="TRACE" checked="false" />Trace</label>
-				  <label><input wt="MLLS" type="checkbox" level="INFO" checked="false" />Info</label>
-				  <label><input wt="MLLS" type="checkbox" level="WARN" checked="false" />Warn</label>
-				  <label><input wt="MLLS" type="checkbox" level="ERR" checked="false" />Err</label>
+				  <label><input wt="MLLS" type="checkbox" level="GAME" />Game</label>
+				  <label><input wt="MLLS" type="checkbox" level="TRACE" />Trace</label>
+				  <label><input wt="MLLS" type="checkbox" level="INFO" />Info</label>
+				  <label><input wt="MLLS" type="checkbox" level="WARN" />Warn</label>
+				  <label><input wt="MLLS" type="checkbox" level="ERR" />Err</label>
 				</div>
 				
 				<div class="message_log_past_entries" style="display:none"></div>

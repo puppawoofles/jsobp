@@ -711,6 +711,11 @@ class Logger {
 		args.unshift("[TRACE]");
 		Logger.__log("TRACE", ...args);
 	}
+	
+	static game(...args) {
+		args.unshift("[GAME]");
+		Logger.__log("GAME", ...args);
+	}
 }
 
 class WoofType {

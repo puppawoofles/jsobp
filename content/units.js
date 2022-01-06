@@ -130,6 +130,8 @@ class Units {
         TeamAttr.set(unit, Teams.Neutral);
         Unit.Ephemeral.set(unit, true);
         Unit.Construct.set(unit, true);
+        
+        BaseStatus.ForbiddenStatus.set(unit, ["agility", "bleed"]);
 
         return unit;
     }

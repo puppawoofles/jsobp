@@ -348,7 +348,8 @@ class DistractAbility {
         })[0];
 
         if (!target) {
-            return;
+            // No target?  No action.
+            return GameEffect.createResults(effect);
         }
 
         var amount = params.debuffSize;

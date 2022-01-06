@@ -77,10 +77,10 @@
 						</handler>
 						<!-- Handlers for UI Effects -->
 						<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after">
-							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delay="100"></ui-effect>
+							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="500 100 0"></ui-effect>
 						</handler> 
 						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit">
-							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delay="0" max-delay="0"></ui-effect>
+							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="0 0 NaN"></ui-effect>
 							<ui-effect type="blink" blink-color="red"></ui-effect>
 							<ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
 						</handler>
@@ -99,10 +99,11 @@
 						<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before">
 							<ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
 							<ui-effect type="banner" filter-fn="RoundRules.ActivateGroupHasCombo" content-fn="RoundRules.ActivateGroupBanner" extra-classes="slow"></ui-effect>
-							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delay="1500"  max-delay="1500"></ui-effect>
+							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delays="1500 1500 200"></ui-effect>
 						</handler>
 						<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before">
 							<ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
+							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="50 0 NaN"></ui-effect>
 						</handler>
 
 						<!-- Handlers for updating functional UI -->
@@ -331,6 +332,16 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.5.3">
+			<info-panel>
+				<h2>V0.0.5.3</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Speed Button: Above the play/pause buttons.  Used to adjust how fast combat goes.  Use Cheetah mode to finish off the slogfest at the end!</li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -466,6 +477,9 @@
 							<li>Mysterious Stranger: Sells you strange cards that suck at first, but once you "unlock" them through some achievement, become good.</li>
 							<li>Gossip: Sells you quests, bounties, etc.</li>
 						</ul></li>
+					</ul></li>
+					<li>Encounter/Event Ideas: <ul>
+						<li>Party Split: An event where half your team needs to do one encounter, whose results impact the second encounter (e.g. team 1 distracts a monster ("Survive 10 rounds!") while team 2 ransacks its cave, but if team 1 fails, team 2 has to deal with the big monster)</li>
 					</ul></li>
 				</ul>
 			</info-panel>
@@ -1155,6 +1169,20 @@
 
 			</info-panel>
 		</concept>
+
+
+		<uihelp hash="encounter">
+			<uihelp hash="speedbutton">
+				<info-panel>
+					<h2>Speed Control</h2>
+
+					<p>Controls how fast the flow of combat goes.  Click to change.</p>
+					<p>🐌: Slow! Useful for pausing at the right time.</p>
+					<p>🐕: Regular Speed!</p>
+					<p>🐆: Hold onto your butts!</p>
+				</info-panel>
+			</uihelp>
+		</uihelp>
 	</div>	
 
 	<!-- Put them all in one place to hide them. -->
@@ -1218,7 +1246,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1354,7 +1382,9 @@
 				<div class="action_button" wt="ActionButton" mode="" wh-c=".click>ActionButton.OnClick">
 					<div class="content"></div>
 				</div>
-				<div class="volley_tracker" compendium="concept/round" volley-time-delay="1">
+				<div class="volley_tracker" compendium="concept/round"
+						wh-b="SpeedButton.click>VolleyCounter.OnSpeedButtonClick">
+					<div wt="SpeedButton" class="speed_button" speed_options="1 2 0" current_speed="1"  compendium="uihelp/encounter/uihelp/speedbutton"></div>
 					<div class="countdown" minimum-volleys="8" volleys-left="8"></div>
 					<div class="countup" volleys-over-min></div>
 				</div>

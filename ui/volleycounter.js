@@ -51,13 +51,26 @@ class VolleyCounter {
         VolleyCounter.VolleysOverMin.set(countUp, newVolleys);
     });
 
+    static SpeedOptions = new ScopedAttr('speed_options', ListAttr);
+    static CurrentSpeed = new ScopedAttr('current_speed', IntAttr);
+    static OnSpeedButtonClick(event, handler) {
+
+        var options = VolleyCounter.SpeedOptions.find(handler);
+        var dest = VolleyCounter.CurrentSpeed.find(handler);
+
+        var values = VolleyCounter.SpeedOptions.get(options);
+        values.push(values.shift()); // Move onto the next one.
+        VolleyCounter.SpeedOptions.set(options, values);
+        VolleyCounter.CurrentSpeed.set(dest, values[0]);
+    }
+
+    static Delays = new ScopedAttr('delays', ListAttr);
     static VolleySpeed = function(ui) {
-        var volleyCounter = VolleyCounter.bfind(ui, 'body');
-        var delay = VolleyCounter.Delay.get(ui);
-        var mult = VolleyCounter.VolleyDelay.findGet(volleyCounter);
-        var total = delay * mult;
-        if (isNaN(total)) return false;
-        return total;
+        var self = bf(ui, VolleyCounter.CurrentSpeed.selector());
+        var idx = parseInt(VolleyCounter.CurrentSpeed.get(self));
+        var delay = VolleyCounter.Delays.get(ui)[idx];
+        if (isNaN(delay)) return false;
+        return delay;
     }
 
 }

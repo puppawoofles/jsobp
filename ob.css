@@ -191,6 +191,64 @@ info {
 	display: none;
 }
 
+.speed_button {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: -6px;
+    left: -17px;
+	overflow: hidden;
+	border: 2px solid black;
+}
+
+
+.speed_button[current_speed="0"] {
+	background: orange;
+}
+
+.speed_button[current_speed="1"] {
+	background: yellow;
+}
+
+.speed_button[current_speed="2"] {
+	background: green;
+}
+
+.speed_button:hover::after {
+	content: ' ';
+	position: absolute;
+	top: 0; bottom: 0; left: 0; right: 0;
+	background: rgba(255, 255, 255, 0.5);
+}
+
+
+.speed_button[current_speed="0"]::before {
+	content: "🐌";
+	position: relative;
+	font-size: 16px;
+	top: -1px;
+	left: -2px;
+}
+
+
+.speed_button[current_speed="1"]::before {
+	content: '🐕';
+	position: relative;
+	font-size: 20px;
+	top: -4px;
+	left: -2px;
+}
+
+.speed_button[current_speed="2"]::before {
+	content: '🐆';
+	position: relative;
+	font-size: 20px;
+	top: -6px;
+	left: -2px;
+}
+
 .volley_tracker {	
     position: absolute;
     height: 50px;

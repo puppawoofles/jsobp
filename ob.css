@@ -191,6 +191,75 @@ info {
 	display: none;
 }
 
+.step_button {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 23px;
+    left: -69px;
+    overflow: hidden;
+    border: 2px solid black;
+	display: none;
+	transform: rotate(90deg);
+}
+
+.step_button::before {
+    content: "⏏️";
+	transform: rotate(90deg);
+    position: relative;
+    font-size: 24px;
+    top: -9px;
+    left: -6px;
+}
+
+.step_button:hover::after {
+	content: ' ';
+	position: absolute;
+	top: 0; bottom: 0; left: 0; right: 0;
+	background: rgba(255, 255, 255, 0.5);
+}
+
+.step_button[enabled="true"] {
+	display: block;
+}
+
+.play_pause_button {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 0px;
+    left: -47px;
+    overflow: hidden;
+    border: 2px solid black;
+}
+
+.play_pause_button:hover::after {
+	content: ' ';
+	position: absolute;
+	top: 0; bottom: 0; left: 0; right: 0;
+	background: rgba(255, 255, 255, 0.5);
+}
+
+.play_pause_button[current_option="pause"]::before {
+    content: "▶️";
+    position: relative;
+    font-size: 24px;
+    top: -7px;
+    left: -6px;
+}
+
+.play_pause_button[current_option="play"]::before {
+    content: '⏸';
+    position: relative;
+    font-size: 24px;
+    top: -7px;
+    left: -7px;
+}
+
 .speed_button {
     position: absolute;
     width: 20px;
@@ -202,7 +271,6 @@ info {
 	overflow: hidden;
 	border: 2px solid black;
 }
-
 
 .speed_button[current_speed="0"] {
 	background: orange;
@@ -300,12 +368,12 @@ info {
 .action_button {
 	position: absolute;
 	right: 20px;
-	width: 80px;
-	height: 80px;
+	width: 76px;
+	height: 76px;
 	border-radius: 50%;
 	background: red;
-	box-sizing: border-box;
 	border: 2px solid rgba(255, 255, 255, 0.5);
+	overflow: hidden;
 }
 
 .encounter_screen .action_button {
@@ -611,7 +679,11 @@ info {
     content: '?';
 }
 
-.action_button:hover {
+.action_button:hover::after {
+	content: ' ';
+	position: absolute;
+	top: 0; bottom: 0; left: 0; right: 0;
+	border-radius: 50%;
 	animation: buttonHoverFrames cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
 }
 
@@ -629,9 +701,9 @@ info {
 	display: none;
 }
 
-.action_button > .content {
-	position: relative;
-	width: 100%;
+.action_button::before {
+	position: absolute;
+	left: 0; right: 0; top: 0; bottom: 0;
 	text-align: center;
 	font-size: 48px;
 }
@@ -640,7 +712,7 @@ info {
 	background: darkred;
 }
 
-.action_button[mode='cancel'] > .content::after {
+.action_button[mode='cancel']::before {
 	content: '🚫';
 }
 
@@ -649,53 +721,44 @@ info {
 	background: darkgreen;
 }
 
-.action_button[mode='go'] > .content::after {
-	content: '▶️';
+.action_button[mode='go']::before {
+    content: '▶️';
+    position: absolute;
+    font-size: 84px;
+    left: -18px;
+    top: -22px;
 }
 
 .action_button[mode='giveup'] {
 	background: darkred;
 }
 
-.action_button[mode='giveup'] > .content::after {
+.action_button[mode='giveup']::before {
 	content: '🏳️';
 }
 
-
-.action_button[mode='nada'] {
-	background: darkgray;
-}
-
-.action_button[mode='nada'] > .content::after {
-	content: '';
-}
 
 .action_button[mode='pending'] {
 	background: darkgray;
 }
 
-.action_button[mode='pending'] > .content::after {
+.action_button[mode='pending']::before {
 	content: '⌛';
 }
 
 
-.action_button[mode='pause'] {
-	background: darkgoldenrod;
+.action_button[mode='stop'] {
+	background: red;
 }
 
-.action_button[mode='pause'] > .content::after {
-	content: '⏸️';
+.action_button[mode='stop']::before {
+    content: '⏹️';
+    position: absolute;
+    font-size: 80px;
+    left: -16px;
+    top: -22px;
+	filter: hue-rotate(182deg);
 }
-
-
-.action_button[mode='step'] {
-	background: darkgreen;
-}
-
-.action_button[mode='step'] > .content::after {
-	content: '⏯️';
-}
-
 
 @keyframes wubbleOpacity {
 	0% {

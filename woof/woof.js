@@ -1438,11 +1438,15 @@ class PendingOpAttr {
 		PendingOpAttr.EffectTicket.set(element, ticket);
 	}
 
-	static returnTicketOn(element, opt_parentElt) {
+
+	static returnTicketOn(element) {
 		var effectSelector = PendingOpAttr.ForEffect.get(element);
 		var ticket = PendingOpAttr.EffectTicket.get(element);
-		if (!effectSelector || !ticket) throw boom("Unexpected missing ticket.");
-		var effect = Utils.bfind(opt_parentElt || element, 'body', effectSelector);
+		if (!effectSelector || !ticket) {
+			if (bestEffort) return;
+			throw boom("Unexpected missing ticket.");
+		} 
+		var effect = Utils.bfind(element, 'body', effectSelector);
 		PendingOpAttr.returnTicket(effect, ticket);
 		PendingOpAttr.ForEffect.set(element);
 		PendingOpAttr.EffectTicket.set(element);
@@ -1450,6 +1454,7 @@ class PendingOpAttr {
 
 	static getPendingEffect(element) {
 		var effect = PendingOpAttr.ForEffect.get(element);
+		if (!effect) return null;
 		return Utils.bfind(element, 'body', effect);
 	}
 }

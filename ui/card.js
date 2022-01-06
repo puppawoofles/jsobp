@@ -2,6 +2,11 @@
 class Card {
     static CardType = new ScopedAttr("card-type", StringAttr);
     static Selected = new ScopedAttr("selected", BoolAttr);
+
+    // Properties for ownership.
+    static OwnerUnit = new ScopedAttr("owner-unit", StringAttr);
+    static Ephemeral = new ScopedAttr("ephemeral", BoolAttr);
+
     static ToggleSelected(event, handler) {
         var card = Card.findUp(event.target);
         Card.Selected.toggle(card);

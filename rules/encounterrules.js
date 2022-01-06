@@ -2,9 +2,7 @@ class ActionMode {
     static Go = "go";
     static GiveUp = "giveup";
     static Cancel = "cancel";
-    static Pause = "pause";
-    static Step = "step";
-    static Nada = "nada";
+    static Stop = "stop";
     static Pending = "pending";
 }
 WoofRootController.addListeners(Utils.constantValues(ActionMode));
@@ -316,9 +314,6 @@ class EncounterRules {
         }
     }
 
-    static OnStartRound(evt, handler) {
-    }
-
     static OnUnitsChanged(evt, handler) {
         var encounter = EncounterScreenHandler.find(handler);
         if (!EncounterRules.IsGo.get(encounter)) {
@@ -353,7 +348,7 @@ class EncounterRules {
         // UI Bookkeeping.
         CardHud.unselectCards(handler);
         DisabledAttr.true(CardHud.find(handler));
-        ActionButton.setMode(handler, ActionMode.Pause);
+        ActionButton.setMode(handler, ActionMode.Stop);
 
         // Game effect queue:
         var encounter = EncounterScreenHandler.find(handler);
@@ -369,36 +364,47 @@ class EncounterRules {
         });
     }
 
-    static IsPause = new ScopedAttr("is-pause", BoolAttr);
-    static OnPause(evt, handler) {
+    static IsStop = new ScopedAttr("is-stop", BoolAttr);
+    static OnStop(evt, handler) {
         // We requested a pause.
         var encounter = EncounterScreenHandler.find(handler);
-        EncounterRules.IsPause.set(encounter, true);
-        ActionButton.setMode(handler, ActionMode.Pending);
+        EncounterRules.IsStop.set(encounter, true);
+;
+        var actionButton = ActionButton.find(handler)
+        ActionButton.setMode(actionButton, ActionMode.Pending);
+        var minVolleysLeft = VolleyCounter.minVolleysLeft(handler); 
+        if (minVolleysLeft == 0 && !!PendingOpAttr.getPendingEffect(actionButton)) {
+            PendingOpAttr.returnTicketOn(ActionButton.find(handler));
+        }
     }
 
-    static BlockBeforeVolleyIfPaused = GameEffect.handle(function(handler, effect, params) {
+    static BlockAfterVolleyIfPaused = GameEffect.handle(function(handler, effect, params) {
         var encounter = EncounterScreenHandler.find(handler);
-        if (EncounterRules.IsPause.get(encounter)) {
+        var paused = VolleyCounter.IsPaused(encounter);
+
+        // Don't bother pausing if we have no good guys left.s
+        var goodGuys = EncounterRules._findPlayerUnits(encounter);
+        if (goodGuys.length == 0) {
+            return;
+        }
+
+        if (paused) {
             // We are paused, so we want to block.
             var actionButton = ActionButton.find(handler);
-            PendingOpAttr.storeTicketOn(actionButton, effect, "PauseBlock");
-            ActionButton.setMode(handler, ActionMode.Step);
+            PendingOpAttr.storeTicketOn(actionButton, effect, "PauseBlock");            
+            VolleyCounter.ShowStepButton(handler);
         }
     });
 
-    static RemovePauseBeforeRound = GameEffect.handle(function(handler, effect, params) {
-        // Remove pause.
-        var encounter = EncounterScreenHandler.find(handler);
-        EncounterRules.IsPause.set(encounter); 
-    });
-
-    static OnStep(evt, handler) {
-        // We requested a pause.
+    static OnStep(event, handler) {
         var actionButton = ActionButton.find(handler);
-        ActionButton.setMode(handler, ActionMode.Pending);
         PendingOpAttr.returnTicketOn(actionButton);
     }
+
+    static RemoveStopBeforeRound = GameEffect.handle(function(handler, effect, params) {
+        var encounter = EncounterScreenHandler.find(handler);
+        EncounterRules.IsStop.set(encounter); 
+    });
 
     static OnCancel(evt, handler) {
         CardHud.unselectCards(handler);
@@ -427,7 +433,7 @@ class RoundRules {
         var roundPanel = RoundPanel.find(handler);
         var results = [];
 
-        var baseFn = function(success, result) {
+        var baseFn = function(result) {
             if (result) {
                 GameEffect.mergeResults(results, result);
             }
@@ -439,31 +445,24 @@ class RoundRules {
                 }, results);                
             }
 
-            var minVolleysLeft = VolleyCounter.minVolleysLeft(handler);
-            var volleysOverMin = VolleyCounter.volleysOverMin(handler);
-            var basePromise = Promise.resolve();
-            var drawCard = minVolleysLeft == 0 && volleysOverMin == 0;
-            if (drawCard) {                
-                basePromise = GameEffect.push(effect, GameEffect.create("DrawCard", {}));
-            }
-
-            // Player clicked pause or Player has no more units.
+            var minVolleysLeft = VolleyCounter.minVolleysLeft(handler);            
             var goodGuys = EncounterRules._findPlayerUnits(encounter);
-            if ((EncounterRules.IsPause.get(encounter) && minVolleysLeft <= 0) || goodGuys.length == 0) {
-                return basePromise.then(function() {
-                    return GameEffect.createResults(effect, {
-                    }, results);                    
-                });
+            if (goodGuys.length == 0) {
+                return GameEffect.createResults(effect, {}, results);                    
             }
 
-            return basePromise.then(function() {
+            if (minVolleysLeft <= 0 && EncounterRules.IsStop.get(encounter)) {
+                return GameEffect.createResults(effect, {}, results);
+            }
+
+            return Promise.resolve().then(function() {
                 return GameEffect.push(effect, GameEffect.create("Volley", {
-                    volleyCount: volleysOverMin
-                })).then(baseFn.bind(this, true), baseFn.bind(this, false));    
+                    volleyCount: null
+                })).then(baseFn.bind(this), baseFn.bind(this));    
             });
         };
 
-        return Promise.resolve(null).then(baseFn.bind(this, true), baseFn.bind(this, false));
+        return Promise.resolve(null).then(baseFn.bind(this), baseFn.bind(this));
     });
 
 
@@ -583,7 +582,8 @@ class RoundRules {
 
     /**
      * {
-s     * }
+     * 
+     * }
      */
     static Volley = GameEffect.handle(function(handler, effect, params) {
 
@@ -621,6 +621,11 @@ s     * }
         return Promise.resolve().then(function() {
             // First, update which way units are facing so we don't waste volleys.
             RoundRules.updateBlockFacing(battlefield);
+        }).then(function() {
+            // Draw cards, if relevant;
+            if(params.volleyCount % 8 == 0) {
+                return GameEffect.push(effect, GameEffect.create("DrawCard", {}));
+            }
         }).then(function() {
             // Run through actions or whatever.
             var baseFn = function(success, result) {

@@ -11,7 +11,7 @@ class VolleyCounter {
         return VolleyCounter.VolleysLeft.get(countDown) || 0;
     }
 
-    static volleysOverMin(elt) {
+    static volleyCount(elt) {
         var counter = VolleyCounter.find(elt);
         var countUp = qs(counter, ".countup");
         return VolleyCounter.VolleysOverMin.get(countUp) || 0;
@@ -25,6 +25,21 @@ class VolleyCounter {
 
         var countUp = qs(counter, ".countup");
         VolleyCounter.VolleysOverMin.set(countUp);
+
+        var stepButton = bf(handler, '.volley_tracker > .step_button');
+        VolleyCounter.Enabled.set(stepButton);
+    });
+
+    static BeforeVolley = GameEffect.handle(function(handler, effect, params) {
+        var counter = VolleyCounter.find(handler);
+        var countUp = qs(counter, ".countup");
+
+        var value = (VolleyCounter.VolleysOverMin.get(countUp) || 0) + 1;
+
+        params.volleyCount = value;
+        // Update params.
+        GameEffect.setParams(effect, params);
+        VolleyCounter.VolleysOverMin.set(countUp, value);
     });
 
     static AfterVolley = GameEffect.handle(function(handler) {
@@ -40,15 +55,6 @@ class VolleyCounter {
             }
             return;
         }
-
-        var countUp = qs(counter, ".countup");
-        var newVolleys = VolleyCounter.VolleysOverMin.get(countUp);
-        if (!newVolleys) {
-            newVolleys = 1;
-        } else {
-            newVolleys += 1;
-        }
-        VolleyCounter.VolleysOverMin.set(countUp, newVolleys);
     });
 
     static SpeedOptions = new ScopedAttr('speed_options', ListAttr);
@@ -72,6 +78,38 @@ class VolleyCounter {
         if (isNaN(delay)) return false;
         return delay;
     }
+
+    static Options = new ScopedAttr('options', ListAttr);
+    static CurrentOption = new ScopedAttr('current_option', StringAttr);
+    static OnPlayPauseClick(event, handler) {
+
+        var options = VolleyCounter.Options.find(handler);
+        var dest = VolleyCounter.CurrentOption.find(handler);
+
+        var values = VolleyCounter.Options.get(options);
+        values.push(values.shift()); // Move onto the next one.
+        VolleyCounter.Options.set(options, values);
+        VolleyCounter.CurrentOption.set(dest, values[0]);
+    }
+
+    static IsPaused(handler) {
+        var elt = bf(handler, '.volley_tracker');
+        var dest = VolleyCounter.CurrentOption.findGet(elt);
+        return dest == 'pause';
+    }
+
+    static Enabled = new ScopedAttr('enabled', BoolAttr);
+    static ShowStepButton(handler) {
+        var button = bf(handler, '.volley_tracker > .step_button');
+        VolleyCounter.Enabled.set(button, true);        
+    }
+
+    static OnStepClick(event, handler) {
+        var button = bf(handler, '.volley_tracker > .step_button');
+        VolleyCounter.Enabled.set(button);
+    }
+
+    
 
 }
 WoofRootController.register(VolleyCounter);

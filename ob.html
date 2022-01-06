@@ -107,13 +107,14 @@
 						</handler>
 
 						<!-- Handlers for updating functional UI -->
-						<handler label="ActionButtonVolley" handler="EncounterRules.BlockBeforeVolleyIfPaused" event-types="Volley:before"></handler>
-						<handler label="ActionButtonVolley" handler="EncounterRules.RemovePauseBeforeRound" event-types="Round:before"></handler>
+						<handler label="ActionButtonVolley" handler="EncounterRules.RemoveStopBeforeRound" event-types="Round:before"></handler>
 						<handler label="TargetPicker" handler="TargetPicker.PickTarget" event-types="PickTarget"></handler>
 						<handler label="UnitPreAbility" handler="Unit.BeforeUseAbility" event-types="UseAbility:before"></handler>
 						<handler label="UnitPostAbility" handler="Unit.AfterUseAbility" event-types="UseAbility:after"></handler>
 						<handler label="VolleyTrackerRound" handler="VolleyCounter.AfterPlayRound" event-types="PlayRound:after"></handler>
 						<handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
+						<handler label="VolleyTrackerVolley" handler="VolleyCounter.BeforeVolley" event-types="Volley:before"></handler>
+						<handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>
 
 					</handlers>
 
@@ -338,6 +339,20 @@
 				<p>Changes:</p>
 				<ul>
 					<li>Speed Button: Above the play/pause buttons.  Used to adjust how fast combat goes.  Use Cheetah mode to finish off the slogfest at the end!</li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.5.4">
+			<info-panel>
+				<h2>V0.0.5.4</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Play/Pause/Step: Rewrote play/pause stuff: <ul>
+						<li>Big Button: This is a play / stop button.  Play starts a round.  Stop ends the round as soon as is possible.  Easy!</li>
+						<li>Pause Button: Left of Speed Button.  If you click pause, it will pause between every volley.  If you then click the (small) play button, it will no longer pause.</li>
+						<li>Step Button: Only appears when the volley is paused.  Click to go.</li>
+					</ul></li>
 				</ul>
 			</info-panel>
 		</version>
@@ -903,7 +918,7 @@
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="SunderAbility.combo"></combo-effect>
 				</skill-blueprint>
 
-				<skill-blueprint name="distract" label="Distact" short-label="💫" type="💫" invoke-fn="DistractAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 CC">
+				<skill-blueprint name="distract" label="Distract" short-label="💫" type="💫" invoke-fn="DistractAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 CC">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="DistractAbility.combo"></combo-effect>
 				</skill-blueprint>
 
@@ -1246,7 +1261,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1365,8 +1380,7 @@
 															  Unit.Attr:taunt-list>Unit.OnTauntListChange,
 															  ActionButton.giveup>EncounterRules.OnGiveUp,
 															  ActionButton.go>EncounterRules.OnGo,
-															  ActionButton.pause>EncounterRules.OnPause,
-															  ActionButton.step>EncounterRules.OnStep,
+															  ActionButton.stop>EncounterRules.OnStop,
 															  ActionButton.cancel>EncounterRules.OnCancel,
 															  CellBlock.Attr:facing>EncounterScreenHandler.OnCellBlockFacingChange|Unit.OnCellBlockFacingChange|Grid.OnCellBlockFacingChange,
 															  CellBlock.mouseover>EncounterScreenHandler.OnCellBlockMouseOver,
@@ -1380,10 +1394,13 @@
 				<div class="preview_panel"></div>
 				<div class="tldr_panel"></div>
 				<div class="action_button" wt="ActionButton" mode="" wh-c=".click>ActionButton.OnClick">
-					<div class="content"></div>
 				</div>
 				<div class="volley_tracker" compendium="concept/round"
-						wh-b="SpeedButton.click>VolleyCounter.OnSpeedButtonClick">
+						wh-b="SpeedButton.click>VolleyCounter.OnSpeedButtonClick,
+							  PlayPauseButton.click>VolleyCounter.OnPlayPauseClick,
+							  StepButton.click>VolleyCounter.OnStepClick|EncounterRules.OnStep">
+					<div wt="StepButton" class="step_button"></div>
+					<div wt="PlayPauseButton" class="play_pause_button" options="play pause" current_option="play"></div>
 					<div wt="SpeedButton" class="speed_button" speed_options="1 2 0" current_speed="1"  compendium="uihelp/encounter/uihelp/speedbutton"></div>
 					<div class="countdown" minimum-volleys="8" volleys-left="8"></div>
 					<div class="countup" volleys-over-min></div>
@@ -1601,10 +1618,10 @@
 				<div class="unit_status">
 				</div>
 				<info class="unit" base-damage="BASE_DAMAGE" base-defense="BASE_DEFENSE" mass="MASS">
-					<inventory>						
-					</inventory>
 				</info>				
-			</div>
+				<inventory>
+				</inventory>
+		</div>
 		</template>
 
 		<!-- Ability to go in a unit script -->

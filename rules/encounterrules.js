@@ -369,7 +369,6 @@ class EncounterRules {
         // We requested a pause.
         var encounter = EncounterScreenHandler.find(handler);
         EncounterRules.IsStop.set(encounter, true);
-;
         var actionButton = ActionButton.find(handler)
         ActionButton.setMode(actionButton, ActionMode.Pending);
         var minVolleysLeft = VolleyCounter.minVolleysLeft(handler); 
@@ -399,6 +398,15 @@ class EncounterRules {
     static OnStep(event, handler) {
         var actionButton = ActionButton.find(handler);
         PendingOpAttr.returnTicketOn(actionButton);
+    }
+
+    static OnResume(event, handler) {        
+        var encounter = EncounterScreenHandler.find(handler);
+        var actionButton = ActionButton.find(encounter);
+        var paused = VolleyCounter.IsPaused(encounter);
+        if (!paused && !!PendingOpAttr.getPendingEffect(actionButton)) {
+            PendingOpAttr.returnTicketOn(actionButton);
+        }
     }
 
     static RemoveStopBeforeRound = GameEffect.handle(function(handler, effect, params) {

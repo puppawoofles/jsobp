@@ -90,6 +90,11 @@ class VolleyCounter {
         values.push(values.shift()); // Move onto the next one.
         VolleyCounter.Options.set(options, values);
         VolleyCounter.CurrentOption.set(dest, values[0]);
+
+        if (!VolleyCounter.IsPaused(handler)) {
+            var button = bf(handler, '.volley_tracker > .step_button');
+            VolleyCounter.Enabled.set(button);
+        }
     }
 
     static IsPaused(handler) {

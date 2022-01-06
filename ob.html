@@ -77,9 +77,10 @@
 						</handler>
 						<!-- Handlers for UI Effects -->
 						<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after">
-							<ui-effect type="delay" delay="100"></ui-effect>
+							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delay="100"></ui-effect>
 						</handler> 
-						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" delay="0">
+						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit">
+							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delay="0" max-delay="0"></ui-effect>
 							<ui-effect type="blink" blink-color="red"></ui-effect>
 							<ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
 						</handler>
@@ -98,7 +99,7 @@
 						<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before">
 							<ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
 							<ui-effect type="banner" filter-fn="RoundRules.ActivateGroupHasCombo" content-fn="RoundRules.ActivateGroupBanner" extra-classes="slow"></ui-effect>
-							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay="1500"></ui-effect>
+							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delay="1500"  max-delay="1500"></ui-effect>
 						</handler>
 						<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before">
 							<ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
@@ -313,6 +314,18 @@
 					<li>Bug Fixes:<ul>
 						<li>Jimmy was broken.  Put Jimmmy back in his place.</li>
 						<li>Town tutorial was busted due to a few shenanigans in how the town screen was initially rendered.</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.5.2">
+			<info-panel>
+				<h2>V0.0.5.2</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Engine:<ul>
+						<li>Added a few optimizations to the effect queue, so now everything goes way faster.</li>
 					</ul></li>
 				</ul>
 			</info-panel>
@@ -1205,7 +1218,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5">V0.0.5.1</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1341,7 +1354,7 @@
 				<div class="action_button" wt="ActionButton" mode="" wh-c=".click>ActionButton.OnClick">
 					<div class="content"></div>
 				</div>
-				<div class="volley_tracker" compendium="concept/round">
+				<div class="volley_tracker" compendium="concept/round" volley-time-delay="1">
 					<div class="countdown" minimum-volleys="8" volleys-left="8"></div>
 					<div class="countup" volleys-over-min></div>
 				</div>

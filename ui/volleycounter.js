@@ -2,6 +2,8 @@ class VolleyCounter {
     static MinimumVolleys = new ScopedAttr('minimum-volleys', IntAttr);
     static VolleysLeft = new ScopedAttr('volleys-left', IntAttr);
     static VolleysOverMin = new ScopedAttr('volleys-over-min', IntAttr);
+    static VolleyDelay = new ScopedAttr('volley-time-delay', IntAttr);
+    static Delay = new ScopedAttr('delay', IntAttr);
 
     static minVolleysLeft(elt) {
         var counter = VolleyCounter.find(elt);
@@ -48,6 +50,15 @@ class VolleyCounter {
         }
         VolleyCounter.VolleysOverMin.set(countUp, newVolleys);
     });
+
+    static VolleySpeed = function(ui) {
+        var volleyCounter = VolleyCounter.bfind(ui, 'body');
+        var delay = VolleyCounter.Delay.get(ui);
+        var mult = VolleyCounter.VolleyDelay.findGet(volleyCounter);
+        var total = delay * mult;
+        if (isNaN(total)) return false;
+        return total;
+    }
 
 }
 WoofRootController.register(VolleyCounter);

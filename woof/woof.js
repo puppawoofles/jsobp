@@ -1605,13 +1605,13 @@ class EffectQueue {
 		
 		if (pending) {
 			// Blocked on something else.  Gotta wait for that.
-			return;
+			return false;
 		}
 		
 		var pendingOp = PendingOpAttr.get(current);
 		if (pendingOp.length > 0) {
 			// Blocked on something else.
-			return;
+			return false;
 		}
 		
 		var phase = EffectQueue.Phase.get(current);
@@ -1644,8 +1644,8 @@ class EffectQueue {
 				}
 
 				// If it's pending, wait for it to wrap up.
-				if (GameEffect.IsPending.get(current)) break;
-				if (GameEffect.IsPending.get(current).length > 0) break;
+				if (GameEffect.IsPending.get(current)) return false;
+				if (GameEffect.IsPending.get(current).length > 0) return false;
 
 				// Hooray, we can move on.
 				EffectQueue.Phase.set(current, 'started');
@@ -1672,11 +1672,11 @@ class EffectQueue {
 				}
 
 				// If it's pending, wait for it to wrap up.
-				if (GameEffect.IsPending.get(current)) break;
-				if (GameEffect.IsPending.get(current).length > 0) break;
+				if (GameEffect.IsPending.get(current)) return false;
+				if (GameEffect.IsPending.get(current).length > 0) return false;
 				result = GameEffect.getResult(current);
 				// No result?  We gotta wait.
-				if (result === undefined || result === null) break;
+				if (result === undefined || result === null) return false;
 
 				// Hooray, we can move on.
 				EffectQueue.Phase.set(current, 'after');				
@@ -1692,14 +1692,14 @@ class EffectQueue {
 					EffectQueue.InvokePhase.set(current, 'after');
 				}
 				
-				if (GameEffect.IsPending.get(current)) break;
-				if (PendingOpAttr.get(current).length > 0) break;
+				if (GameEffect.IsPending.get(current)) return false;
+				if (PendingOpAttr.get(current).length > 0) return false;
 				
 				EffectQueue.Phase.set(current, 'complete');				
 			case 'complete':
 				// We already did a pending check above.  Only thing left
 				// is to get rid of this element once we resolve the promise.				
-				result = result || GameEffect.getResult(current);				
+				result = result || GameEffect.getResult(current);
 				if (!!promiseSetter) {
 					promiseSetter.resolve(result);
 					delete EffectQueue.pendingPromises[promiseId];					
@@ -1707,7 +1707,8 @@ class EffectQueue {
 
 				current.parentNode.removeChild(current);				
 				break;
-		}		
+		}
+		return true;
 	}
 }
 
@@ -1984,7 +1985,9 @@ class GameEffectInvoker {
 			var start = window.performance.now();
 			/** Ensure 60 FPS */
 			while (window.performance.now() - start < (1000.0 / 60)) {					
-				EffectQueue.evoke(queueElt);
+				if (!EffectQueue.evoke(queueElt)) {
+					break;
+				}
 			}
 		} catch (e) {
 			Logger.err(e);

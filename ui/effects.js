@@ -5,6 +5,7 @@ class UiTreatments {
 	static Style = new ScopedAttr("style", StringAttr);
 	static Label = new ScopedAttr("label", StringAttr);
 	static Delay = new ScopedAttr("delay", IntAttr);
+	static DelayFn = new ScopedAttr("delay-fn", FunctionAttr);
 
 	// For wub
 	static Icon = new ScopedAttr("icon", StringAttr);
@@ -35,7 +36,18 @@ class UiTreatments {
 			if (UiTreatments.FilterFn.has(handler)) return UiTreatments.FilterFn.invoke(handler, handler, event, params, result);
 			return true;
 		}
-		var delay = UiTreatments.Delay.get(handler);
+		var delay = null;
+		if (UiTreatments.Delay.has(handler)) {
+			delay = UiTreatments.Delay.get(handler);
+		}
+		if (UiTreatments.DelayFn.has(handler)) {
+			var newDelay = UiTreatments.DelayFn.invoke(handler, handler);
+			if (newDelay === false) {
+				delay = null;
+			} else {
+				delay = newDelay;
+			}
+		}
 		
 		for (var effect of effects) {
 			// If this is filtered out, skip it.
@@ -93,6 +105,18 @@ class UiTreatments {
 				case "delay":
 					// Do nothing.
 					var otherDelay = UiTreatments.Delay.get(effect);
+					var otherDelay = null;
+					if (UiTreatments.Delay.has(effect)) {
+						otherDelay = UiTreatments.Delay.get(effect);
+					}
+					if (UiTreatments.DelayFn.has(effect)) {
+						var oDelay = UiTreatments.DelayFn.invoke(effect, effect);
+						if (oDelay === false) {
+							otherDelay = null;
+						} else {
+							otherDelay = oDelay;
+						}
+					}
 					if (!!otherDelay) {
 						delay = Math.max(delay || 0, otherDelay);
 					}
@@ -102,7 +126,7 @@ class UiTreatments {
 			}			
 		}
 
-		if (!isNaN(delay)) {
+		if (delay !== null && !isNaN(delay)) {
 			return new Promise(function(resolve, reject) {
 				window.setTimeout(resolve, delay);	
 			});

@@ -22,7 +22,14 @@ class TutorialHelper {
             }
             // Update our tutorial.  We use our "last" one because that's the most specific one.
             if (TutorialHelper.TutorialLabel.has(screen)) {
-                TutorialHelper.Compendium.set(debugScreenCompendium, TutorialHelper.TutorialLabel.get(screen));
+                var currentNav = InfoPanel.currentNav(screen);
+                var newTutorialNav = TutorialHelper.TutorialLabel.get(screen);
+                TutorialHelper.Compendium.set(debugScreenCompendium, newTutorialNav);
+
+                if (currentNav.startsWith("tutorial") && currentNav != newTutorialNav) {
+                    // Attempt to auto-navigate                    
+            		Utils.setFragment(newTutorialNav);
+                }
             }
         }
         if (title.length > 0) {

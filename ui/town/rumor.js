@@ -16,6 +16,8 @@ class Rumor {
             cost: Rumor.Cost.findGet(elt) || 0
         });
 
+        Rumor.Name.copy(rumor, elt);
+
         // Move the results up.
         var bpClone = elt.cloneNode(true);
         var resultHolder = qs(rumor, '.results');

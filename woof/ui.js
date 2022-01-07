@@ -46,7 +46,7 @@ class InfoPanel {
 		if (!elt) return;
 		var link = CompendiumAttr.get(elt);
 		if (!link) return;
-		Utils.setFragment(link);		
+		Utils.setFragment(link);	
 	}
 	
 	static OnHashChange(evt, handler) {
@@ -55,6 +55,11 @@ class InfoPanel {
 			InfoPanel.navigateTo(handler, value);
 		}
 		evt.preventDefault();
+	}
+
+	static currentNav(parentElt) {
+		if (!parentElt || !parentElt.ownerDocument || !parentElt.ownerDocument.defaultView) return null;
+		return parentElt.ownerDocument.defaultView.location.hash.toLowerCase().substring(1);
 	}
 	
 	static navigateTo(parentElt, page) {

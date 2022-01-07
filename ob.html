@@ -398,14 +398,15 @@
 
 				<p>The top bar shows current run info.  The only useful thing there for now is your <span hover-help=".run_bar .gold_container">current Gold</span>, represented by a yellow circle: 🟡</p>
 				<p>In general, 🟡 with a number in it indicates that it costs that much to do the thing.</p>
+				<p>If you scroll down, you can see your <span hover-help="[tag=idle] .appearance">list of units</span>, which generally will sit around and do chores unless they get assigned to a more exciting quest.</p>
 
-				<p>For now, from this screen, you can start 3 combats:<ul>
-					<li>The Rats: A beginner fight that demonstrates being attacked from multiple directions.</li>
-					<li>The Golems: A harder fight that demonstrates enemies that are strong to some unit abilities and can combo with each other.</li>
-					<li>Jimmy the Rat King: A harder fight that demonstrates some mini-boss behaviors.</li>
+				<p>There are 2 combat missions you can send units on at the start of a run:<ul>
+					<li><span hover-help=".town_rumor[name=rats]">The Rats</span>: A beginner fight with 8 rats that all attack in an uncoordinated fashion for small amounts of damage.  If you win this, you'll unlock a harder fight against Jimmy, the Rat King.</li>
+					<li><span hover-help=".town_rumor[name=golems]">The Golems</span>: A harder fight that demonstrates enemies that are strong to some unit abilities and can combo with each other.</li>
 				</ul></p>
+				<p>You can take on multiple missions each day, dividing up your units into groups that work well together.</p>
 
-				<p>Click one of the <span hover-help="[wt~=BuyRumor]">Prepare buttons</span> to prepare for that combat!</p>
+				<p>Click one of the <span hover-help="[wt~=BuyRumor]:not([disabled=true]">Prepare buttons</span> to prepare for that encounter!</p>
 				<p>To prepare for combat, choose which units to send to that encounter.  In general, look for units that have similar numbers in their <span hover-help=".stumpy_cards [wt~=Ability]">action icons</span>, and similar non-face icons in their <span hover-help="[wt~=Unit] .appearance">appearances</span>.  When you've selected some units (try to pick at least 5), click <span hover-help="[wt~=Accept]">Accept</span>.</p>
 				<p>Once you've prepared for combat, scroll down and click the <span hover-help="[wt~=Go]">Embark button</span>. </p>
 			</info-panel>
@@ -451,7 +452,7 @@
 
 				<p>A few last points: <ul>
 					<li>If a unit dies, they are gone forever!</li>
-					<li>HP is not restored between combats/rounds.  Methods to heal them between combats are coming in a later version.</li>
+					<li>HP is not restored between combats/rounds.  To heal your units, you need to pay the doctor in town!</li>
 				</ul></p>
 			</info-panel>
 		</tutorial>
@@ -858,7 +859,7 @@
 						<li>Step: Move 1 (+1 per combo, +1 per <span compendium="concept/status">💨 stack</span>.  If the unit can't move, add 1 <span compendium="concept/status">💨 stack</span>.  While it benefits from combos, it does not contribute to them.</li>
 						<li>Retreat: Remove 1 <span compendium="concept/status">🏳️ stack</span> stack.  While it benefits from combos, it does not contribute to them.</li>
 						<li>Wind Blast: Attempts to push a unit backward within their cell block.  How far a unit is moved is based on how heavy the unit is, and the strength of the push.  Units that collide may take damage.</li>
-						<li>Push: Same as push, but in a different row.</li>
+						<li>Shove: Same as Wind Blast, but in a different row.</li>
 						<li>Defend: Gain <span compendium="concept/block">block</span>.</li>
 						<li>Protect: The adjecent ally (or self) with the lowest HP gains <span compendium="concept/block">block</span>.  If this affects a different unit, more block is gained.</li>
 						<li>Bleed: Add 6 stacks of Bleed to an enemy.  Enemies lose HP (bypassing Block) equal to the number of Bleed stacks they have and lose half their bleed stacks every time the unit is activated.</li>

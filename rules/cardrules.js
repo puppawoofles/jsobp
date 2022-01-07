@@ -228,7 +228,7 @@ class CardRules {
                     });
                 } else {
                     SelectedAttr.set(card, false);
-                }                
+                }
             });
         } else {
             TargetPicker.cancel(card, id);

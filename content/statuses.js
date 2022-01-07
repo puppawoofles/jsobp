@@ -196,3 +196,47 @@ class DistractedStatus {
 }
 WoofRootController.register(DistractedStatus);
 Utils.classMixin(DistractedStatus, BaseStatus, 'distracted');
+
+
+
+class BaseDamageStatus {
+ 
+    static merge(unit, existing, amount) {
+        BaseDamageStatus.AddStacks(unit, amount, existing);
+        return true;
+    }
+
+    static onStackChange(status, unit, oldValue) {
+        var current = BaseDamageStatus.StackCount(status);
+        var delta = current - oldValue;
+        Unit.adjustBaseDamage(unit, delta);
+
+        if (current == 0) {
+            BaseDamageStatus.Remove(unit, status);
+        }
+    }
+}
+WoofRootController.register(BaseDamageStatus);
+Utils.classMixin(BaseDamageStatus, BaseStatus, 'base_damage');
+
+
+
+class BaseDefenseStatus {
+ 
+    static merge(unit, existing, amount) {
+        BaseDefenseStatus.AddStacks(unit, amount, existing);
+        return true;
+    }
+
+    static onStackChange(status, unit, oldValue) {
+        var current = BaseDefenseStatus.StackCount(status);
+        var delta = current - oldValue;
+        Unit.adjustBaseDefense(unit, delta);
+
+        if (current == 0) {
+            BaseDefenseStatus.Remove(unit, status);
+        }
+    }
+}
+WoofRootController.register(BaseDefenseStatus);
+Utils.classMixin(BaseDefenseStatus, BaseStatus, 'base_defense');

@@ -397,7 +397,7 @@ class SkillParams {
     static _totalBaseDamage(units) {
         var total = 0;
         units.forEach(function(unit) {
-            total += Unit.baseDamage(unit);
+            total += Math.max(Unit.baseDamage(unit), 1);
         });
         return total;
     }
@@ -405,7 +405,7 @@ class SkillParams {
     static _totalBaseDefense(units) {
         var total = 0;
         units.forEach(function(unit) {
-            total += Unit.baseDefense(unit);
+            total += Math.max(Unit.baseDefense(unit), 1);
         });
         return total;
     }

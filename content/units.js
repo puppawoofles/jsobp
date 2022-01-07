@@ -64,6 +64,16 @@ class Units {
         return returnMe;
     }
 
+    static _starting_preparation = [
+        "barricade",
+        "throwingknife",
+        "turtlePot",
+        "cheetahPot",
+        "minorDefensePot",
+        "blinkCrystal", 
+        "minorDamagePot",
+        "fireBomb"
+    ];
 
     static Name = new ScopedAttr("name", StringAttr);
     static sample_hero(rootElt) {
@@ -109,6 +119,10 @@ class Units {
         abilities.forEach(function(a) {
             script.appendChild(a);
         });
+
+        // Add random inventory item.
+
+        Unit.addToInventory(unit, Preparation.inflate(Preparation.findBlueprint(rootElt || document, randomValue(Units._starting_preparation))));
 
         TeamAttr.set(unit, Teams.Player);
 

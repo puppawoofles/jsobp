@@ -4,12 +4,23 @@ class Card {
     static Selected = new ScopedAttr("selected", BoolAttr);
 
     // Properties for ownership.
+    static ForUnit = new ScopedAttr('for-unit', StringAttr);
     static OwnerUnit = new ScopedAttr("owner-unit", StringAttr);
     static Ephemeral = new ScopedAttr("ephemeral", BoolAttr);
 
     static ToggleSelected(event, handler) {
         var card = Card.findUp(event.target);
         Card.Selected.toggle(card);
+    }
+    
+    static WrapInCard(elt) {
+        var card = Card.inflate(Utils.UUID());
+        var forUnit = Card.ForUnit.findGet(elt);        
+        if (forUnit) {
+            Card.OwnerUnit.set(card, forUnit);
+        }
+        card.appendChild(elt);
+        return card;
     }
 
 }
@@ -34,7 +45,7 @@ class Tactic {
 
     static findBlueprint(baseElt, name) {
         return Utils.bfind(baseElt, 'body', 'tactic-blueprint[name="' + name + '"]');
-    }
+    }    
 }
 Utils.classMixin(Tactic, AbstractDomController, {
     matcher: "[card-type='tactic']",
@@ -57,6 +68,7 @@ Utils.classMixin(Tactic, AbstractDomController, {
 class Preparation {
     static NameAttr = new ScopedAttr('name', StringAttr);
     static Appearance1 = new ScopedAttr('appearance_1', StringAttr);
+    static Appearance2 = new ScopedAttr('appearance_2', StringAttr);
     static LabelAttr = new ScopedAttr('label', StringAttr);
     static ShortLabelAttr = new ScopedAttr('short-label', StringAttr);
     static TargetFnAttr = new ScopedAttr('target-fn', FunctionAttr);
@@ -64,6 +76,7 @@ class Preparation {
     static Cost = new ScopedAttr('cost', IntAttr);
     static Uses = new ScopedAttr('uses', IntAttr);
     static Used = new ScopedAttr('used', BoolAttr);
+    static Exhaust = new ScopedAttr("exhaust", BoolAttr);
 
     static findBlueprint(baseElt, name) {
         return Utils.bfind(baseElt, 'body', 'preparation-blueprint[name="' + name + '"]');
@@ -74,7 +87,9 @@ class Preparation {
         Utils.clearChildren(usesParent);
         var maxUses = Preparation.Uses.get(usesParent);
         while (usesParent.children.length < maxUses) {
-            Preparation.Used.set(Templates.inflateIn("preparation_use", usesParent), false);
+            var use = Templates.inflateIn("preparation_use", usesParent);
+            Preparation.Used.set(use, false);
+            Preparation.Exhaust.copy(use, usesParent);
         }
     }
 }
@@ -84,13 +99,15 @@ Utils.classMixin(Preparation, AbstractDomController, {
     params: function(blueprint) {
         return {
             APPEARANCE_1: Preparation.Appearance1.findGet(blueprint),
+            APPEARANCE_2: Preparation.Appearance2.findGet(blueprint) || '',
             LABEL: Preparation.LabelAttr.findGet(blueprint),
             APPEARANCE_CLASS: "",
             TARGET_FN: Preparation.TargetFnAttr.get(blueprint),
             INVOKE_FN: Preparation.InvokeFnAttr.get(blueprint),
             DESCRIPTION: qs(blueprint, '.description').innerHTML,
             COST: Preparation.Cost.findGet(blueprint),
-            USES: Preparation.Uses.findGet(blueprint)
+            USES: Preparation.Uses.findGet(blueprint),
+            EXHAUST: Preparation.Exhaust.findGet(blueprint)
         };
     },
     decorate: function(elt, bp) {

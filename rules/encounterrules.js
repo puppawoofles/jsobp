@@ -1,4 +1,5 @@
 class ActionMode {
+    static Disabled = '';
     static Go = "go";
     static GiveUp = "giveup";
     static Cancel = "cancel";
@@ -106,7 +107,7 @@ class EncounterRules {
      * {
      *   encounter: fn for creating the battlefield.
      *   encounterBp: <encounter-blueprint>
-     * 
+     *   deck: The element that houses cards that are going into and leaving this combat.
      * }
      */
     static Encounter = GameEffect.handle(function(handler, effect, params) {
@@ -145,15 +146,19 @@ class EncounterRules {
         var cardHud = CardHud.find(encounter);
         CardHud.inflateIn(cardHud, []);
 
-        // Clean this up!!!!  Favor the version where we get a deck element to read cards out of.
-        var cards;
-        if (isElement(params.deck)) {
-            cards = Array.from(params.deck.children);
-        } else {
-            cards = params.deck.map(function(matcher) {
-                return Utils.bfind(handler, 'body', matcher);
-            });    
-        }
+        var cards = Array.from(params.deck.children);
+
+        // Extend with any encounter-specific bonus cards.
+        cards.extend(qsa(encounterBp, 'bonus-cards').map(function(cardHolder) {
+            return Blueprint.findAll(cardHolder, 'preparation').map(function(prep) {
+                return Card.WrapInCard(Preparation.inflate(prep));
+            }).extend(Blueprint.findAll(cardHolder, 'tactic').map(function(tactic) {
+                return Card.WrapInCard(Tactic.inflate(tactic));
+            })).map(function(card)  {
+                Card.Ephemeral.set(card, true);
+                return card;    
+            });
+        }).flat());
 
         // Put units at the top.
         cards.sort(function(a, b) {
@@ -213,6 +218,9 @@ class EncounterRules {
         };
 
         return Promise.resolve(drawFn()).then(checkFn).then(function(winOrLoss) {
+            // Disable the action button.
+            ActionButton.setMode(handler, ActionMode.Disabled);
+
             // Cleanup here.  First, retreat all our units.
             var units = Array.from(Unit.findAllByTeam(battlefield, Teams.Player));
 
@@ -323,9 +331,17 @@ class EncounterRules {
 
     static OnCardSelected(evt, handler) {
         var cards = CardHud.selectedCards(handler);
-        if (evt.detail.oldValue == null) {
-            return;
+        if (cards.length > 0) {
+            ActionButton.setMode(handler, ActionMode.Cancel);
+        } else {
+            EncounterRules._adjustActionButton(handler);
         }
+    }
+
+    static OnCardRemove(evt, handler) {
+        var cards = CardHud.selectedCards(handler);
+
+        if (EncounterRules.IsGo.get(handler)) return;
         if (cards.length > 0) {
             ActionButton.setMode(handler, ActionMode.Cancel);
         } else {
@@ -374,6 +390,17 @@ class EncounterRules {
         var minVolleysLeft = VolleyCounter.minVolleysLeft(handler); 
         if (minVolleysLeft == 0 && !!PendingOpAttr.getPendingEffect(actionButton)) {
             PendingOpAttr.returnTicketOn(ActionButton.find(handler));
+        }
+    }
+
+    static CheckAndTriggerEnd(elt) {
+        var encounter = EncounterScreenHandler.find(elt);
+        var result = EncounterRules.GetEncounterResult(encounter);
+        if (result) {
+            // Neat!  We want to call it here.  End the round!
+            var effect = PendingOpAttr.getPendingEffect(encounter);            
+            GameEffect.setResult(effect, GameEffect.createResults(effect, {}));
+            PendingOpAttr.returnTicketOn(encounter);
         }
     }
 

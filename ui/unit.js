@@ -50,8 +50,26 @@ class Unit {
         return Unit.BaseDamage.findGet(unit);
     }
 
+    static setBaseDamage(unit, value) {
+        var elt = Unit.BaseDamage.find(unit);
+        Unit.BaseDamage.set(elt, value);
+    }
+
+    static adjustBaseDamage(unit, delta) {
+        Unit.setBaseDamage(unit, Unit.baseDamage(unit) + delta);
+    }
+
     static baseDefense(unit) {
         return Unit.BaseDefense.findGet(unit);
+    }
+
+    static setBaseDefense(unit, value) {
+        var elt = Unit.BaseDefense.find(unit);
+        Unit.BaseDefense.set(elt, value);
+    }
+
+    static adjustBaseDefense(unit, delta) {
+        Unit.setBaseDefense(unit, Unit.baseDefense(unit) + delta);
     }
 
     static mass(unit) {
@@ -171,7 +189,9 @@ class Unit {
         // Remove statuses.
         var status = UnitStatus.findAll(unit);
         status.forEach(function(s) {
-            s.remove();
+            var type = UnitStatus.getType(s);
+            // Remove the real way.
+            BaseStatus.Remove(type, unit, s);
         });
 
         // Remove taunts.
@@ -428,6 +448,16 @@ class Unit {
         Unit.Month.copy(qs(handler, ".month"), handler);
         Unit.Day.copy(qs(handler, ".day"), handler);
         Unit.Appearance.copy(qs(handler, ".avatar"), handler);
+    }
+
+    static isDead(unit) {
+        return Unit.currentHP(unit) == 0;
+    }
+
+    static addToInventory(unit, item) {
+        var inventory = qs(unit, 'inventory');
+        Card.ForUnit.set(item, IdAttr.generate(unit));
+        inventory.appendChild(item);
     }
 }
 WoofRootController.register(Unit);
@@ -764,8 +794,11 @@ class UnitStatus {
         return qs(unit, '[wt~="Status"][status_type="' + type + '"]');
     }
 
-    static findAll(elt, type) {
-        return qsa(elt, '[wt~="Status"][status_type="' + type + '"]');
+    static findAll(elt, opt_type) {
+        if (opt_type === undefined) {
+            return qsa(elt, '[wt~="Status"]');
+        }
+        return qsa(elt, '[wt~="Status"][status_type="' + opt_type + '"]');
     }
 
     static getType(status) {
@@ -809,6 +842,7 @@ class BaseStatus {
     static RemoveFn = new ScopedAttr('remove-fn', FunctionAttr);
     static StackCountFn = new ScopedAttr("stack-fn", FunctionAttr);
     static ForbiddenStatus = new ScopedAttr('forbidden-status', ListAttr);
+    static RemoveAtZero = new ScopedAttr('remove-at-zero', BoolAttr);
 
     // This does the engine-y related shit (like installing handlers).
     // This is also what we would call in the game (e.g. "MyStatus.Apply");
@@ -909,6 +943,8 @@ class BaseStatus {
 
         var newCount = UnitStatus.getCount(status) + count;
         UnitStatus.updateCount(status, newCount);
+
+
     }
 
     static SubtractStacks(config, unit, count, status) {
@@ -917,12 +953,19 @@ class BaseStatus {
 
     static OnStackCountChange(event, handler) {
         var status = handler;
-        var statusType = UnitStatus.getType(handler);
         var unit = Unit.findUp(status);
+        BaseStatus.handleStackCountChange(unit, status, event.detail.oldValue)
+    }
+    
+    static handleStackCountChange(unit, status, oldValue) {
+        var statusType = UnitStatus.getType(status);
         var bp = Utils.bfind(unit, 'body', 'status-blueprint[type="' + statusType + '"]');
-
         if (BaseStatus.StackCountFn.has(bp)) {
-            BaseStatus.StackCountFn.invoke(bp, status, unit, event.detail.oldValue);
+            BaseStatus.StackCountFn.invoke(bp, status, unit, oldValue);
+        }
+
+        if (BaseStatus.RemoveAtZero.findGet(status) && BaseStatus.StackCount(statusType, status) == 0) {
+            BaseStatus.Remove(statusType, unit, status);
         }
     }
 
@@ -931,6 +974,17 @@ class BaseStatus {
     static Remove(config, unit, status) {
         if (!status) {
             status = UnitStatus.StatusType.find(unit, config);
+        }
+        if (!status) {
+            // Might have already been removed.
+            return;
+        }
+        // Zero this out first.
+        var stackCount = BaseStatus.StackCount(config, status);
+        if (stackCount > 0) {
+            BaseStatus.SubtractStacks(config, unit, BaseStatus.StackCount(config, status), status);
+            BaseStatus.handleStackCountChange(unit, status, stackCount);
+            if (!Unit.findUp(status)) return;  // It settled.
         }
 
         var id = IdAttr.get(status);

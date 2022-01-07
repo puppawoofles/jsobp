@@ -25,8 +25,7 @@ class GameRules {
             Tactic.inflate(Tactic.findBlueprint(handler, "reposition")),
             Tactic.inflate(Tactic.findBlueprint(handler, "pivot")),
             Tactic.inflate(Tactic.findBlueprint(handler, "taunt-enemy")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "taunt-ally")),
-            Preparation.inflate(Preparation.findBlueprint(handler, "barricade"))
+            Tactic.inflate(Tactic.findBlueprint(handler, "taunt-ally"))
         ];
         starterDeck.forEach(function(content) {
             var card = Card.inflate(Utils.UUID());
@@ -286,6 +285,8 @@ class GameRules {
 
         // Copy blueprint in.
         Utils.moveChildren(blueprint.cloneNode(true), qs(eventScreen, "blueprint"));
+        // Normalize the blueprint.
+        Blueprint.normalizeAll(townScreen, qs(eventScreen, "blueprint"), 'encounter');
 
         // Move units in.
         var unitHolder = qs(eventScreen, 'units');

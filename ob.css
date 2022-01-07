@@ -1652,11 +1652,27 @@ input {
 	content: '❌';
 }
 
+.preparation .uses .use[exhaust=true]::before {
+	content: '🔴';
+}
+
+.preparation .uses .use[exhaust=true][used=true]::before {
+	content: '';
+}
+
 .preparation > .appearance::after {
     content: attr(appearance-1);
     position: absolute;
     left: 10px;
     top: 10px;
+    font-size: 24px;
+}
+
+.preparation > .appearance::before {
+    content: attr(appearance-2);
+    position: absolute;
+    left: 0px;
+    top: 11px;
     font-size: 24px;
 }
 
@@ -1909,6 +1925,18 @@ span[compendium] {
 	content: attr(name);
 }
 
+.full_size_cards .card inventory {
+	display: none;
+}
+
+.stumpy_cards .card inventory {
+	display: none;
+}
+
+.micro_cards .card inventory {
+	display: none;
+}
+
 
 
 .stumpy_cards .card {
@@ -2079,7 +2107,7 @@ span[compendium] {
 	text-align: left;
 }
 
-.exploded_cards .card .battlefield_unit .appearance {
+.exploded_cards .card .battlefield_unit > .appearance {
 	border-radius: 50%;
 	display: inline-block;
 	position: relative;
@@ -2191,7 +2219,69 @@ span[compendium] {
 	color: white;	
 }
 
+.exploded_cards .card inventory::before {
+	content: 'Inventory';
+	display: block;
+	text-align: center;
+	font-weight: bolder;
+	font-size: 16px;
+	margin-top: 16px;	
+}
 
+.exploded_cards .card inventory > * {
+	position: relative;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 5px;
+	margin-left: 16px;
+	margin-top: 16px;
+	display: inline-block;
+
+	width: 124px;
+	height: 160px;
+}
+
+.exploded_cards .card inventory .appearance {
+	top: -12px;
+	left: -12px;
+	border-radius: 50%;
+	overflow: hidden;
+}
+
+/** SPLIT SHENANIGANS HERE */
+
+.preparation .uses .use::before {
+	content: '✔️';
+}
+
+.preparation .uses .use[used=true]::before {
+	content: '❌';
+}
+
+.exploded_cards .card inventory .preparation .name {
+	position: absolute;
+	left: 32px;
+	top: 3px;
+	width: 92px;
+	overflow: hidden;
+	font-size: 12px;
+	text-align: left;
+}
+
+.exploded_cards .card inventory  .preparation .name::after {
+	content: attr(label);
+}
+
+.exploded_cards .card inventory  .preparation .description {
+	position: absolute;
+	top: 48px;
+	bottom: 0;
+	padding: 6px;
+	font-size: 10px;
+	white-space: normal;
+}
+
+
+/** SPLIT SHENANIGANS HERE */
 
 
 .full_size_cards .card .ability > .volley_count::after {
@@ -3130,6 +3220,23 @@ span[compendium] {
 	border: 2px solid black;
 	background: white;
 	border-radius: 8px;
+}
+
+.full_size_cards .card[ephemeral=true] {
+	/* Slightly more grey */
+	animation: ephemeralCard cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+@keyframes ephemeralCard {
+	0% {
+		background: #efefef;
+	}
+	50% {
+		background: white;
+	}
+	100% {
+		background: #efefef;
+	}
 }
 
 .hand .card {

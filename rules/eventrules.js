@@ -51,7 +51,17 @@ class EventRules {
                 });
             } else if (stateType == 'encounter') {
                 // Move all units into the deck.
-                Utils.moveChildren(qs(screen, 'units'), qs(screen, 'deck'));
+                var deckHolder = qs(screen, 'deck');
+                Utils.moveChildren(qs(screen, 'units'), deckHolder);
+
+                // Make cards out of their inventories and into the main deck.
+                qsa(deckHolder, 'inventory [card-type]').forEach(function(item) {
+                    var unit = Unit.findUp(item);
+                    Card.ForUnit.set(item, IdAttr.generate(unit));
+                    var card = Card.WrapInCard(item);
+                    deckHolder.appendChild(card);
+                });
+
                 var bp = Blueprint.find(currentState, 'encounter');
 
                 promise = GameEffect.push(effect, GameEffect.create("Encounter", {
@@ -60,9 +70,27 @@ class EventRules {
                     encounterBp: bp,
                     deck: qs(screen, "deck")
                 })).then(function(result) {
-                    // Clean up after the encounter.  Sort units back into units.
+                    // Clean up after the encounter.  Sort cards back into inventories and units back into their holder.
                     qsa(screen, '[wt~=Card]').forEach(function(card) {
-                        if (Card.CardType.findGet(card) == 'unit') qs(screen, 'units').appendChild(card);
+                        if (Card.Ephemeral.get(card)) {
+                            // Ephemeral cards gots to go.
+                            card.remove();
+                            return;
+                        }
+
+                        if (Card.CardType.findGet(card) == 'unit') {
+                            qs(screen, 'units').appendChild(card);
+                            return;
+                        }
+                        // Move non-units back into unit inventories, if relevant.
+                        var forUnit = Card.ForUnit.findGet(card);
+                        if (forUnit) {
+                            var inventory = bf(screen, '.battlefield_unit[w-id="' + forUnit + '"] inventory');
+                            if (inventory) {
+                                inventory.appendChild(Card.CardType.find(card));
+                            }
+                            card.remove();
+                        }
                     });
 
                     // Oh baby, such many results.

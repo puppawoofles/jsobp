@@ -357,6 +357,24 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.5.5">
+			<info-panel>
+				<h2>V0.0.5.5</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Added a bunch of prep cards: <ul>
+						<li>Throwing Knife:  Deal 5 damage to an enemy.</li>
+						<li>Bull Potion: Boost a unit's damage by 3.</li>
+						<li>Bear Potion: Boost a unit's block-gain by 3.</li>
+						<li>Turtle Soup: +1 to all your cooldowns, gain 15 block.</li>
+						<li>Cheetah Soup: -1 to all your cooldowns.</li>
+						<li>Blink Crystal: Reposition, but instant teleport.</li>
+						<li>Fire Bomb: Deal 50 damage in a bomberman cross pattern, permanently consumed on use.  This was originally 10, but I set it to 50 for testing and it felt fun.</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -529,7 +547,11 @@
 				</state>
 
 				<state type="encounter" name="encounter">
-					<encounter bp="rats"></encounter>
+					<encounter bp="rats">
+						<bonus-cards>
+							<!-- Put <preparation bp=> and <tactic bp=> to make combat-specific cards.  Cool! -->
+						</bonus-cards>
+					</encounter>
 					<event-result choice="victory" next-state="win"></event-result>
 					<event-result choice="wipe" next-state="wipe"></event-result>
 					<event-result choice="giveUp" next-state="retreat"></event-result>
@@ -959,14 +981,62 @@
 			<info-panel>
 				<h2>Preparations</h2>
 
-				<p>Preparations are cards that you can play to create effects on the battlefield.</p>
-				<p>Preparations generally cost money to play.</p>
+				<p>Preparations are cards that you can play to create instant efects on the battlefield.  They're a way that you can trade money for immediate efficacy.</p>
+				<p>Preparations always cost money and have a limited number of uses in combat: <ul>
+					<li>✔️: This icon means 1 available use that becomes ❌ once used. </li>
+					<li>❌: This icon means 1 unavailable use that becomes ✔️ after the combat. </li>
+					<li>🔴: This icon means 1 available use that will never be restored once used.</li>					
+				</ul></p>
+				<p>If the card has no available uses (all ❌), it's removed from the combat, but will be put back in the owning unit's inventory after combat.</p>
+				<p>If the card has no available uses because they were all 🔴, the card is gone forever.  Go buy more, when that's implemented.  Use those firebombs wisely.</p>
 			</info-panel>
 
 			<preparation-blueprint name="barricade" target-fn="Barricade.target" invoke-fn="Barricade.invoke">
 				<div label="Barricade" appearance_1="🧱"></div>
-				<div class="description">Drops a barricade onto the battlefield.  Barricades can be used to block squares.</div>
+				<div class="description">Drops a barricade onto the battlefield.  Barricades can be used to block cells, which affects targeting.</div>
 				<div cost="3" uses="5"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="throwingknife" target-fn="Preparations.FrontEnemyInAdjacentBlockTarget" invoke-fn="OffensiveItems.throwingKnife">
+				<div label="Throwing Knife" appearance_1="🗡️"></div>
+				<div class="description">Deals 5 damage one of the front-most enemies in a block adjacent to your units.</div>
+				<div cost="1" uses="3"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="minorDamagePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.minorBaseDamage">
+				<div label="Bull Potion" appearance_1="🧪" appearance_2="🐂"></div>
+				<div class="description">Increases damage dealt by your unit's ⚔️⚾🏹 skills by 3.</div>
+				<div cost="3" uses="1"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="minorDefensePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.minorBaseDefense">
+				<div label="Bear Potion" appearance_1="🧪" appearance_2="🐻"></div>
+				<div class="description">Increases defense gained by your unit's 🛡️ skills by 3.</div>
+				<div cost="3" uses="1"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="turtlePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.turtlePotion">
+				<div label="Turtle Soup" appearance_1="🥣" appearance_2="🐢"></div>
+				<div class="description">Increase cooldowns on all your skills by 1.  Gain 15 🛡️.</div>
+				<div cost="3" uses="1"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="cheetahPot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.cheetahPotion">
+				<div label="Cheetah Soup" appearance_1="🥣" appearance_2="🐆"></div>
+				<div class="description">Decrease cooldowns on all your skills by 1.</div>
+				<div cost="3" uses="1"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="blinkCrystal" target-fn="BlinkCrystal.TargetFn" invoke-fn="BlinkCrystal.invoke">
+				<div label="Blink Crystal" appearance_1="💎" appearance_2="🧿"></div>
+				<div class="description">Teleport a unit to a space in the same cell block.</div>
+				<div cost="3" uses="3"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="fireBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.fireBomb">
+				<div label="Fire Bomb" appearance_1="💣" appearance_2="🔥"></div>
+				<div class="description">Deal 10 damage to enemies in a cell and the 4 adjacent cells around them within their block.</div>
+				<div cost="5" uses="1" exhaust="true"></div>
 			</preparation-blueprint>
 		</concept>
 
@@ -1129,6 +1199,12 @@
 				<handler label="Distracted" handler="DistractedStatus.TickDownMaybe" event-types="UseAbility:after"></handler>
 			</status-blueprint>
 
+			<status-blueprint type="base_damage" icon="💪" extra-class="" merge-fn="BaseDamageStatus.merge" stack-fn="BaseDamageStatus.onStackChange" remove-at-zero="true">
+			</status-blueprint>
+
+			<status-blueprint type="base_defense" icon="🛡️" extra-class="" merge-fn="BaseDefenseStatus.merge" stack-fn="BaseDefenseStatus.onStackChange" remove-at-zero="true">
+			</status-blueprint>
+
 			<!-- Enemy AI / etc -->
 			<status-blueprint type="rat_ai" exclusive="ai" icon="" extra-classes="hidden">
 				<handler label="DecideTargetLocation" handler="RatAI.OnAfterVolley" event-types="Volley:after"></handler>
@@ -1262,7 +1338,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1374,7 +1450,8 @@
 		<!-- Structure of a combat encounter -->
 		<template name="encounter_screen">
 			<div  wt="Screen EncounterScreen" screen-label="Encounter Screen" tutorial-label="tutorial/encounterscreen" class="encounter_screen modal_screen"
-														wh-c="Card.Attr:selected>CardRules.OnCardSelected|EncounterRules.OnCardSelected,															  
+														wh-c="Card.Attr:selected>CardRules.OnCardSelected|EncounterRules.OnCardSelected,
+															  Hand.RemoveChild|Hand.AddChild|Hand.MoveFrom>EncounterRules.OnCardRemove,															  
 															  Battlefield.NewUnit>EncounterRules.OnUnitsChanged|Unit.OnUnit,
 															  Battlefield.RemovedUnit>EncounterRules.OnUnitsChanged|Unit.onUnitRemoved,
 															  Battlefield.UnitMoved>Unit.OnUnit,
@@ -1529,11 +1606,11 @@
 
 		<template name="preparation">
 			<div class="preparation" card-type="preparation" target-fn="TARGET_FN" invoke-fn="INVOKE_FN" compendium="concept/preparations">
-				<div class="appearance APPEARANCE_CLASS" appearance-1="APPEARANCE_1">
+				<div class="appearance APPEARANCE_CLASS" appearance-1="APPEARANCE_1" appearance-2="APPEARANCE_2">
 					<div class="cost" cost="COST"></div>
 				</div> 
 				<div class="name" label="LABEL"></div>
-				<div class="uses" uses="USES"></div>
+				<div class="uses" uses="USES" exhaust="EXHAUST"></div>
 				<div class="description">DESCRIPTION</div>
 			</div>
 		</template>
@@ -1620,8 +1697,11 @@
 				</div>
 				<info class="unit" base-damage="BASE_DAMAGE" base-defense="BASE_DEFENSE" mass="MASS">
 				</info>				
-				<inventory>
+				<inventory max-items="2">
 				</inventory>
+				<combos max-combos="2">
+
+				</combos>
 		</div>
 		</template>
 

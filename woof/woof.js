@@ -36,6 +36,7 @@ Array.prototype["extend"] = function(newArr) {
 	while (newArr.length > 0) {
 		this.push(newArr.shift());
 	}
+	return this;
 }
 
 Array.prototype["toObject"] = function(keyFn, opt_valueFn) {
@@ -1485,6 +1486,30 @@ class Blueprint {
 			return candidate;	
 		});		
 	}
+	
+	/** this is a destructive operation on the DOM, so make sure you're working from a copy. */
+	static normalizeAll(relativeTo, element, type) {
+		qsa(element, type).forEach(function(candidate) {
+			if (Blueprint.Bp.has(candidate)) {
+				// Okay, this is where it gets screwy.  We want to basically replace this inline.
+				var bpName = Blueprint.Bp.get(candidate);
+				var bp = Utils.bfind(relativeTo, 'body', type + '-blueprint[name="' + bpName + '"]');
+				if (!bp) return; // Skip this one if there's no blueprint.
+
+				Blueprint.Bp.set(candidate); // Remove the BP ref so it can't be double-normalized.
+				bp = bp.cloneNode(true); // Make a copy and never look at the original again.
+				Utils.moveChildren(bp, candidate);  // Copy children over.  Existing children will be in front, which in theory will be an override.
+
+				// Copy over attributes.
+				for (var i = 0; i < bp.attributes.length; i++) {
+					var attribute = bp.attributes[i];
+					if (attribute.specified) {
+						candidate.setAttribute(attribute.name, attribute.value);
+					}
+				}
+			}
+		});
+	}
 }
 
 class PromiseIdAttr {
@@ -1552,9 +1577,12 @@ class EffectQueue {
 		return EffectQueue.findCurrentQueue(queue);
 	}
 	
-	static findCurrentEvent(element) {		
+	static findCurrentEvent(element) {
 		var current = qs(element, 'queue > game-effect');
-		if (!current) return null;
+		if (!current) {
+			current = bf(element, 'game-effect');
+			if (!current) return null;
+		};
 		var next = qs(current, 'queue > game-effect');
 		if (!next) return current;
 		

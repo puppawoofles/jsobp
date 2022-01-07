@@ -182,6 +182,7 @@ class UnitRules {
      *    target: Unit ref (who is taking the damage)
      *    source: Unit ref (what is dealing the damage)
      *    amount: integer (amount of damage taken)
+     *    immediateDeath: bool (if we should do a death check now.)
      * }
      */
     static TakeDamage = GameEffect.handle(function(handler, effect, params) {
@@ -196,6 +197,12 @@ class UnitRules {
         var damageTaken = current - newCurrent;
 
         var promise = Promise.resolve();
+        if (newCurrent == 0 && params.immediateDeath) {
+            promise = GameEffect.push(effect, GameEffect.create("UnitDeath", {
+                unit: target
+            }));
+        }
+        
 
         return promise.then(function(result) {
             return GameEffect.createResults(effect, {
@@ -203,7 +210,7 @@ class UnitRules {
                 damageTaken: damageTaken,
                 finalHP: newCurrent,
                 overkill: amount - damageTaken
-            }, results);
+            }, results);    
         });
     });
 

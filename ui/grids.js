@@ -17,6 +17,10 @@ class FacingAttr {
     static Down = "down";
     static None = "none";
 
+    static allDirections() {
+        return [FacingAttr.Left, FacingAttr.Right, FacingAttr.Up, FacingAttr.Down];
+    }
+
     static fromUnit(c) {
 
         if (c[0] == 0) {
@@ -130,8 +134,8 @@ class Grid {
         return SmallCoord.rotate(Grid._effective[effective], facing);
     }
 
-    static fromEffectiveToReal(block, positions) {
-        var facing = Grid.getFacing(block);
+    static fromEffectiveToReal(block, positions, opt_facing) {
+        var facing = opt_facing || Grid.getFacing(block);
         return positions.map(function(label) {
             return SmallCoord.rotate(Grid._effective[label], facing);
         });

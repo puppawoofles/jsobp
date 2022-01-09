@@ -35,6 +35,8 @@ Utils.classMixin(CompendiumAttr, StringAttr, 'compendium');
 
 /** Utility class for managing the info panel. */
 class InfoPanel {	
+	static Compendium = new ScopedAttr('compendium', StringAttr);
+	static CompendiumHashFn = new ScopedAttr('compendium-hash-fn', FunctionAttr);
 	
 	static OnInfoClick(evt, handler) {
 		var infoPanel = InfoPanel.find(handler);
@@ -42,16 +44,22 @@ class InfoPanel {
 		var elt = evt.target;
 		if (!elt) return;
 		evt.preventDefault();
-		elt = CompendiumAttr.findUp(elt);
+		elt = InfoPanel.Compendium.findUp(elt);
 		if (!elt) return;
-		var link = CompendiumAttr.get(elt);
+		var link = InfoPanel.Compendium.get(elt);
 		if (!link) return;
+
+		// Add bonus hash.
+		if (InfoPanel.CompendiumHashFn.has(elt)) {
+			link += '#' + InfoPanel.CompendiumHashFn.invoke(elt, elt);
+		}
+
 		Utils.setFragment(link);	
 	}
 	
 	static OnHashChange(evt, handler) {
 		if (window.location.hash) {
-			var value = window.location.hash.substring(1).toLowerCase();
+			var value = window.location.hash.substring(1);
 			InfoPanel.navigateTo(handler, value);
 		}
 		evt.preventDefault();
@@ -62,8 +70,19 @@ class InfoPanel {
 		return parentElt.ownerDocument.defaultView.location.hash.toLowerCase().substring(1);
 	}
 	
+	static RendererFn = new ScopedAttr('renderer', FunctionAttr);
 	static navigateTo(parentElt, page) {
+		// First, find the hash split.
+		var bonusHash = null;
+		if (page.includes("#")) {
+			var hashSplit = page.split("#");
+			page = hashSplit.shift(); // First part is for page nav.
+			bonusHash = hashSplit.join("#");  // Rejoin in case this matters.
+		}
+
 		var parts = page.toLowerCase().split('/');
+		// Check for bonus-hash.
+
 		var current = '';
 		var first = true;
 		for (var i = 0; i < parts.length; i += 2) {
@@ -89,14 +108,16 @@ class InfoPanel {
 		if (!self) {
 			return Logger.warn("No info panel found.");
 		}
-		
-		var copy = node.cloneNode(true);
 		var inner = qs(self, '.info_panel_contents');				
+
+		// Renderer goes here!
 		Utils.clearChildren(inner);
-		
-		while (copy.firstChild) {
-			inner.appendChild(copy.firstChild);
-		}	
+		if (InfoPanel.RendererFn.has(node)) {
+			InfoPanel.RendererFn.invoke(node, inner, node, page, bonusHash);
+		} else {
+			var copy = node.cloneNode(true);
+			Utils.moveChildren(copy, inner);		
+		}		
 	}
 }
 WoofRootController.register(InfoPanel);

@@ -103,6 +103,11 @@ class Unit {
         }
     }
 
+    static capacitySize(unit) {
+        if (Unit.Ephemeral.get(unit) || Unit.Construct.get(unit)) return 0;
+        return 1; // TODO: Big units might be neat.
+    }
+
     static findAllInBlock(cellBlock) {
         var coords = BigCoord.extract(cellBlock);
         var selector = BigCoord.selector(coords);
@@ -193,6 +198,7 @@ class Unit {
             // Remove the real way.
             BaseStatus.Remove(type, unit, s);
         });
+        WoofType.remove(unit, "GhostUnit");
 
         // Remove taunts.
         Unit.CurrentTaunt.clear(unit);
@@ -458,6 +464,14 @@ class Unit {
         var inventory = qs(unit, 'inventory');
         Card.ForUnit.set(item, IdAttr.generate(unit));
         inventory.appendChild(item);
+    }
+
+    /** Helper for removing ghostiness. */
+    static affect(unit, fn) {
+        WoofType.remove(unit, "GhostUnit");
+        if (!fn) return;
+        var args = a(arguments).splice(2);
+        fn.apply(this, args);
     }
 }
 WoofRootController.register(Unit);

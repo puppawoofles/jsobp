@@ -1,13 +1,26 @@
-class Retreat {
-    static target(card) {
+class Tactics {
+    static targetTeamExcept(card, teams, filterFn) {
+        if (!Array.isArray(teams)) {
+            teams = [teams];
+        }
         var battlefield = BattlefieldHandler.find(card);        
-        return TargetPicker.standardPickTarget(card, IdAttr.generate(card),
+        return TargetPicker.standardPickTarget(battlefield, IdAttr.generate(card),
                 function() {
-                    return Array.from(Unit.findAllByTeam(battlefield, 'player')) || [];
+                    return Unit.findAll(battlefield).filter(function(unit) {
+                        return teams.includes(TeamAttr.get(unit));
+                    }).filter(filterFn || function() { return true; });
                 },
                 function(elt) {
                     return false;
                 });
+    }
+
+}
+
+
+class Retreat {
+    static target(card) {
+        return Tactics.targetTeamExcept(card, Teams.Player);
     }
 
     static invoke(card, target) {
@@ -20,17 +33,9 @@ WoofRootController.register(Retreat);
 
 class TauntEnemy {
     static target(card) {
-        var battlefield = BattlefieldHandler.find(card);        
-        return TargetPicker.standardPickTarget(card, IdAttr.generate(card),
-                function() {
-                    return Unit.findAll(battlefield).filter(function(unit) {
-                        return TeamAttr.get(unit) != Teams.Player &&
-                                !Unit.hasTaunt(unit, Teams.Player);
-                    });
-                },
-                function(elt) {
-                    return false;
-                });
+        return Tactics.targetTeamExcept(card, Teams.not(Teams.Player), function(unit) {
+            return !Unit.hasTaunt(unit, Teams.Player);
+        });
     }
 
     static invoke(card, target) {
@@ -43,22 +48,15 @@ WoofRootController.register(TauntEnemy);
 
 class TauntAlly {
     static target(card) {
-        var battlefield = BattlefieldHandler.find(card);        
-        return TargetPicker.standardPickTarget(card, IdAttr.generate(card),
-                function() {
-                    return Unit.findAll(battlefield).filter(function(unit) {
-                        // Can taunt any ally or any neutral in ally territory.
-                        return (TeamAttr.get(unit) == Teams.Player ||
-                            (TeamAttr.get(unit) == Teams.Neutral && TeamAttr.get(CellBlock.findByContent(unit)) == Teams.Player)) &&
-                            !Unit.hasTaunt(unit, Teams.Enemy);
-                    });
-                },
-                function(elt) {
-                    return false;
-                });
+        return Tactics.targetTeamExcept(card, Teams.not(Teams.Enemy), function(unit) {
+            return (TeamAttr.get(unit) == Teams.Player ||
+                    (TeamAttr.get(unit) == Teams.Neutral && TeamAttr.get(CellBlock.findByContent(unit)) == Teams.Player)) &&
+                    !Unit.hasTaunt(unit, Teams.Enemy);
+        });
     }
 
     static invoke(card, target) {
+        Unit.affect(target);
         Unit.setTaunt(target, Teams.Enemy);
         return true;
     }
@@ -68,43 +66,28 @@ WoofRootController.register(TauntAlly);
 
 class Reposition {
     static target(card) {
-        var battlefield = BattlefieldHandler.find(card);        
-        return TargetPicker.standardPickTarget(card, IdAttr.generate(card),
-                function() {
-                    var found = Array.from(Unit.findAllByTeam(battlefield, 'player')) || [];
-                    return found;                    
-                },
-                function(elt) {
-                    return false;
-                }).then(function(unit) {
-                    // Bail if bullshit.
-                    if (!unit) {
-                        return null;
-                    }
-                    var battlefield = BattlefieldHandler.find(card);        
-                    var unitPrefs = Unit.getPreferredLocations(unit);
-                    var root = BattlefieldHandler.findGridContainer(battlefield);
-            
-                    return TargetPicker.standardPickTarget(card, IdAttr.generate(card),
-                            function() {
-                                var cells = Array.from(BattlefieldHandler.findCells(root, "[team='player']"));
-                                cells = cells.filter(function(cell) {
-                                    var coord = Cell.uberCoord(cell);
-                                    var big = UberCoord.big(coord);
-                                    var foundUnit = BattlefieldHandler.unitAt(battlefield, coord);
-                                    return !foundUnit && BigCoord.equals(big, BigCoord.extract(unit));
-                                });
-                                return cells;
-                            },
-                            function(elt) {
-                                return WoofType.has(elt, 'Cell') && unitPrefs.contains(Grid.getEffectiveTile(elt));
-                            }).then(function(location) {  
-                                return {
-                                    unit: unit,
-                                    destination: location
-                                };
-                            });
-                });
+        var battlefield = BattlefieldHandler.find(card);
+        return Tactics.targetTeamExcept(card, Teams.Player, function(unit) {
+            return !WoofType.has(unit, "GhostUnit");
+        }).then(function(unit) {
+            if (!unit) return null;
+            var unitPrefs = Unit.getPreferredLocations(unit);
+            var block = CellBlock.findByContent(unit);
+            return TargetPicker.standardPickTarget(card, IdAttr.generate(card), function() {
+                return Cell.findAllInBlock(block).filter(function(cell) {
+                    var uberCoord = UberCoord.extract(cell);
+                    return !BattlefieldHandler.unitAt(battlefield, uberCoord);
+                });            
+            }, function(elt) {
+                // Preferred for extra bling bling.
+                return WoofType.has(elt, 'Cell') && unitPrefs.contains(Grid.getEffectiveTile(elt));
+            }).then(function(location) {  
+                return {
+                    unit: unit,
+                    destination: location
+                };
+            });
+        });
     }
 
     static invoke(card, target) {
@@ -171,3 +154,37 @@ class Pivot {
     }
 }
 WoofRootController.register(Pivot);
+
+class Hustle {
+    static target(card) {
+        return Tactics.targetTeamExcept(card, Teams.Player);
+    }
+
+    static invoke(card, target) {
+        Unit.affect(target);
+        Ability.findAll(target).forEach(function(ability) {
+            var toEdit = Ability.CooldownDuration.find(ability);
+            Ability.CurrentCooldown.set(toEdit, Math.max(Ability.CurrentCooldown.get(toEdit) - 1, 1));
+        });
+        return true;
+    }
+}
+WoofRootController.register(Hustle);
+
+
+
+class WaitForIt {
+    static target(card) {
+        return Tactics.targetTeamExcept(card, Teams.Player);
+    }
+
+    static invoke(card, target) {
+        Unit.affect(target);
+        Ability.findAll(target).forEach(function(ability) {
+            var toEdit = Ability.CooldownDuration.find(ability);
+            Ability.CurrentCooldown.set(toEdit, Ability.CurrentCooldown.get(toEdit) + 1);
+        });
+        return true;
+    }
+}
+WoofRootController.register(WaitForIt);

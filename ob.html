@@ -375,6 +375,32 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.5.6">
+			<info-panel>
+				<h2>V0.0.5.6</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Added a new Raven Hat prep card (instant retreat)</li>
+					<li>Added richer Unit wiki: Right-clicking on a <span hover-helper="[wt~=Unit] .appearance">unit portrait</span> will show a detailed view in the info panel.</li>
+					<li>Added Ghost Units:<ul>
+						<li>When you place a unit, it is in <span hover-help="[wt~=GhostUnit]">pending state.</span></li>
+						<li>Units in a pending state may be repositioned until one of the following happens: <ul>
+							<li>The round is started</li>
+							<li>You play a card on the unit</li>
+							<li>You click the unit (to try to reposition it), and click the unit again to confirm it's where you want it.</li>
+						</ul></li>
+					</ul></li>
+					<li>Tweaked a few things / made a few cards: <ul>
+						<li>Cheetah Soup: Now reduces all your cooldowns to 1.</li>
+						<li>Turtle Soup: Increases all your cooldowns by 2.</li>
+						<li>Hustle!: New tactics card, decreases all cooldowns by 1.</li>
+						<li>Wait for it!: New tactics card, increases all cooldowns by 1.</li>
+					</ul></li>
+					<li>Added some UI to the title screen around run seeds.  This does not work yet.</li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -452,13 +478,21 @@
 
 				<p>If you don't like the cards in your hand, you can click the <span hover-help="[wt~=DrawPileUi]">Deck symbol</span> on the left side of the car UI.  Note that drawing cards out of turn costs gold!  You can have up to 10 cards in hand: if you would draw more, the leftmost card is discarded to the <span hover-help="[wt~=Discard]">discard pile</span>.  Once your draw pile runs out of cards, your discard pile is shuffled into a new draw pile.</p>
 
-				<p>For now, play a few <span hover-help="[wt~=Card] [wt~=Unit]">Unit cards</span> onto the battlefield.  If you have none, draw cards from the draw pile until you do.  Be sure to choose a location that blinks obnoxiously!</p>
+				<p>For now, play a few <span hover-help="[wt~=Card] [wt~=Unit]">Unit cards</span> onto the battlefield.  If you have none, draw cards from the draw pile until you do.  Be sure to choose a location that blinks obnoxiously.</p>
 
-				<p>Once you've played some units, click the <span hover-help="[wt~=ActionButton]">Action Button with a ▶️ symbol</span> to start a round.  Units and enemies will take turns using their abilities.  Each of these turns is called a Volley.</p>
+				<p>When you first play a unit onto the battlefield, it's in a <span hover-help="[wt~=GhostUnit]">pending state</span>, where its avatar has muted colors.  Units in this state<ul>
+					<li>Can be repositioned.  To do so, click the unit and click the destination cell.</li>
+					<li>May not have certain cards played on them until they are no longer pending.</li>
+					<lI>Are made no-longer pending.  To do so, click the unit, then click the unit again.</lI>
+				</ul></p>
 
-				<p>To pause the action, click on the <span hover-help="[wt~=ActionButton]">Action Button with a ⏸️ symbol</span>.  Note that before you can play cards again, a minimum number of Volleys must pass.  This is represented by the top number in the <span hover-help=".volley_tracker">Volley Tracker hourglass symbol</span>.</p>
+				<p>Once you've played some units, click the <span hover-help="[wt~=ActionButton]">Action Button with a ▶️ symbol</span> to start a round.  Any pending units will no longer be pending once the round starts.  Units and enemies will take turns using their abilities.  Each of these turns is called a Volley.</p>
 
-				<p>If you've paused round before the minimum number of volleys, the <span hover-help="[wt~=ActionButton]">Action Button</span> will switch between a ⌛ symbol, which means to simply wait, or a ⏯️ symbol, which will play one volley.  Once the minimum volleys are reached, you will be able to play cards again.</p>				
+				<p>By default, volleys play one step at a time, which you can progress by clicking the <span hover-help="[wt~=StepButton]">Step Forward</span> button.  Click the <span hover-help="[wt~=PlayPauseButton]">Pause/Resume</span> button to toggle between auto-play or pause between volleys, which will hide the <span hover-helper="[wt~=StepButton]">Step Forward</span> button while it's in auto-play.  In addition, you can toggle the speed of a volley using the <span hover-help="[wt~=SpeedButton]">Speed Control</span>, which as 3 modes: 🐌 (slow), 🐕(standard), and 🍑(hold-onto-your-butts, aka fast).</p>
+
+				<p>To end the round, click on the <span hover-help="[wt~=ActionButton]">Action Button with a ⏹️ symbol</span>.  Note that before you can play cards again, a minimum number of Volleys must pass.  This is represented by the top number in the <span hover-help=".volley_tracker">Volley Tracker hourglass symbol</span>.  The <span hover-help="[wt~=ActionButton]">Action Button</span> will display a ⌛ symbol while it is waiting for the minimum number of volleys to pass.  This may require that you click the</p>
+
+				<p>Once the round ends, you will once again be able to play cards.  Note that some game effects end when the round ends, so sometimes it's to your benefit to not end a round.</p>				
 
 				<p>Above each unit on the battlefield, you'll see a <span hover-help="[wt~=Battlefield] [wt~=Ability]">vomit of icons</span>.  These icons represent the unit's Intents, which is what they plan to do during the battle.</p>
 
@@ -670,7 +704,9 @@
 				<p>Encounters are combat.  I don't want to rename them all though.</p>
 			</info-panel>
 
-			<default-encounter end-condition-fns="EncounterRules.DefaultWin EncounterRules.DefaultWipe">
+			<default-encounter >
+				<info end-condition-fns="EncounterRules.DefaultWin EncounterRules.DefaultWipe"></info>
+				<info max-player-units="5"></info>
 			</default-encounter>
 
 			<encounter-blueprint name="rats">
@@ -835,7 +871,7 @@
 		<concept hash="cards">
 			<info-panel>
 				<h2> Cards </h2>
- 				Hurr Durr Curds
+				Cards!  I should say more about cards.
 			</info-panel>
 
 			<concept hash="card">
@@ -1017,13 +1053,13 @@
 
 			<preparation-blueprint name="turtlePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.turtlePotion">
 				<div label="Turtle Soup" appearance_1="🥣" appearance_2="🐢"></div>
-				<div class="description">Increase cooldowns on all your skills by 1.  Gain 15 🛡️.</div>
+				<div class="description">Increase cooldowns on all your skills by 2.  Gain 15 🛡️.</div>
 				<div cost="3" uses="1"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="cheetahPot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.cheetahPotion">
 				<div label="Cheetah Soup" appearance_1="🥣" appearance_2="🐆"></div>
-				<div class="description">Decrease cooldowns on all your skills by 1.</div>
+				<div class="description">Decrease cooldowns on all your skills to 1.</div>
 				<div cost="3" uses="1"></div>
 			</preparation-blueprint>
 
@@ -1037,6 +1073,12 @@
 				<div label="Fire Bomb" appearance_1="💣" appearance_2="🔥"></div>
 				<div class="description">Deal 50 damage to enemies in a cell and the 4 adjacent cells around them within their block.</div>
 				<div cost="5" uses="1" exhaust="true"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="retreatCloak" target-fn="Preparations.AllyUnitTarget" invoke-fn="DefensiveItems.instantRetreat">
+				<div label="Raven Hat" appearance_1="🎩" appearance_2="🐦"></div>
+				<div class="description">A selected unit immediately retreats from the battlefield.</div>
+				<div cost="3" uses="1"></div>
 			</preparation-blueprint>
 		</concept>
 
@@ -1055,11 +1097,11 @@
 			</info-panel>
 
 			<!-- Orders -->
-			<tactic-blueprint name="retreat" card-icon="📜" label="Retreat" short-label="🏳️" target-fn="Retreat.target" invoke-fn="Retreat.invoke">
+			<tactic-blueprint name="retreat" card-icon="📜" label="Retreat!" short-label="🏳️" target-fn="Retreat.target" invoke-fn="Retreat.invoke">
 				<div class="description">After 3 <span compendium="concept/unit/concept/activation">activations</span>, the unit is removed from the battlefield and placed to your discard pile.</div>
 			</tactic-blueprint>
 			
-			<tactic-blueprint name="reposition" card-icon="📜" label="Reposition" short-label="🥾" target-fn="Reposition.target" invoke-fn="Reposition.invoke">
+			<tactic-blueprint name="reposition" card-icon="📜" label="Reposition!" short-label="🥾" target-fn="Reposition.target" invoke-fn="Reposition.invoke">
 				<div class="description">During each activation, move towards the chosen location until it is reached or inaccessible.</div>
 			</tactic-blueprint>
 
@@ -1069,6 +1111,14 @@
 
 			<tactic-blueprint name="taunt-ally" card-icon="📜" label="Hit Me!" short-label="🗣️" target-fn="TauntAlly.target" invoke-fn="TauntAlly.invoke">
 				<div class="description">Choose an ally.  That ally is <span compendium="concept/taunt">taunted.</span></div>
+			</tactic-blueprint>
+			
+			<tactic-blueprint name="go-faster" card-icon="📜" label="Hustle!" short-label="🗣️" target-fn="Hustle.target" invoke-fn="Hustle.invoke">
+				<div class="description">Subtract 1 from all of an ally's current ability cooldowns if they are above 1.</span></div>
+			</tactic-blueprint>
+			
+			<tactic-blueprint name="go-slower" card-icon="📜" label="Wait for it!" short-label="🗣️" target-fn="WaitForIt.target" invoke-fn="WaitForIt.invoke">
+				<div class="description">Add 1 to all of an ally's current ability cooldowns.</span></div>
 			</tactic-blueprint>
 
 			<!-- Maneuvers -->
@@ -1091,13 +1141,23 @@
 			<silly-unit matcher="😬🔥🌑" name="Kellie"></silly-unit>
 			<silly-unit matcher="🐱💧🌑" name="Robin"></silly-unit>
 
-			<info-panel>
+			<info-panel renderer="Compendiums.RenderUnit">
 				<h2>Unit</h2>
 
 				<p>Units are the folks who bash eachother until they stop moving.  Your units are either on the field (on a grid) or stuck in a <span compendium="concept/cards">card</span>.</p>
 				<p>You play units from cards onto the battlefield.  When units retreat, they return to your <span compendium="concept/cards/concept/discard">discard pile</span>.</p>
 				<p>Units have Hit Points, represented by a bar below them.  When this bar is empty, the unit is dead: gone forever!</p>
 				<p>Player units have Birthdays, represented by the other icons in their avatar bubble.  These determine how the units <span compendium="concept/unit/concept/combo">combo</span> together.</p>
+
+				<template>
+					<h2>Unit Details</h2>
+					<p>Right click <span compendium="concept/unit">here for the main page on units in general.</span></p>
+					<div class="exploded_cards">
+						<div class="card unit_container">
+
+						</div>
+					</div>
+				</template>
 				
 			</info-panel>
 
@@ -1271,7 +1331,7 @@
 					<p>Controls how fast the flow of combat goes.  Click to change.</p>
 					<p>🐌: Slow! Useful for pausing at the right time.</p>
 					<p>🐕: Regular Speed!</p>
-					<p>🐆: Hold onto your butts!</p>
+					<p>🍑: Hold onto your butts!</p>
 				</info-panel>
 			</uihelp>
 		</uihelp>
@@ -1326,7 +1386,8 @@
 
 				<br />
 
-				<button class="start_button" wt="StartButton" wh-c="StartButton.click>TitleScreen.OnStart">Start!</button>
+				<p><button class="start_button" wt="StartButton" wh-c="StartButton.click>TitleScreen.OnStart">Start!</button></p>
+				<p><input class="seed_input" type="text" placeholder="Seed (in progress!)"></input></p>
 
 
 				<p><span compendium="concept/ideas">Future Ideas</span></p>
@@ -1338,7 +1399,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1450,8 +1511,7 @@
 		<!-- Structure of a combat encounter -->
 		<template name="encounter_screen">
 			<div  wt="Screen EncounterScreen" screen-label="Encounter Screen" tutorial-label="tutorial/encounterscreen" class="encounter_screen modal_screen"
-														wh-c="Card.Attr:selected>CardRules.OnCardSelected|EncounterRules.OnCardSelected,
-															  Hand.RemoveChild|Hand.AddChild|Hand.MoveFrom>EncounterRules.OnCardRemove,															  
+														wh-c="Card.Attr:selected>CardRules.OnCardSelected,
 															  Battlefield.NewUnit>EncounterRules.OnUnitsChanged|Unit.OnUnit,
 															  Battlefield.RemovedUnit>EncounterRules.OnUnitsChanged|Unit.onUnitRemoved,
 															  Battlefield.UnitMoved>Unit.OnUnit,
@@ -1460,12 +1520,13 @@
 															  ActionButton.go>EncounterRules.OnGo,
 															  ActionButton.stop>EncounterRules.OnStop,
 															  ActionButton.cancel>EncounterRules.OnCancel,
+															  ActionButton.Attr:pending-action>EncounterRules.OnActionButtonPendingAction,
 															  CellBlock.Attr:facing>EncounterScreenHandler.OnCellBlockFacingChange|Unit.OnCellBlockFacingChange|Grid.OnCellBlockFacingChange,
 															  CellBlock.mouseover>EncounterScreenHandler.OnCellBlockMouseOver,
 															  CellBlock.Attr:taunt-priority>Unit.OnTauntPriorityChange,
 															  DrawPileUi.click>CardRules.OnDrawPileClick,
 															  Unit.Attr:in-block>Unit.onMoveBlock"
-														wh-b="">
+														wh-b="GhostUnit.click>EncounterRules.OnGhostUnitClick">
 				<!-- Info for battlefield things -->
 				<info class="encounter"></info>
 				<div class="battlefield_widget_container"></div>
@@ -1478,7 +1539,7 @@
 							  PlayPauseButton.click>VolleyCounter.OnPlayPauseClick|EncounterRules.OnResume,
 							  StepButton.click>VolleyCounter.OnStepClick|EncounterRules.OnStep">
 					<div wt="StepButton" class="step_button"></div>
-					<div wt="PlayPauseButton" class="play_pause_button" options="play pause" current_option="play"></div>
+					<div wt="PlayPauseButton" class="play_pause_button" options="pause play" current_option="pause"></div>
 					<div wt="SpeedButton" class="speed_button" speed_options="1 2 0" current_speed="1"  compendium="uihelp/encounter/uihelp/speedbutton"></div>
 					<div class="countdown" minimum-volleys="8" volleys-left="8"></div>
 					<div class="countup" volleys-over-min></div>
@@ -1671,7 +1732,7 @@
 		
 		<!-- Unit -->
 		<template name="unit">
-			<div class="battlefield_unit" wt="Unit" card-type="unit" w-id="UNIT_ID" highlight-scroll-to="true" compendium="concept/unit"
+			<div class="battlefield_unit" wt="Unit" card-type="unit" w-id="UNIT_ID" highlight-scroll-to="true" compendium="concept/unit" compendium-hash-fn="WoofType.buildSelectorFor"
 					target-fn="UnitRules.TargetUnitPlacement" invoke-fn="UnitRules.InvokeUnitPlacement"
 					wh-c="HPBar.Attr:value|HPBar.Attr:max>Unit.OnHPBarUpdate,
 						Ability.Updated>Unit.OnUnit,
@@ -1798,6 +1859,7 @@
 		"ui/battlefield",
 		"ui/card",
 		"ui/cardhud",
+		"ui/compendiums",
 		"ui/dialogscreen",
 		"ui/effects",
 		"ui/encounterscreen",
@@ -1866,7 +1928,7 @@
 			// Run whatever test you wanted to run.
 			
 			if (window.location.hash) {
-				InfoPanel.navigateTo(document.body, window.location.hash.toLowerCase().substring(1));
+				InfoPanel.navigateTo(document.body, window.location.hash.substring(1));
 			}
 
 			var titleScreen = TitleScreen.inflate();

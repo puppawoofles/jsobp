@@ -3,7 +3,7 @@ class GameRules {
     static RunEffect = new ScopedAttr("run-effect", StringAttr);
 
     static NewRun = GameEffect.handle(function(handler, effect, params) {
-        Logger.info("Got a request for a run!");
+        Logger.info("Got a request for a run, seed: ", params.seed);
         var runScreen = RunScreen.inflate();
     
         // Put up the run screen.
@@ -25,7 +25,9 @@ class GameRules {
             Tactic.inflate(Tactic.findBlueprint(handler, "reposition")),
             Tactic.inflate(Tactic.findBlueprint(handler, "pivot")),
             Tactic.inflate(Tactic.findBlueprint(handler, "taunt-enemy")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "taunt-ally"))
+            Tactic.inflate(Tactic.findBlueprint(handler, "taunt-ally")),
+            Tactic.inflate(Tactic.findBlueprint(handler, "go-faster")),
+            Tactic.inflate(Tactic.findBlueprint(handler, "go-slower"))
         ];
         starterDeck.forEach(function(content) {
             var card = Card.inflate(Utils.UUID());

@@ -72,7 +72,8 @@ class Units {
         "minorDefensePot",
         "blinkCrystal", 
         "minorDamagePot",
-        "fireBomb"
+        "fireBomb",
+        "retreatCloak"
     ];
 
     static Name = new ScopedAttr("name", StringAttr);

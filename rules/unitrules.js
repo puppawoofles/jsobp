@@ -1,25 +1,38 @@
 class UnitRules {
 
-    static TargetUnitPlacement = function(card) {
+    static TargetUnitPlacement(card) {
         var battlefield = BattlefieldHandler.find(card);        
         var unit = Unit.find(card);
+        var maxPlayerUnits = EncounterRules.MaxPlayerUnits.findUpGet(battlefield, 5); // Hard-coded default. :(
+
+        return UnitRules.TargetPlacementForUnit(battlefield, unit, IdAttr.generate(card), function() {
+            var playerCount = Unit.findAllByTeam(battlefield, Teams.Player).map(Unit.capacitySize).merge(sumMerge);
+            return playerCount < maxPlayerUnits;
+        });
+    }
+
+    static TargetPlacementForUnit(battlefield, unit, thing, predicateFn) {
         var unitPrefs = Unit.getPreferredLocations(unit);
         var root = BattlefieldHandler.findGridContainer(battlefield);
 
-        return TargetPicker.standardPickTarget(card, IdAttr.get(card),
+        return TargetPicker.standardPickTarget(battlefield, thing,
                 function() {
-                    var cells = Array.from(BattlefieldHandler.findCells(root, "[team='player']"));
-                    cells = cells.filter(function(cell) {
-                        var coord = Cell.uberCoord(cell);
-                        var big = UberCoord.big(coord);
-                        var unit = BattlefieldHandler.unitAt(battlefield, coord);
-                        var units = BattlefieldHandler.unitsOn(battlefield, big).filter(function(unit) {
-                            // Max 5 players per block.
-                            return TeamAttr.get(unit) == Teams.Player;
-                        });                                
-                        return !unit && units.length < 5;
+                    // This is to handle max-player-counts for new players, but to ignore it for
+                    // ghost-positioning.
+                    if (predicateFn && !predicateFn()) return [];
+                    // Check total player capacity first.
+
+                    var blocks = CellBlock.findAllByTeam(root, Teams.Player).filter(function(block) {
+                        // Filter out blocks that can't hold all these limes.
+                        if (!EncounterRules.MaxPlayerUnits.has(block)) return true;
+                        return Unit.findTeamInBlock(block, Teams.Player).map(Unit.capacitySize).merge(sumMerge) < EncounterRules.MaxPlayerUnits.get(block);
                     });
-                    return cells;
+
+                    // For each of these blocks, return cells that are actually empty.
+                    return blocks.map(Cell.findAllInBlock).flat().filter(function(cell) {
+                        var coord = UberCoord.extract(cell);
+                        return !BattlefieldHandler.unitAt(battlefield, coord);
+                    });
                 },
                 function(elt) {
                     return WoofType.has(elt, 'Cell') && unitPrefs.contains(Grid.getEffectiveTile(elt));
@@ -35,6 +48,7 @@ class UnitRules {
         Unit.setStopped(unit, true);
         var battlefield = BattlefieldHandler.find(card);
         BattlefieldHandler.addUnitTo(battlefield, unit, bigCoord, smallCoord);
+        WoofType.add(unit, "GhostUnit");
         card.remove();
         return false;
     }
@@ -196,6 +210,8 @@ class UnitRules {
         var newCurrent = Unit.currentHP(target);
         var damageTaken = current - newCurrent;
 
+        Unit.affect(target);
+
         var promise = Promise.resolve();
         if (newCurrent == 0 && params.immediateDeath) {
             promise = GameEffect.push(effect, GameEffect.create("UnitDeath", {
@@ -235,6 +251,8 @@ class UnitRules {
         var target = params.target;
         var direction = params.direction;
         var amount = params.amount;
+        
+        Unit.affect(target);
 
         var pushStack = [target];
 
@@ -455,6 +473,7 @@ class UnitRules {
     static ShiftUnit = GameEffect.handle(function(handler, effect, params) {
         var unit = params.unit;
         var cell = params.destination;
+        Unit.affect(unit);
 
         SmallCoord.write(unit, SmallCoord.extract(cell));
         return GameEffect.createResults(effect, {});

@@ -119,6 +119,13 @@ class Preparations {
         }));
     }
 
+    static retreatUnit(battlefield, unit) {
+        var effect = EffectQueue.findCurrentQueue(battlefield);
+
+        return GameEffect.push(effect, GameEffect.create("UnitRetreat", {
+            unit: unit
+        }));
+    }
     
     static dealDamage(battlefield, targets, amount) {
         var effect = EffectQueue.findCurrentQueue(battlefield);
@@ -138,19 +145,22 @@ WoofRootController.register(Preparations);
 
 class BuffPotions {
     static minorBaseDamage(card, target) {
+        Unit.affect(target);
         BaseDamageStatus.AddStacks(target, 3);
         return Preparations.payCostAndMaybeIncrementUsage(card);
     }
 
     static minorBaseDefense(card, target) {
+        Unit.affect(target);
         BaseDefenseStatus.AddStacks(target, 3);        
         return Preparations.payCostAndMaybeIncrementUsage(card);
     }
 
     static turtlePotion(card, target) {
+        Unit.affect(target);
         Ability.findAll(target).forEach(function(ability) {
             var toEdit = Ability.CooldownDuration.find(ability);
-            Ability.CurrentCooldown.set(toEdit, Ability.CurrentCooldown.get(toEdit) + 1);
+            Ability.CurrentCooldown.set(toEdit, Ability.CurrentCooldown.get(toEdit) + 2);
         });
         DefendStatus.Apply(target, 15);
         
@@ -158,9 +168,10 @@ class BuffPotions {
     }
 
     static cheetahPotion(card, target) {
+        Unit.affect(target);
         Ability.findAll(target).forEach(function(ability) {
             var toEdit = Ability.CooldownDuration.find(ability);
-            Ability.CurrentCooldown.set(toEdit, Math.max(1, Ability.CurrentCooldown.get(toEdit) - 1));
+            Ability.CurrentCooldown.set(toEdit, 1);
         });
         return Preparations.payCostAndMaybeIncrementUsage(card);
     }
@@ -262,3 +273,22 @@ class OffensiveItems {
 
 }
 WoofRootController.register(OffensiveItems);
+
+
+class DefensiveItems {
+
+    static instantRetreat(card, target) {
+        var battlefield = BattlefieldHandler.find(target);
+        var targetBlock = CellBlock.findByContent(target);
+        var bigCell = BigCoord.extract(targetBlock);
+
+        Preparations.retreatUnit(battlefield, target).then(function(result) {
+            EncounterRules._adjustActionButton(battlefield);
+        });
+
+        return Preparations.payCostAndMaybeIncrementUsage(card);
+    }
+
+
+}
+WoofRootController.register(DefensiveItems);

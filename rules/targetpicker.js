@@ -67,13 +67,21 @@ class TargetPicker {
 
     static standardPickTarget(relativeTo, context, targetFn, preferredFilter) {
         var mainScreen = MainScreenHandler.find(relativeTo);        
-        var current = EffectQueue.findCurrentEvent(mainScreen);
+        var current = EffectQueue.findCurrentQueue(mainScreen);
         if (!current) {
-            current = mainScreen; // We'll find out queue from this.
+            current = mainScreen; // We'll find our queue from this.            
+        }
+
+        // There can only be one.
+        var existing = GameEffect.findParentByType(current, "PickTarget");
+        if (existing) {
+            var params = GameEffect.getParams(existing);
+            // Cancel this one.
+            TargetPicker.cancel(relativeTo, params.context);
+            current = EffectQueue.findCurrentQueue(mainScreen); // Just in case.
         }
 
         var targets = targetFn();
-        if (preferredFilter)
         var preferred = !!preferredFilter ? targets.filter(preferredFilter) : [];
         targets = targets.map(WoofType.buildSelectorFor);
         preferred = preferred.map(WoofType.buildSelectorFor);

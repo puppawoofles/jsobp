@@ -215,10 +215,15 @@ class CardRules {
                 TargetPicker.cancel(oldCard, IdAttr.get(oldCard));
             });
 
+            var cardId = IdAttr.get(card);
+            ActionButton.setPendingAction(handler, cardId);
+
             // Set up our next card.
             CardRules.TargetFn.findInvoke(card, card).then(function(target) {
+                ActionButton.clearPendingActionIf(handler, cardId);
                 return CardRules.InvokeFn.findInvoke(card, card, target);
             }, function() {
+                ActionButton.clearPendingActionIf(handler, cardId);
                 SelectedAttr.set(card, false);
                 return false;
             }).then(function(discard) {

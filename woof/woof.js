@@ -100,7 +100,7 @@ Array.prototype["merge"] = function(mergeFn) {
 			toReturn = this[i];
 			continue;
 		}
-		toReturn = mergeFn(toReturn, this[i]);
+		toReturn = mergeFn(toReturn, this[i], i);
 	}
 
 	return toReturn;
@@ -189,16 +189,131 @@ randomValue = function(arr) {
 	return arr[randomInt(arr.length)];
 }
 
+/**
+ * Adapted from Squirrel Eiserloh's http://eiserloh.net/noise/SquirrelNoise5.hpp
+ * TODO figure out licensing / credit / whatever.  Suck it, RNG!
+ **/
+class Noise {
+	static NOISE = [
+		parseInt("11010010101010000000101000111111", 2),
+		parseInt("10101000100001001111000110010111", 2),
+		parseInt("01101100011100110110111101001011", 2),
+		parseInt("10110111100111110011101010111011", 2),
+		parseInt("00011011010101101100010011110101", 2)
+	];
+
+	// Everything after index 3 is me going off script trying to follow patterns.
+	// This caps out at 6 dimensions.
+	static PRIMES = [1|0, 198491317|0, 6542989|0, 357239|0, 20201|0, 2909|0, 467|0];
+
+	static __seed = null;
+	static SetSeed(int) {
+		// For caching.
+		Noise.__seed = int|0;
+	}
+
+	static __noise(int, opt_seed) {
+		var seed = (opt_seed !== undefined && opt_seed !== null && !isNaN(opt_seed)) ? opt_seed : Noise.__seed || 0;
+		var r = int|0;
+		// Good thing I don't give a shit about perf on this project!
+		for (var i = 0; i < Noise.NOISE.length; i++) {
+			r = (((i % 2) == 0) ? (r * Noise.NOISE[i]) : (r + Noise.NOISE[i]))|0;
+			r = i == 0 ? (r + seed)|0 : r;
+			r = r ^ (r >>> (((i * 2) % 24) + 9))|0;
+		}
+		return r; // Should be good enough.
+	}
+
+	static noise(parts, opt_seed) {
+		var chunk = parts;
+		if (Array.isArray(parts)) {
+			var chunk = parts.merge(function(total, next, index) {
+				return (total + ((next * Noise.PRIMES[index]|0)))|0;
+			});
+		}
+		return Noise.__noise(chunk, opt_seed);
+	}
+
+	static SIGN_BIT = parseInt("10000000000000000000000000000000", 2);
+	static BIG_VALUE = parseInt("01000000000000000000000000000000", 2) * 2;
+	static ONE_OVER_MAX_INT = 1 / 4294967295;
+	static float(parts, opt_seed) {
+		var raw = Noise.noise(parts, opt_seed);
+		if (raw < 0) {
+			// Gotta do some dumb JS shit.
+			raw = raw ^ Noise.SIGN_BIT;  // Remove sign bit as 32-bit int.
+			raw += Noise.BIG_VALUE; // Add sign bit as 64 bit int.
+		}
+		return raw * Noise.ONE_OVER_MAX_INT;
+	}
+
+
+	static intInRange(parts, min, max, opt_seed) {
+		return Math.floor((Noise.float(parts, opt_seed) * (max - min)) + min);
+	}
+
+
+	/** Overly simplistic human distribution test */
+	static testSeed(seed) {
+		var distributions = [
+			[0.0, 0.1],
+			[0.1, 0.2],
+			[0.2, 0.3],
+			[0.3, 0.4],
+			[0.4, 0.5],
+			[0.5, 0.6],
+			[0.6, 0.7],
+			[0.7, 0.8],
+			[0.8, 0.9],
+			[0.9, 1.0]];
+		var buckets = distributions.map(function() { return 0; });
+
+		// 10 million is hopefully enough.
+		for (var i = 0; i < 10000000; i++) {
+			var val = Noise.float(i, seed);
+			for (var j = 0; j < distributions.length; j++) {
+				var range = distributions[j];
+				if (val <= range[1] && val > range[0]) {
+					buckets[j]++;
+					break;
+				}
+			}
+		}
+
+		return buckets;
+	}
+
+
+	// Adapted from stackoverflow somewhere, totally not crypto-friendly, but
+	// that's not the damn point. :D
+	// This is used to generate the seed for a run.
+	static stringHash(str) {
+		var v1 = 0xdeadbeef;  // Yum!!
+		var v2 = 0x41c6ce57;  // What does this taste like?
+		for (var i = 0; i < str.length; i++) {
+			v1 = Math.imul((v1 ^ str.charCodeAt(i)), 2654435761);
+			v2 = Math.imul((v2 ^ str.charCodeAt(i)), 1597334677);
+		}
+		v1 = Math.imul(v1 ^ (v1 >>> 16), 2246822507) ^ Math.imul(v2 ^ (v2 >>> 13), 3266489909);
+		v2 = Math.imul(v2 ^ (v2 >>> 16), 2246822507) ^ Math.imul(v1 ^ (v1 >>> 13), 3266489909);		
+		return Noise.noise(v1, v2);
+	}
+
+}
+
 
 /** Super barebones template inflation class. */
 class Templates {
 	
-	static inflate(name, opt_subMap) {
+	static inflate(nameOrElt, opt_subMap) {
 		// Empty map otherwise.
 		var substitutions = opt_subMap || {};
-		
-		var elt = qs(document, ".templates > template[name='" + name + "']");
-		if (!elt) throw boom("Unknown template: " + name);
+
+		var elt = nameOrElt;
+		if (!isElement(elt)) {		
+			elt = qs(document, ".templates > template[name='" + elt + "']");
+			if (!elt) throw boom("Unknown template: " + nameOrElt);
+		}
 		var clone = elt.cloneNode(true);
 		var html = clone.innerHTML;
 		var html2 = html;
@@ -788,6 +903,7 @@ class WoofType {
 		return WoofType.buildSelectorFrom(type, id);
 	}
 }
+WoofRootController.register(WoofType);
 
 /** Used for objects used to store relative scores of things. */
 class Counters {
@@ -1084,6 +1200,14 @@ class IntAttr {
 		return matchParent(element, IntAttr.selector(config));
 	}
 
+	static findUpGet(config, element, defaultValue) {
+		var found = IntAttr.findUp(config, element);
+		if (!found) return defaultValue || null;
+		var result = IntAttr.get(config, found);
+		if (result == null) return defaultValue || null;;
+		return result;
+	}
+
 	static get(config, element) {
 		return parseInt(element.getAttribute(config));
 	}
@@ -1253,6 +1377,11 @@ class IdAttr {
 	static generateAll(elts) {
 		elts.forEach(elt => IdAttr.generate(elt));
 	}
+
+	static eraseRecursive(elt) {
+		IdAttr.set(elt);
+		qsa(elt, IdAttr.buildSelector()).forEach(IdAttr.set);
+	}
 	
 	static generate(elt) {
 		var current = IdAttr.get(elt);
@@ -1263,6 +1392,9 @@ class IdAttr {
 	}
 		
 	static buildSelector(value) {
+		if (value === undefined) {
+			return '[w-id]';
+		}
 		return '[w-id="' + value + '"]';
 	}
 }

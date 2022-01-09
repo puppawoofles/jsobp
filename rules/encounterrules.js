@@ -101,6 +101,7 @@ class EncounterRules {
     static Battlefield = new ScopedAttr("battlefield", StringAttr);
     static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
     static EndConditions = new ScopedAttr("end-condition-fns", ListAttr);
+    static MaxPlayerUnits = new ScopedAttr("max-player-units", IntAttr);
 
     /**
      * Populates the screen.
@@ -118,7 +119,8 @@ class EncounterRules {
         Screen.showScreen(parentScreen, encounter);
 
         var defaultEncounter = Utils.bfind(handler, 'body', 'default-encounter');
-        var endConditions = EncounterRules.EndConditions.get(defaultEncounter);
+        var endConditions = EncounterRules.EndConditions.findGet(defaultEncounter);
+        var maxPlayerUnits = EncounterRules.MaxPlayerUnits.findGet(defaultEncounter);
 
         var battlefield = BattlefieldHandler.inflateIn(EncounterScreenHandler.findBattlefieldContainer(encounter));
 
@@ -135,9 +137,14 @@ class EncounterRules {
         // Update initial facing.
         EncounterRules.setDefaultFacing(encounter);
 
+        // Find new end conditions.
         var newEndConditions = EncounterRules.EndConditions.findGet(encounterBp);
         endConditions.extend(newEndConditions);
         EncounterRules.EndConditions.set(encounter, endConditions);
+
+        // Set max player unit count.
+        maxPlayerUnits = EncounterRules.MaxPlayerUnits.findGet(encounterBp) || maxPlayerUnits;
+        EncounterRules.MaxPlayerUnits.set(encounter, maxPlayerUnits);
 
         var teams = [Teams.Player, Teams.Enemy];
         InitiativeOrderAttr.put(encounter, teams);
@@ -329,24 +336,19 @@ class EncounterRules {
         }
     }
 
-    static OnCardSelected(evt, handler) {
-        var cards = CardHud.selectedCards(handler);
-        if (cards.length > 0) {
-            ActionButton.setMode(handler, ActionMode.Cancel);
-        } else {
-            EncounterRules._adjustActionButton(handler);
-        }
-    }
+    static OnActionButtonPendingAction(evt, handler) {
+        var existing = evt.detail.oldValue;
+        var updated = evt.detail.newValue;
 
-    static OnCardRemove(evt, handler) {
-        var cards = CardHud.selectedCards(handler);
-
-        if (EncounterRules.IsGo.get(handler)) return;
-        if (cards.length > 0) {
-            ActionButton.setMode(handler, ActionMode.Cancel);
-        } else {
-            EncounterRules._adjustActionButton(handler);
+        if (existing) {
+            TargetPicker.cancel(handler, existing);
         }
+
+        if (!updated) {
+            EncounterRules._adjustActionButton(handler);
+        } else {
+            ActionButton.setMode(handler, ActionMode.Cancel);
+        }    
     }
 
     static OnGiveUp(evt, handler) {
@@ -391,6 +393,56 @@ class EncounterRules {
         if (minVolleysLeft == 0 && !!PendingOpAttr.getPendingEffect(actionButton)) {
             PendingOpAttr.returnTicketOn(ActionButton.find(handler));
         }
+    }
+
+    static PendingAction = new ScopedAttr('pending-action', StringAttr);
+    static OnGhostUnitClick(event, handler) {
+        var battlefield = BattlefieldHandler.find(handler);
+        var unit = Unit.findUp(event.target);
+        // If this is an active target, we don't want to prioritize this thingie.
+        if (WoofType.has(unit, "Target")) return;
+
+        var id = IdAttr.generate(unit) + "ghostmove";
+        var existing = ActionButton.setPendingAction(battlefield, id);
+        if (existing) {
+            TargetPicker.cancel(battlefield, existing);
+        }
+        ActionButton.setMode(handler, ActionMode.Cancel);
+
+        CardHud.unselectCards(handler);
+
+        var unitPrefs = Unit.getPreferredLocations(unit);
+        var root = BattlefieldHandler.findGridContainer(battlefield);
+
+        // TODO: This is copy/pasted between here and UnitRules.  Figure out a better
+        // home for some of this logic.
+        return TargetPicker.standardPickTarget(battlefield, id,
+                function() {
+                    // Check total player capacity first.
+                    var blocks = CellBlock.findAllByTeam(root, Teams.Player).filter(function(block) {
+                        // Filter out blocks that can't hold all these limes.
+                        if (!EncounterRules.MaxPlayerUnits.has(block)) return true;
+                        return Unit.findTeamInBlock(block, Teams.Player).map(Unit.capacitySize).merge(sumMerge) < EncounterRules.MaxPlayerUnits.get(block);
+                    });
+
+                    // For each of these blocks, return cells that are actually empty.
+                    return blocks.map(Cell.findAllInBlock).flat().filter(function(cell) {
+                        var coord = UberCoord.extract(cell);
+                        return !BattlefieldHandler.unitAt(battlefield, coord);
+                    }).extend([unit]);
+                },
+                function(elt) {
+                    return WoofType.has(elt, 'Cell') && unitPrefs.contains(Grid.getEffectiveTile(elt));
+                }).then(function(target) {
+                    if (target) {
+                        if (target == unit) {
+                            WoofType.remove(unit, "GhostUnit");
+                        } else {
+                            SmallCoord.write(unit, SmallCoord.extract(target));
+                        }
+                    }
+                    ActionButton.clearPendingActionIf(battlefield, id);        
+                });
     }
 
     static CheckAndTriggerEnd(elt) {
@@ -442,7 +494,16 @@ class EncounterRules {
     });
 
     static OnCancel(evt, handler) {
+        // Unselect cards.
         CardHud.unselectCards(handler);
+
+        // Clear any other action.
+        var pending = ActionButton.getPendingAction(handler);
+        if (pending) {
+            TargetPicker.cancel(handler, pending);
+            ActionButton.setPendingAction(handler);
+        }
+        EncounterRules._adjustActionButton(handler);
     }
 }
 WoofRootController.register(EncounterRules);
@@ -472,6 +533,10 @@ class RoundRules {
             if (result) {
                 GameEffect.mergeResults(results, result);
             }
+            // Clean up ghost units.
+            WoofType.findAll(battlefield, "GhostUnit").forEach(function(unit) {
+                WoofType.remove(unit, "GhostUnit");
+            })
 
             // Short-circuit if the combat is over.
             var result = EncounterRules.GetEncounterResult(encounter);

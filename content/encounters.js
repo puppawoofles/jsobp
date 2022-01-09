@@ -1,6 +1,17 @@
 class Encounters {
 
-    static rats(encounter) {
+    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
+    static __encounter(innerFn) {
+        return function(root) {
+            var enc = innerFn(root);
+            NoiseCounters.inc(NC.Encounter);
+            Encounters._rng.invalidate();
+            return enc;
+        }
+    }
+
+
+    static rats = Encounters.__encounter(function(encounter) {
         var battlefield = BattlefieldHandler.find(encounter);
         var blocks = CellBlock.findAllByTeam(encounter, Teams.Enemy).filter(function(block) {
             // Only enabled blocks plz.
@@ -9,8 +20,10 @@ class Encounters {
         var cells = blocks.map(function(block) {
             return Cell.findAll(block);
         }).flat();
-        cells.shuffle();
-        var toPutRatsIn = cells.splice(0, 8);        
+
+        var toPutRatsIn = times(8).map(function() {
+            return Encounters._rng.randomValueR(cells);
+        });
 
         toPutRatsIn.forEach(function(cell) {
             var coord = UberCoord.extract(cell);
@@ -21,14 +34,12 @@ class Encounters {
                     UberCoord.small(coord));
             RatAI.Apply(rat, 1);
         });
-    }
+    });
 
-    static golems(encounter) {
+    static golems = Encounters.__encounter(function(encounter) {
         var battlefield = BattlefieldHandler.find(encounter);
         var enemyBlocks = CellBlock.findAllByTeam(encounter, Teams.Enemy);
-        enemyBlocks.shuffle();
-        var enemyBlock = enemyBlocks[0];
-
+        var enemyBlock = Encounters._rng.randomValueR(enemyBlocks);
         var coords = Grid.fromEffectiveToReal(enemyBlock, Activations.back_row);
         coords.forEach(function(coord) {
             var golem = Units.golem();
@@ -38,9 +49,9 @@ class Encounters {
 
             RatAI.Apply(golem, 1);
         });
-    }
+    });
 
-    static jimmyTheRatKing(encounter) {
+    static jimmyTheRatKing = Encounters.__encounter(function(encounter) {
         var battlefield = BattlefieldHandler.find(encounter);
         var blocks = CellBlock.findAllByTeam(encounter, Teams.Enemy);
         var jimmyBlock = blocks.sort(function(a, b) {
@@ -61,6 +72,6 @@ class Encounters {
         var jimmy = Units.jimmyTheRatKing();
         BattlefieldHandler.addUnitTo(battlefield, jimmy, BigCoord.extract(jimmyBlock), [1, 0]);
         JimmyAI.Apply(jimmy, 1);
-    }
+    });
 }
 WoofRootController.register(Encounters);

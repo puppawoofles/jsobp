@@ -24,7 +24,8 @@ class Units {
         "🌔": ["🌓", "🌔", "🌕"]
     };
 
-    static _all_units = []
+    static _all_units = [];
+    static _all_names = [];
 
     static _unit_basic_attacks = ["strike", "throw", "shoot"];
 
@@ -34,6 +35,8 @@ class Units {
         "💧": ["distract"],
         "⛰️": ["defend", "protect"]
     };
+
+    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
 
     static _generate_units() {
         if (Units._all_units.length > 0) {
@@ -47,12 +50,10 @@ class Units {
                 }       
             }    
         }
-        Units._all_units.shuffle();
-    }
-
-    static _next_unit() {
-        Units._generate_units();
-        return Units._all_units.shift();
+        
+        Units._all_names = qsa(document, 'name-option').map(function(elt) {
+            return elt.getAttribute('value');
+        });
     }
 
     static _determine_wombo(month, day) {
@@ -66,26 +67,41 @@ class Units {
 
     static _starting_preparation = [
         "barricade",
+        "minorDamagePot",
         "throwingknife",
         "turtlePot",
         "cheetahPot",
         "minorDefensePot",
         "blinkCrystal", 
-        "minorDamagePot",
         "fireBomb",
         "retreatCloak"
     ];
 
+    static __unit(innerFn) {
+        return function(root) {            
+            var unit = innerFn(root);
+            // Increment our unit counter.
+            NoiseCounters.inc(NC.Unit);
+            // Invaldate our RNG to reset it between units.
+            Units._rng.invalidate();
+            return unit;
+        }
+    }
+
     static Name = new ScopedAttr("name", StringAttr);
-    static sample_hero(rootElt) {
-        var deets = Units._next_unit();
+    static sample_hero = Units.__unit(function (rootElt) {
+        Units._generate_units();
+
+        var idx = Units._rng.nextIdx(Units._all_units);
+        var deets = Units._all_units.splice(idx, 1)[0];
         var matcher = deets[0] + deets[1] + deets[2];
         var matched = Utils.bfind(rootElt, 'body', 'silly-unit[matcher="' + matcher + '"]');
         var name;
         if (!!matched) {
             name = Units.Name.get(matched);
         } else {
-            name = "Unit-" + Units.__nameCounter++;
+            var idx = Units._rng.nextIdx(Units._all_names);
+            name = Units._all_names.splice(idx, 1)[0];
         }
 
         var unit = Unit.inflate({
@@ -107,15 +123,12 @@ class Units {
         // Generate 2 abilities.
         var abilities = Units.generateAbilitySlots(2, volley_options);
         var skills = [
-            randomValue(Units._unit_basic_attacks),
-            randomValue(Units._unit_skills[deets[1]])
+            Units._rng.randomValue(Units._unit_basic_attacks),
+            Units._rng.randomValue(Units._unit_skills[deets[1]]),
         ];
-        skills.shuffle();
-        for (var i = 0; i < abilities.length; i++) {
-            if (skills[i]) {
-                Ability.applySkill(rootElt, abilities[i], skills[i]);
-            }
-        }
+
+        Ability.applySkill(rootElt, abilities[0], Units._rng.randomValueR(skills));
+        Ability.applySkill(rootElt, abilities[1], skills[0]);
 
         abilities.forEach(function(a) {
             script.appendChild(a);
@@ -128,7 +141,7 @@ class Units {
         TeamAttr.set(unit, Teams.Player);
 
         return unit;
-    }
+    });
 
     static barricade(rootElt) {
         var unit = Unit.inflate({
@@ -151,7 +164,7 @@ class Units {
         return unit;
     }
 
-    static rat(rootElt) {
+    static rat = Units.__unit(function(rootElt) {
         var unit = Unit.inflate({
             name: "Rat",
             icon: "🐀",
@@ -178,10 +191,10 @@ class Units {
         Units.UnitLabel.set(unit, "rat");
 
         return unit;
-    }
+    });
     
 
-    static golem(rootElt) {
+    static golem = Units.__unit(function(rootElt) {
         var unit = Unit.inflate({
             name: "Golem",
             icon: "🗿",
@@ -211,10 +224,10 @@ class Units {
         // Golems have no blood.  You're welcome, Jake.
         BaseStatus.ForbiddenStatus.set(unit, ["agility", "bleed"]);
         return unit;
-    }
+    });
 
 
-    static jimmyTheRatKing(rootElt) {
+    static jimmyTheRatKing = Units.__unit(function(rootElt) {
         var jimmy = Unit.inflate({
             name: "Jimmy the Rat King",
             icon: "🤴",
@@ -246,13 +259,13 @@ class Units {
         Units.UnitLabel.set(jimmy, "jimmy");
 
         return jimmy;
-    }
+    });
 
     static generateAbilitySlots(count, volley_options) {
         var abilities = [];
         var abilities_by_volley = {};
         while (abilities.length < count) {
-            var volley = randomValue(volley_options);
+            var volley = Units._rng.randomValue(volley_options);
             if (!abilities_by_volley[volley]) {
                 var ability = Ability.inflate({
                     volley: volley

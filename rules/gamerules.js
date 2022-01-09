@@ -9,6 +9,8 @@ class GameRules {
         // Put up the run screen.
         Screen.showScreen(handler, runScreen);
 
+        NoiseCounters.setCounter('seed', params.seed);
+
         // Next up, generate the starter deck.
         var starterDeck = [
             Units.sample_hero(handler),
@@ -81,6 +83,11 @@ class GameRules {
      static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
      static InvokeFn = new ScopedAttr("assignment-invoke-fn", FunctionAttr);
      static NewDay = GameEffect.handle(function(handler, effect, params) {
+         // Set our noise counters for dat sweet sweet RNGsus
+        NoiseCounters.setCounter(NC.Day, (params.act|0 << 4) + params.day);
+        NoiseCounters.setCounter(NC.Unit, 0);
+        NoiseCounters.setCounter(NC.Event, 0);
+
         var runScreen = RunScreen.find(handler);
         var container = qs(runScreen, WoofType.buildSelector("ScreenWrapper"));
 
@@ -233,6 +240,7 @@ class GameRules {
 
                 return GameEffect.createResults(effect);
             }
+            // TODO: Noise counter for events.
             
             var t = invokeFns.shift();
             return GameRules.InvokeFn.invoke(t.invokeFn, t.elt).then(function(result) {

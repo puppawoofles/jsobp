@@ -944,17 +944,21 @@ class RoundRules {
     }
 
     static ActivateGroupUnits(handler, effect, params) {
-        return params.blorbs.map(function(blorb) {            
+        return params.blorbs.filter(function(blorb) {
+            return !!blorb.unit;
+        }).map(function(blorb) {
             return blorb.unit;
-        });
+        })
     }
 
     static ActivateGroupBanner(handler, effect, params) {
         // Normalize our blorbs back to elements.
         var banner = Templates.inflate('combo_banner');
         params.blorbs.forEach(function(b) {
-            banner.appendChild(Unit.cloneAppearance(b.unit));
-            banner.appendChild(effect.ownerDocument.createTextNode(Ability.Label.findGet(b.ability)));
+            if (!!b.unit) {
+                banner.appendChild(Unit.cloneAppearance(b.unit));
+                banner.appendChild(effect.ownerDocument.createTextNode(Ability.Label.findGet(b.ability)));
+            }
         });
         return banner;
     } 

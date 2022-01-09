@@ -1,5 +1,15 @@
 class Battlefields {
 
+    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
+
+    static __b(innerFn) {
+        return function(...args) {
+            var toReturn = innerFn.apply(this, args);
+            Battlefields._rng.invalidate();
+            return toReturn;
+        };
+    }
+
     static BattlefieldFn = new ScopedAttr('battlefield-fn', FunctionAttr);
     static Generate(encounter, bp) {
         Battlefields.BattlefieldFn.findInvoke(bp, encounter, bp);
@@ -11,7 +21,7 @@ class Battlefields {
     static Property = new ScopedAttr('property', StringAttr);
     static Value = new ScopedAttr('value', StringAttr);
 
-    static Standard(battlefield, bp) {
+    static Standard = Battlefields.__b(function(battlefield, bp) {
         var generate = qs(bp, 'generate');
         Battlefields.Fn.invoke(generate, battlefield, generate);
 
@@ -29,7 +39,7 @@ class Battlefields {
                 block.setAttribute(Battlefields.Property.get(modifier), Battlefields.Value.get(modifier));
             });
         });
-    }
+    });
 
     /** Generate functions */
     static Width = new ScopedAttr('width', IntAttr);
@@ -47,8 +57,9 @@ class Battlefields {
     static labelSetModifierRandomSubset(modifierElt, labels) {
         var subsetSize = Battlefields.SubsetSize.get(modifierElt);
         var labelClone = Array.from(labels);
-        labelClone.shuffle();
-        return labelClone.slice(0, Math.min(subsetSize, labelClone.length));
+        return times(Math.min(subsetSize, labelClone.length)).map(function() {
+            return Battlefields._rng.randomValueR(labelClone);
+        });
     }
 }
 WoofRootController.register(Battlefields);

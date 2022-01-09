@@ -189,6 +189,10 @@ randomValue = function(arr) {
 	return arr[randomInt(arr.length)];
 }
 
+times = function(int) {
+	return a(Array(int).keys());
+}
+
 /**
  * Adapted from Squirrel Eiserloh's http://eiserloh.net/noise/SquirrelNoise5.hpp
  * TODO figure out licensing / credit / whatever.  Suck it, RNG!
@@ -254,7 +258,7 @@ class Noise {
 
 
 	/** Overly simplistic human distribution test */
-	static testSeed(seed) {
+	static testSeed(seed, prefixParts) {
 		var distributions = [
 			[0.0, 0.1],
 			[0.1, 0.2],
@@ -270,7 +274,12 @@ class Noise {
 
 		// 10 million is hopefully enough.
 		for (var i = 0; i < 10000000; i++) {
-			var val = Noise.float(i, seed);
+			var val;
+			if (prefixParts) {
+				val = Noise.float(prefixParts.clone().extend([i]), seed);
+			} else {
+				val = Noise.float(i, seed);
+			}
 			for (var j = 0; j < distributions.length; j++) {
 				var range = distributions[j];
 				if (val <= range[1] && val > range[0]) {
@@ -298,7 +307,6 @@ class Noise {
 		v2 = Math.imul(v2 ^ (v2 >>> 16), 2246822507) ^ Math.imul(v1 ^ (v1 >>> 13), 3266489909);		
 		return Noise.noise(v1, v2);
 	}
-
 }
 
 
@@ -1480,6 +1488,115 @@ class ScopedAttr {
 		Utils.classMixin(this, baseClass, tag);
 	}
 }
+
+
+
+/** Used to track noise input parts. */
+class NoiseCounters {
+	static Name = new ScopedAttr('name', StringAttr);
+	static Value = new ScopedAttr('value', IntAttr);
+	static findCounters(...names) {
+		var root = bf(document, 'noise-counters');
+		return names.map(function(name) {
+			var elt = NoiseCounters.Name.findDown(root, name);
+			if (!elt) {
+				elt = Templates.inflateIn('noise_counter', root, {
+					NAME: name,
+					VALUE: 0
+				});
+			}
+			return NoiseCounters.Value.findGet(elt);
+		});
+	}
+
+	static setCounter(name, value) {
+		var root = bf(document, 'noise-counters');
+		var elt = NoiseCounters.Name.findDown(root, name);
+		if (!elt) {
+			elt = Templates.inflateIn('noise_counter', root, {
+				NAME: name,
+				VALUE: value
+			});
+		} else {
+			NoiseCounters.Value.set(elt, value);
+		}
+	}
+
+	static getIncLast(...names) {
+		var toReturn = NoiseCounters.findCounters.apply(this, names);
+		NoiseCounters.setCounter(names[names.length - 1], toReturn[toReturn.length - 1] + 1);
+		return toReturn;
+	}
+
+	static getImplicit(value, ...names) {
+		return NoiseCounters.findCounters.apply(this, names).extend([value]);
+	}
+
+	static get(name) {
+		return NoiseCounters.findCounters(name)[0];
+	}
+
+	static inc(name) {
+		var value = NoiseCounters.get(name);
+		NoiseCounters.setCounter(name, value + 1);
+	}
+}
+
+class SRNG {
+	constructor(seed, implicitFirst, ...names) {
+		// First one is always the seed.
+		this.seedName = seed;
+		this.implicitFirst = implicitFirst;
+		this.names = names;
+		this.needsRefresh = true;
+	}
+
+	invalidate() {
+		this.needsRefresh = true;
+	}
+
+	__refresh() {
+		if (!this.needsRefresh) return;
+		this.seed = NoiseCounters.get(this.seedName);
+		this.values = this.names.map(function(name) {
+			return NoiseCounters.get(name);
+		});
+		if (this.implicitFirst) this.values.unshift(0);
+		this.needsRefresh = false;
+	}
+
+	__tick() {
+		this.values[0]++;
+		if (!this.implicitFirst) {
+			NoiseCounters.set(this.names[0], this.values[0]);
+		}
+	}
+
+	next() {
+		this.__refresh();
+
+		var toReturn = Noise.float(this.values, this.seed);
+		this.__tick();
+		return toReturn;
+	}
+
+	nextIdx(forArr) {
+		this.__refresh();
+
+		var toReturn = Noise.intInRange(this.values, 0, forArr.length, this.seed);
+		this.__tick();
+		return toReturn;
+	}
+
+	randomValue(forArr) {
+		return forArr[this.nextIdx(forArr)];
+	}
+
+	randomValueR(forArr) {
+		return forArr.splice(this.nextIdx(forArr), 1)[0];
+	}
+}
+
 
 class AbstractDomController {
 	static Tag = new ScopedAttr('tag', StringAttr);

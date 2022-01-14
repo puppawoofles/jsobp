@@ -7,16 +7,10 @@ class RetreatStatus {
                     return count <= 0;
                 });
 
-        var results = [];
-        var retreatFn = function(success, result) {
-            if (result) {
-                GameEffect.mergeResults(results, result);
-            }
-
+        var retreatFn = function(result) {
             if (retreats.length == 0) {
                 // We're done.
-                return GameEffect.createResults(effect, {
-                }, results);
+                return GameEffect.createResults(effect);
             }
 
             var retreat = retreats.shift();
@@ -25,7 +19,7 @@ class RetreatStatus {
 
             return GameEffect.push(effect, GameEffect.create("UnitRetreat", {
                 unit: unit
-            })).then(retreatFn.bind(this, true), retreatFn.bind(this, false));
+            }, handler)).then(retreatFn.bind(this, true), retreatFn.bind(this, false));
         }
 
         return Promise.resolve().then(retreatFn);
@@ -129,22 +123,18 @@ class BleedStatus {
     static OnAfterUseAbility = GameEffect.handle(function(handler, effect, params, result) {
         for (var i = 0; i < params.components.length; i++) {
             var unit = params.components[i].unit;
-            var results = [];
             var stacks = BleedStatus.StackCount(unit);
             if (stacks) {
                 return GameEffect.push(effect, GameEffect.create("TakeDamage", {
                     target: params.unit,
                     amount: stacks,
                     source: BleedStatus.Get(unit)
-
-                })).then(function(result) {
+                }, handler)).then(function() {
                     if (BleedStatus.StackCount(unit) == 1) {
                         BleedStatus.Remove(unit);
                     } else {
                         BleedStatus.SubtractStacks(unit, Math.floor(stacks / 2));
-                    }                
-                    GameEffect.mergeResults(results, result);
-                    return GameEffect.createResults(effect, {}, results)
+                    }
                 });
             }
         }

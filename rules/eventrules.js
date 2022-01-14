@@ -46,8 +46,8 @@ class EventRules {
                     eventScreen: screen,
                     holder: holder,
                     vignette: currentState
-                })).then(function(result) {
-                    return result.result;
+                }, handler)).then(function(result) {
+                    return result.result; // Normalize!
                 });
             } else if (stateType == 'encounter') {
                 // Move all units into the deck.
@@ -69,7 +69,7 @@ class EventRules {
                     container: holder,
                     encounterBp: bp,
                     deck: qs(screen, "deck")
-                })).then(function(result) {
+                }, handler)).then(function(result) {
                     // Clean up after the encounter.  Sort cards back into inventories and units back into their holder.
                     qsa(screen, '[wt~=Card]').forEach(function(card) {
                         if (Card.Ephemeral.get(card)) {
@@ -94,7 +94,7 @@ class EventRules {
                     });
 
                     // Oh baby, such many results.
-                    return result.result.result;
+                    return result.result;
                 });
             } else {
                 Logger.err("Unknown state type on state", stateType, EventRules.Name.get(currentState));

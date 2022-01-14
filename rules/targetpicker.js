@@ -97,8 +97,8 @@ class TargetPicker {
                 priority: preferred,
                 context: context
             })).then(function(result) {
-                if (result.result.target) {
-                    resolve(result.result.target);
+                if (result.target) {
+                    resolve(result.target);
                 }
                 reject();
             });

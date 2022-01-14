@@ -577,6 +577,15 @@ class Ability {
     static findSkill(relativeTo, skillLookup) {
         return Utils.bfind(relativeTo, "body", "skill-blueprint[name='" + skillLookup + "']");        
     }
+
+    static Fallback = new ScopedAttr("fallback", StringAttr);
+    static findFallback(relativeTo, skillLookup) {
+        var base = Ability.findSkill(relativeTo, skillLookup);
+        if (Ability.Fallback.has(base)) {
+            return Ability.findSkill(relativeTo, fallback);
+        }
+        return base;
+    }
     
     static findSkillFor(ability) {
         var attr = Ability.Skill.get(ability);

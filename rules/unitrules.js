@@ -53,10 +53,13 @@ class UnitRules {
         return false;
     }
 
+    static Fallback = new ScopedAttr('fallback', StringAttr);
+
     /**
      * {
      *     units: [ Unit ref, ...],
      *     ability: Ability ref,
+     *     fallback: bool,
      *     comboUnits: [{ unit: unitRef, ability: abilityRef}],
      *     mana: The mana that was spent on this skill.
      *     components: [{
@@ -73,7 +76,7 @@ class UnitRules {
         var ability = params.ability;
         var skill = SkillAttr.get(ability);
         
-        var bp = Ability.findSkill(handler, skill);
+        var bp = !params.fallback ? Ability.findSkill(handler, skill) : Ability.findFallback(handler, skill);
         var targetTravel = Ability.getTargetTravel(bp);
         var overhead = Ability.getOverhead(bp);
 
@@ -188,7 +191,7 @@ class UnitRules {
             target: params.target,
             source: params.source,
             amount: newDamage
-        }));
+        }, handler));
     });
 
     /**
@@ -203,7 +206,6 @@ class UnitRules {
 
         var target = params.target;
         var amount = params.amount;
-        var results = [];
 
         var current = Unit.currentHP(target);
         Unit.reduceHP(target, amount);
@@ -216,17 +218,17 @@ class UnitRules {
         if (newCurrent == 0 && params.immediateDeath) {
             promise = GameEffect.push(effect, GameEffect.create("UnitDeath", {
                 unit: target
-            }));
+            }, handler));
         }
         
 
-        return promise.then(function(result) {
+        return promise.then(function() {
             return GameEffect.createResults(effect, {
                 unit: target,
                 damageTaken: damageTaken,
                 finalHP: newCurrent,
                 overkill: amount - damageTaken
-            }, results);    
+            });    
         });
     });
 
@@ -235,7 +237,7 @@ class UnitRules {
     }
 
     static TakeDamageAmount(handler, event, params, result) {
-        return result.result.damageTaken || null;
+        return result.damageTaken || null;
     }
 
     /**
@@ -297,7 +299,7 @@ class UnitRules {
                     return GameEffect.push(effect, GameEffect.create("UnitCollision", {
                         firstUnit: current,
                         secondUnit: unitAt,
-                    })).then(pushFn);
+                    }, handler)).then(pushFn);
                 } else {
                     // We collided with the "wall", which means there's nobody to transfer
                     // the push into.  In this case, we want to pop back up.
@@ -306,7 +308,7 @@ class UnitRules {
                     }
                     return GameEffect.push(effect, GameEffect.create("UnitCollision", {
                         firstUnit: current,
-                    })).then(pushFn);
+                    }, handler)).then(pushFn);
                 }
             } else {
                 // Push!
@@ -319,12 +321,12 @@ class UnitRules {
                 return GameEffect.push(effect, GameEffect.create("ShiftUnit", {
                     unit: current,
                     destination: cellAt
-                })).then(pushFn);
+                }, handler)).then(pushFn);
             }
         };
 
         return Promise.resolve(pushFn()).then(function() {
-            return GameEffect.createResults(effect, {});
+            return GameEffect.createResults(effect);
         });
     });
 
@@ -343,13 +345,11 @@ class UnitRules {
     static UnitCollision = GameEffect.handle(function(handler, effect, params) {
         var unit = params.firstUnit;
         var secondUnit = params.secondUnit || null;
-        var results = []
 
         return GameEffect.push(effect, GameEffect.create("Attack", {
             target: unit,
             amount: !!secondUnit ? Unit.mass(secondUnit) : Math.floor(Unit.mass(unit) / 2)
-        })).then(function(result) {
-            GameEffect.mergeResults(results, result);
+        }, handler)).then(function(result) {
             if (!secondUnit) {
                 return;
             }
@@ -357,11 +357,9 @@ class UnitRules {
             return GameEffect.push(effect, GameEffect.create("Attack", {
                 target: secondUnit,
                 amount: Unit.mass(unit)
-            })).then(function(secondResult) {
-                GameEffect.mergeResults(results, secondResult);
-            });
+            }, handler));
         }).then(function() {
-            return GameEffect.createResults(effect, {}, results);
+            return GameEffect.createResults(effect);
         });
     });
 
@@ -377,7 +375,7 @@ class UnitRules {
         // Remove the unit.
         unit.parentNode.removeChild(unit);
 
-        return GameEffect.createResults(effect, {});
+        return GameEffect.createResults(effect);
     });
 
     static UnitDeathUnit(handler, event, params) {
@@ -398,7 +396,7 @@ class UnitRules {
             card: card
         }, effect);
 
-        return GameEffect.createResults(effect, {});
+        return GameEffect.createResults(effect);
     })
 
     /**
@@ -457,10 +455,10 @@ class UnitRules {
         return GameEffect.push(effect, GameEffect.create("ShiftUnit", {
             unit: params.unit,
             destination: location.cell
-        })).then(function(result) {
+        }, handler)).then(function() {
             return GameEffect.createResults(effect, {
                 distanceMoved: location.distanceFromStart
-            }, [result]);
+            });
         });       
     })
 
@@ -476,7 +474,7 @@ class UnitRules {
         Unit.affect(unit);
 
         SmallCoord.write(unit, SmallCoord.extract(cell));
-        return GameEffect.createResults(effect, {});
+        return GameEffect.createResults(effect);
     })
 
 

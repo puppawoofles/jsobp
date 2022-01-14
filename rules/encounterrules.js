@@ -201,13 +201,13 @@ class EncounterRules {
             unitCount--;
             return GameEffect.push(effect, GameEffect.create("DrawCard", {
                 from: unitCount >= 0 ? "top" : "random"
-            })).then(drawFn);
+            }, handler)).then(drawFn);
         };
 
         // Next up, we want to loop until our end condition is met.
         var roundCounter = 1;
         var checkFn = function(result) {
-            if (result && result.result.giveUp) {
+            if (result && result.giveUp) {
                 // Womp womp.  Do something here.
                 return {
                     win: false,
@@ -221,7 +221,7 @@ class EncounterRules {
 
             return GameEffect.push(effect, GameEffect.create("Round", {
                 round: roundCounter++
-            })).then(checkFn);
+            }, handler)).then(checkFn);
         };
 
         return Promise.resolve(drawFn()).then(checkFn).then(function(winOrLoss) {
@@ -261,7 +261,7 @@ class EncounterRules {
     });
 
     static EndOfEncounterBanner(handler, effect, params, result) {        
-        switch (result.result.result) {
+        switch (result.result) {
             case "victory":
                 return "You win!";
             case "wipe":
@@ -354,9 +354,9 @@ class EncounterRules {
     static OnGiveUp(evt, handler) {
         var encounter = EncounterScreenHandler.find(handler);
         var effect = PendingOpAttr.getPendingEffect(encounter);
-        GameEffect.setResult(effect, GameEffect.createResults(effect, {
+        GameEffect.setResult(effect, {
             giveUp: true
-        }));
+        });
         PendingOpAttr.returnTicketOn(encounter);
     }
 
@@ -376,7 +376,7 @@ class EncounterRules {
         GameEffect.push(effect, GameEffect.create("PlayRound", {
             minimumVolleys: 8
         })).then(function() {
-            GameEffect.setResult(effect, GameEffect.createResults(effect, {}));
+            GameEffect.setResult(effect);
             EncounterRules.IsGo.set(encounter, false);
             PendingOpAttr.returnTicketOn(encounter);
         });
@@ -451,7 +451,7 @@ class EncounterRules {
         if (result) {
             // Neat!  We want to call it here.  End the round!
             var effect = PendingOpAttr.getPendingEffect(encounter);            
-            GameEffect.setResult(effect, GameEffect.createResults(effect, {}));
+            GameEffect.setResult(effect);
             PendingOpAttr.returnTicketOn(encounter);
         }
     }
@@ -529,10 +529,7 @@ class RoundRules {
         var roundPanel = RoundPanel.find(handler);
         var results = [];
 
-        var baseFn = function(result) {
-            if (result) {
-                GameEffect.mergeResults(results, result);
-            }
+        var baseFn = function() {
             // Clean up ghost units.
             WoofType.findAll(battlefield, "GhostUnit").forEach(function(unit) {
                 WoofType.remove(unit, "GhostUnit");
@@ -541,28 +538,27 @@ class RoundRules {
             // Short-circuit if the combat is over.
             var result = EncounterRules.GetEncounterResult(encounter);
             if (result) {
-                return GameEffect.createResults(effect, {
-                }, results);                
+                return GameEffect.createResults(effect);                
             }
 
             var minVolleysLeft = VolleyCounter.minVolleysLeft(handler);            
             var goodGuys = EncounterRules._findPlayerUnits(encounter);
             if (goodGuys.length == 0) {
-                return GameEffect.createResults(effect, {}, results);                    
+                return GameEffect.createResults(effect);                    
             }
 
             if (minVolleysLeft <= 0 && EncounterRules.IsStop.get(encounter)) {
-                return GameEffect.createResults(effect, {}, results);
+                return GameEffect.createResults(effect);
             }
 
             return Promise.resolve().then(function() {
                 return GameEffect.push(effect, GameEffect.create("Volley", {
                     volleyCount: null
-                })).then(baseFn.bind(this), baseFn.bind(this));    
+                }, handler)).then(baseFn);    
             });
         };
 
-        return Promise.resolve(null).then(baseFn.bind(this), baseFn.bind(this));
+        return Promise.resolve().then(baseFn);
     });
 
 
@@ -716,23 +712,17 @@ class RoundRules {
             });
         }).flat();
     
-        var results = [];
-
         return Promise.resolve().then(function() {
             // First, update which way units are facing so we don't waste volleys.
             RoundRules.updateBlockFacing(battlefield);
         }).then(function() {
             // Draw cards, if relevant;
             if(params.volleyCount % 8 == 0) {
-                return GameEffect.push(effect, GameEffect.create("DrawCard", {}));
+                return GameEffect.push(effect, GameEffect.create("DrawCard", {}), handler);
             }
         }).then(function() {
             // Run through actions or whatever.
-            var baseFn = function(success, result) {
-                if (result) {
-                    GameEffect.mergeResults(results, result);
-                }
-
+            var baseFn = function(success) {
                 var activation = null;
                 while (activation == null && activations.length > 0) {
                     var candidate = activations.shift();
@@ -751,7 +741,7 @@ class RoundRules {
 
                 return GameEffect.push(effect, GameEffect.create("BlockActivation", {
                     abilities: activation.abilities
-                })).then(baseFn.bind(this, true), baseFn.bind(this, false));
+                }, handler)).then(baseFn.bind(this, true), baseFn.bind(this, false));
             };
 
             return Promise.resolve(baseFn()).then(function() {
@@ -791,12 +781,8 @@ class RoundRules {
         });
 
         var unitsToAct = Array.from(activations);
-        var results = [];
 
-        var applyFn = function(result) {
-            if (result) {
-                GameEffect.mergeResults(results, result);
-            }
+        var applyFn = function() {
             if (unitsToAct.length == 0) {
                 // No units?  Bail out.
                 return;
@@ -837,11 +823,11 @@ class RoundRules {
 
             return GameEffect.push(effect, GameEffect.create("ActivateGroup", {
                 blorbs: largestGroup
-            })).then(applyFn);
+            }, handler)).then(applyFn);
         };
 
         return Promise.resolve(applyFn()).then(function() {
-            return GameEffect.createResults(effect, {}, results);
+            return GameEffect.createResults(effect);
         });
     });
 
@@ -863,12 +849,8 @@ class RoundRules {
         var blorbs = params.blorbs;
         var toActivate = Array.from(blorbs);
         var activatedUnits = [];
-        var results = [];
 
-        var applyFn = function(result) {
-            if (result) {
-                GameEffect.mergeResults(results, result);
-            }
+        var applyFn = function() {
             if (toActivate.length == 0) {
                 return;
             }
@@ -911,30 +893,26 @@ class RoundRules {
                     ability: next.ability
                 }],
                 mana: mana
-            })).then(applyFn);
+            }, handler)).then(applyFn);
         };
 
         return Promise.resolve(applyFn()).then(function() {
             // Check for deaths.
-            var deadFn = function(success, result) {
-                if (result) {
-                    GameEffect.mergeResults(results, result);                
-                }
+            var deadFn = function() {
                 var deadUnits = qsa(battlefield, "progress.hp_bar[value='0']");
                 if (deadUnits.length == 0) {
-                    return GameEffect.createResults(effect, {
-                    }, results);
+                    return GameEffect.createResults(effect);
                 }
     
                 return GameEffect.push(effect, GameEffect.create("UnitDeath", {
                     unit: Unit.findUp(deadUnits[0])
-                })).then(deadFn.bind(this, true), deadFn.bind(this, false));
+                }, handler)).then(deadFn.bind(this, true), deadFn.bind(this, false));
             };
             return deadFn(true);
         }).then(function() {
             return GameEffect.createResults(effect, {
                 activatedUnits: activatedUnits
-            }, results);
+            });
         });
 
     });

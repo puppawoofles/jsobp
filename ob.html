@@ -71,37 +71,37 @@
 						<handler handler="CardRules.PlayCard" event-types="PlayCard" TODO></handler>
 
 						<!-- Handlers for structural UI effects-->
-						<handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after">
+						<handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after" skip-log="true">
 							<ui-effect type="delay" delay="1000"></ui-effect>
 							<ui-effect type="banner" content-fn="EncounterRules.EndOfEncounterBanner"></ui-effect>
 						</handler>
 						<!-- Handlers for UI Effects -->
-						<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after">
+						<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after" skip-log="true">
 							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="500 100 0"></ui-effect>
 						</handler> 
-						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit">
+						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" skip-log="true">
 							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="0 0 NaN"></ui-effect>
 							<ui-effect type="blink" blink-color="red"></ui-effect>
 							<ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
 						</handler>
-						<handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit">
+						<handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
 							<ui-effect type="wub" icon="☠️"></ui-effect>
 						</handler>
-						<handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit">
+						<handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
 							<ui-effect type="wub" icon="🏳️"></ui-effect>
 						</handler>
-						<handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after">
+						<handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after" skip-log="true">
 							<ui-effect type="wub" icon="💥" target-fn="UiTreatments.TargetsFromParams" target-param="firstUnit secondUnit"></ui-effect>
 						</handler>
-						<handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before">
+						<handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before" skip-log="true">
 							<ui-effect type="wub" icon="💨" target-fn="UiTreatments.TargetsFromParams" target-param="unit" filter-fn="UnitRules.ShiftFromPush"></ui-effect>
 						</handler>
-						<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before">
+						<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before" skip-log="true">
 							<ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
 							<ui-effect type="banner" filter-fn="RoundRules.ActivateGroupHasCombo" content-fn="RoundRules.ActivateGroupBanner" extra-classes="slow"></ui-effect>
 							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delays="1500 1500 200"></ui-effect>
 						</handler>
-						<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before">
+						<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before" skip-log="true">
 							<ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
 							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="50 0 NaN"></ui-effect>
 						</handler>
@@ -412,6 +412,19 @@
 						<li>Enemy AI actions (which spots rats try to run to, for example)</li>
 						<li>Which unit says what during vignettes.</li>
 					</ul></lu>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.5.8">
+			<info-panel>
+				<h2>V0.0.5.8</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Added unit names.</li>
+					<li>Refactored a bunch of code around the event queue.  I might have missed a few bugs. :(</li>
+					<li>Added result tracking to the event queue.  This might slow down the game. :(</li>
+					<li>Added close-quarters as a valid range option for throw and shoot, but they will only do one damage!</li>					
 				</ul>
 			</info-panel>
 		</version>
@@ -970,11 +983,11 @@
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
 				</skill-blueprint>
 
-				<skill-blueprint name="throw" label="Throw" short-label="⚾" type="⚾" invoke-fn="Strike.throwInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3">
+				<skill-blueprint name="throw" label="Throw" short-label="⚾" type="⚾" invoke-fn="Strike.throwInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 CC">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
 				</skill-blueprint>
 
-				<skill-blueprint name="shoot" label="Shoot" short-label="🏹" type="🏹" invoke-fn="Strike.shootInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" target-overhead="true" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="B1 B2 B3">
+				<skill-blueprint name="shoot" label="Shoot" short-label="🏹" type="🏹" invoke-fn="Strike.shootInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" target-overhead="true" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="B1 B2 B3 CC">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
 				</skill-blueprint>
 
@@ -1013,6 +1026,9 @@
 
 				<skill-blueprint name="step" label="Step" short-label="🥾" type="🥾" invoke-fn="StepAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="StepAbility.combo"></combo-effect>
+				</skill-blueprint>
+
+				<skill-blueprint name="struggle" label="Struggle" short-label="❓" type="❓" invoke-fn="Strike.struggleInvoke" target-fn="Targeting.StandardEnemy" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="CC">
 				</skill-blueprint>
 
 				<!-- Enemy-only skill blueprints -->
@@ -1177,7 +1193,7 @@
 				<template>
 					<h2>Unit Details</h2>
 					<p>Right click <span compendium="concept/unit">here for the main page on units in general.</span></p>
-					<div class="exploded_cards">
+					<div class="exploded_cards" facing="up">
 						<div class="card unit_container">
 
 						</div>
@@ -1425,7 +1441,7 @@
 						<li><span compendium="version/0.0.2">V0.0.2</span></li>
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
-						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span> <span compendium="version/0.0.5.7">V0.0.5.7</span></li>
+						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span> <span compendium="version/0.0.5.7">V0.0.5.7</span> <span compendium="version/0.0.5.8">V0.0.5.8</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1628,8 +1644,13 @@
 		<!-- For the engine. -->
 		<template name="game_effect">
 			<game-effect w-id="ID" wt="Effect" type="TYPE" phase="before">
+				<results></results>
 				<queue></queue>
 			</game-effect>
+		</template>
+
+		<template name="game_effect_result">
+			<game-effect-result type="TYPE" value=""></game-effect-result>
 		</template>
 		
 		<!-- Template for an icon that grows, then disappears. -->
@@ -1884,6 +1905,7 @@
 		// Base libs.
 		"woof/woof",
 		"woof/ui",
+		"woof/queue",
 
 		// Basic components.
 		"ui/actionbutton",

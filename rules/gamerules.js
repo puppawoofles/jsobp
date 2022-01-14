@@ -57,7 +57,7 @@ class GameRules {
             return GameEffect.push(effect, GameEffect.create("NewDay", {
                 act: act,
                 day: day
-            })).then(function() {
+            }, handler)).then(function() {
                 day++;
                 if (day > maxDay) {
                     act++;
@@ -84,7 +84,7 @@ class GameRules {
      static InvokeFn = new ScopedAttr("assignment-invoke-fn", FunctionAttr);
      static NewDay = GameEffect.handle(function(handler, effect, params) {
          // Set our noise counters for dat sweet sweet RNGsus
-        NoiseCounters.setCounter(NC.Day, (params.act|0 << 4) + params.day);
+        NoiseCounters.setCounter(NC.Day, ((params.act|0) << 4) + params.day);
         NoiseCounters.setCounter(NC.Unit, 0);
         NoiseCounters.setCounter(NC.Event, 0);
 
@@ -259,7 +259,7 @@ class GameRules {
             encounters: encounters
         })).then(function() {
             PendingOpAttr.returnTicketOn(runScreen);
-            GameEffect.setResult(effect, GameEffect.createResults(effect));
+            GameEffect.setResult(effect);
         });
     }
 
@@ -333,7 +333,7 @@ class GameRules {
             eventScreen.remove();
 
             return {
-                victory: result.result.victory
+                victory: result.victory
             };
         });
     }

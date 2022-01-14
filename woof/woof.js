@@ -1100,6 +1100,79 @@ class Utils {
 	static tag(elt) {
 		return elt.tagName.toLowerCase();
 	}
+
+	static deserializeBlob(relativeTo, blob) {
+		var parsed = JSON.parse(blob);
+		return Utils.normalizeBlob(relativeTo, parsed);
+	}
+
+	static denormalizeBlob(elt, params) {
+		var deserializeFn = function(obj) {
+			Object.keys(obj).forEach(function(key) {
+				if (obj[key] !== null && obj[key]["____"] && obj[key].element) {
+					var value = Utils.bfind(elt, 'body', obj[key].element);
+					if (!value && obj[key]["fallback"]) {
+						value = obj[key]["fallback"] || null;
+					}
+					obj[key] = value;
+				} else if (typeof obj[key] === 'object' && obj[key] !== null) {
+					deserializeFn(obj[key]);
+				}
+			});
+		};
+		deserializeFn(params);
+
+		return params;
+	}
+
+	static normalizeBlob(elt, params) {
+		params = GameEffect.__simpleClone(params);
+		var serializeFn = function(obj) {
+			Object.keys(obj).forEach(function(key) {
+				var value = obj[key];
+				if (value instanceof HTMLElement) {
+					var types = WoofType.get(value);
+					var baseObj = {
+						____: true,
+						element: WoofType.buildSelectorFor(value)
+					};
+					var serialized = false;
+					var fallbackBlob = {
+						____types: []
+					};
+					types.forEach(function(t) {
+						if (!Utils.serializers[t]) return;
+						var s = Utils.serializers[t].fallback(fallbackBlob, value);
+						if (s) {
+							serialized = true;
+							fallbackBlob.____types.push(t);
+						}
+					});
+					if (serialized) {
+						baseObj.fallback = fallbackBlob
+					}
+					obj[key] = baseObj;
+				} else if (typeof obj[key] === 'object' && obj[key] !== null) {
+					serializeFn(obj[key]);
+				}
+			});	
+		}
+		serializeFn(params);
+		return params;
+	}
+
+	static serializeBlob(elt, params) {
+		var normalized = Utils.normalizeBlob(elt, params);
+		return JSON.stringify(normalized);
+	}
+
+	static serializers = {};
+	static registerBlobSerializer(type, fallback) {
+     	Utils.serializers[type] = {
+			fallback: fallback,
+			t: type	
+		};
+	}
 	
 	static classMixin(intoThis, mixThis, opt_config) {
 		for (var key of Object.getOwnPropertyNames(mixThis)) {
@@ -1115,6 +1188,103 @@ class Utils {
 	}
 }
 WoofRootController.register(Utils);
+
+
+/**
+ * Note this is expecting 2 layers of inheritence: first with a config, second with a key.
+ **/
+class BaseAttr {
+	static key(config, key) {
+		return key;
+	}
+
+	static get(config, key, element) {
+		return config.d(element.getAttribute(key));
+	}
+
+	static set(config, key, element, value) {
+		if (value === undefined) {
+			element.removeAttribute(key);
+			return;
+		}
+		var updatedValue = config.s(value);
+		if (updatedValue === undefined) {
+			element.removeAttribute(key);
+			return;
+		}
+		element.setAttribute(key, updatedValue);
+	}
+
+	static has(config, key, element) {
+		return element.hasAttribute(key);
+	}
+
+	static selector(config, key, value) {
+		if (value === undefined) {
+			return '[' + key + ']';
+		}
+		var newVal = config.serializeForSelector(value);
+		if (newVal === undefined) {
+			return '[' + key + ']';
+		}
+		// This is to allow = vs ~=
+		return '[' + key + config.selectorOperand + newVal + ']';
+	}
+
+	static copy(config, key, to, from) {
+		BaseAttr.set(config, key, to, BaseAttr.get(config, key, from));
+	}
+
+	static find(config, key, element, value) {
+		var selector = BaseAttr.selector(config, key, value);
+		if (element.matches(selector)) return element;
+		return qs(element, selector);
+	}
+
+	static findGet(config, key, element) {
+		var elt = BaseAttr.find(config, key, element);
+		if (!elt) return null;
+		return BaseAttr.get(config, key, element);
+	}
+
+	static findDown(config, key, element, value) {
+		var selector = BaseAttr.selector(config, key, value);
+		return qs(element, selector);
+	}
+
+	static findUp(config, key, element, value) {
+		var selector = BaseAttr.selector(config, key, value);
+		return matchParent(element, selector);
+	}
+
+	static findAllDown(config, key, element, value) {
+		var selector = BaseAttr.selector(config, key, value);
+		return qsa(element, selector);
+	}
+
+	static findAll(config, key, element, value) {
+		var selector = BaseAttr.selector(config, key, value);
+		var returnMe = element.matches(selector) ? [element] : [];
+		returnMe.extend(qsa(element, selector));
+		return returnMe;
+	}
+
+	static findSetAll(config, key, element, value) {
+		BaseAttr.findAll(config, key, element).forEach(function(found) {
+			BaseAttr.set(config, key, found, value);
+		});
+	}
+	
+	static findSetAllDown(config, key, element, value) {
+		BaseAttr.findAllDown(config, key, element).forEach(function(found) {
+			BaseAttr.set(config, key, found, value);
+		});
+	}
+
+	static matches(config, key, el1, el2) {
+		return BaseAttr.get(config, key, el1) === BaseAttr.get(config, key, el2);
+	}
+}
 
 class BoolAttr {
 	static key(config) {
@@ -1456,7 +1626,7 @@ class ListAttr {
 	
 	static clear(param, element) {
 		return ParamList.clear(element, param);
- 	}
+	}
 	
 	static put(param, element, types) {
 		return ParamList.put(element, param, types);
@@ -1481,6 +1651,18 @@ class ListAttr {
 		return "[" + param + "~='" + value + "']";
 	}
 }
+
+
+
+class BlobAttr {
+
+}
+Utils.classMixin(BlobAttr, BaseAttr, {
+	d: Utils.deserializeBlob.bind(this, document),
+	s: Utils.serializeBlob.bind(this, document),
+	serializeForSelector: function() {} // No can do
+});
+
 
 /** Create attributes as instances on classes so they're scoped locally instead of globally. */
 class ScopedAttr {
@@ -1760,554 +1942,3 @@ class Blueprint {
 		});
 	}
 }
-
-class PromiseIdAttr {
-	static generate(elt) {
-		var current = PromiseIdAttr.get(elt);
-		if (current) return current;
-		var newId = Utils.UUID();
-		PromiseIdAttr.set(elt, newId);
-		return newId;
-	}		
-}
-Utils.classMixin(PromiseIdAttr, StringAttr, "promise-id");
-
-class EffectQueue {
-	static InvokePhase = new ScopedAttr("invoke-phase", StringAttr);
-	static Phase = new ScopedAttr("phase", StringAttr);
-
-	static find(elt) {
-		return Utils.bfind(elt, 'body', "[woof-queue]");
-	}
-
-	static findUp(elt) {
-		var found = WoofType.findUp(elt, "EffectQueue");
-		if (found) return found;
-		
-		found = Utils.findUp(elt, "[woof-queue]");
-		if (!found) return null;
-		
-		return qs(found, found.getAttribute('woof-queue'));		
-	}
-	
-	static findDown(elt) {
-		return qs(elt, '[wt="EffectQueue"]');
-	}
-
-	static getHandlerContainer(elt) {
-		var queue = EffectQueue.findUp(elt);
-		if (!queue) {
-			queue = EffectQueue.findDown(elt);
-		}
-		return qs(queue, 'handlers');
-	}
-	
-	static findHandlersFor(element) {
-		var queue = EffectQueue.findUp(element);
-		var eventType = GameEffect.getType(element);
-		var phase = EffectQueue.Phase.get(element) || 'before';
-		var type;
-		if (phase == 'started') {
-			type = eventType;
-		} else {
-			type = eventType + ":" + phase;
-		}
-		Logger.trace("Attempting " + type );
-		
-		return qsa(queue, "[event-types~='" + type + "']");
-	}
-	
-	static findDefaultHandler(element) {
-		return WoofRootController.controller(qs(element, 'effects > handlers').getAttribute("default"));
-	}
-
-	static currentQueue(element) {
-		var queue = EffectQueue.find(element);
-		return EffectQueue.findCurrentQueue(queue);
-	}
-	
-	static findCurrentEvent(element) {
-		var current = qs(element, 'queue > game-effect');
-		if (!current) {
-			current = bf(element, 'game-effect');
-			if (!current) return null;
-		};
-		var next = qs(current, 'queue > game-effect');
-		if (!next) return current;
-		
-		while (next) {
-			current = next;
-			next = qs(current, 'queue > game-effect');
-		}
-		return current;		
-	}
-
-	static findCurrentQueue(element) {
-		var event = EffectQueue.findCurrentEvent(element);
-		if (!event) {
-			return Utils.bfind(element, 'body', 'queue');
-		}
-		return event;
-	}
-	
-
-	static Handler = new ScopedAttr("handler", FunctionAttr);
-	static invokeHandler(handler, current, args) {
-		var result = EffectQueue.Handler.findAInvoke(handler, args);
-		if (!!result && typeof(result["then"]) == "function") {
-			// This is a promise.  We should do our ticketing BS.
-			var ticket = PendingOpAttr.takeTicket(current, "auto");
-			result = result.then(function(result) {
-				PendingOpAttr.returnTicket(current, ticket);
-				return result;
-			})
-		}
-		return Promise.resolve(result);
-	}
-
-	static pendingPromises = {};
-	
-	static pushEvent(element, event) {
-		var id = IdAttr.generate(event);
-		var promiseId = PromiseIdAttr.generate(event);
-		if (!element.matches('queue')) {
-			element = qs(element, 'queue');
-		}
-		if (!EffectQueue.pendingPromises[promiseId]) {
-			EffectQueue.pendingPromises[promiseId] = new PromiseSetter();
-		}
-		element.appendChild(event);
-		return EffectQueue.pendingPromises[promiseId].promise();
-	}
-		
-	static Invoked = new ScopedAttr("invoked", BoolAttr);
-	static evoke(queue) {
-		var current = EffectQueue.findCurrentEvent(queue);
-		if (!current) return;
-		var id = IdAttr.get(current);
-		if (!id) IdAttr.generate(current);				
-		var children = GameEffect.getChildEvents(current);
-		if (children.length > 0) throw boom("EffectQueue got non-bottom child", current);		
-		var pending = GameEffect.IsPending.get(current);
-		
-		if (pending) {
-			// Blocked on something else.  Gotta wait for that.
-			return false;
-		}
-		
-		var pendingOp = PendingOpAttr.get(current);
-		if (pendingOp.length > 0) {
-			// Blocked on something else.
-			return false;
-		}
-		
-		var phase = EffectQueue.Phase.get(current);
-		var result;
-		var promiseId = PromiseIdAttr.get(current);
-		var promiseSetter = !!promiseId ? EffectQueue.pendingPromises[promiseId] : null;
-		
-		switch (phase) {
-			case null:
-			    EffectQueue.Phase.set(current, 'before');
-			case 'before':
-				// First phase: Basically for pre-empting / counterspelling.
-				if (EffectQueue.InvokePhase.get(current) != 'before') {
-					var handlers = EffectQueue.findHandlersFor(current);
-					for (var handler of handlers) {
-						EffectQueue.invokeHandler(handler, current, [current, handler]);
-					}
-					EffectQueue.InvokePhase.set(current, 'before');
-				}
-
-				// If it's cancelled, finish canceling it.
-
-				if (GameEffect.cancelled(current)) {
-					// Event was cancelled.
-					if (!!promiseSetter) {
-						promiseSetter.reject("cancelled");
-						delete EffectQueue.pendingPromises[promiseId];
-					}
-					current.parentNode.removeChild(current);
-				}
-
-				// If it's pending, wait for it to wrap up.
-				if (GameEffect.IsPending.get(current)) return false;
-				if (GameEffect.IsPending.get(current).length > 0) return false;
-
-				// Hooray, we can move on.
-				EffectQueue.Phase.set(current, 'started');
-			case 'started':
-				// Second phase: Actually invoking it.
-				if (!EffectQueue.Invoked.get(current)) {
-					if (EffectQueue.InvokePhase.get(current) != 'started') {
-						var handlers = EffectQueue.findHandlersFor(current);
-					
-						// We force exactly 1 handler here.  It makes dealing
-						// with results easier.
-						if (handlers.length != 1) throw boom("Unexpected number of invocation handlers", handlers);	
-						var resultPromise = EffectQueue.invokeHandler(handlers[0], current, [current, handlers[0]])
-						EffectQueue.Invoked.set(current, true);
-						EffectQueue.InvokePhase.set(current, 'started');
-						resultPromise.then(function(actualResult) {
-							// Set our result.
-							if (!!actualResult) {
-								GameEffect.setResult(current, actualResult);
-								EffectQueue.Phase.set(current, 'after');
-							}
-						});
-					}
-				}
-
-				// If it's pending, wait for it to wrap up.
-				if (GameEffect.IsPending.get(current)) return false;
-				if (GameEffect.IsPending.get(current).length > 0) return false;
-				result = GameEffect.getResult(current);
-				// No result?  We gotta wait.
-				if (result === undefined || result === null) return false;
-
-				// Hooray, we can move on.
-				EffectQueue.Phase.set(current, 'after');				
-			case 'after':
-				// Third phase: Posting the results.
-				result = result || GameEffect.getResult(current);				
-				
-				if (EffectQueue.InvokePhase.get(current) != 'after') {
-					var handlers = EffectQueue.findHandlersFor(current);					
-					for (var handler of handlers) {
-						EffectQueue.invokeHandler(handler, current, [current, handler]);
-					}
-					EffectQueue.InvokePhase.set(current, 'after');
-				}
-				
-				if (GameEffect.IsPending.get(current)) return false;
-				if (PendingOpAttr.get(current).length > 0) return false;
-				
-				EffectQueue.Phase.set(current, 'complete');				
-			case 'complete':
-				// We already did a pending check above.  Only thing left
-				// is to get rid of this element once we resolve the promise.				
-				result = result || GameEffect.getResult(current);
-				if (!!promiseSetter) {
-					promiseSetter.resolve(result);
-					delete EffectQueue.pendingPromises[promiseId];					
-				}
-
-				current.parentNode.removeChild(current);				
-				break;
-		}
-		return true;
-	}
-}
-
-class PromiseSetter {
-	constructor() {
-		this.isSet_ = false;
-		this.resolve_ = null;
-		this.reject_ = null;
-		this.temp_ = null;
-		this.promise_ = new Promise(this.init.bind(this));
-	}
-	
-	init(resolve, reject) {
-		if (this.isSet_) {			
-			if (this.resolve_) {
-				resolve.apply(null, this.temp_);
-			} else {
-				reject.apply(null, this.temp_);				
-			}
-			return;
-		}		
-		this.resolve_ = resolve;
-		this.reject_ = reject;
-	}
-	
-	promise() { return this.promise_; }
-	resolve() {
-		if (this.isSet_) return;
-		this.isSet_ = true;
-		if (this.resolve_) this.resolve_.apply(null, arguments);
-		this.temp_ = arguments;
-		this.resolve_ = true;
-	}
-	reject() {
-		if (this.isSet_) return;
-		this.isSet_ = true;
-		if (this.reject_) this.reject_.apply(null, arguments);
-		this.temp_ = arguments;
-		this.reject_ = true;
-	}
-	completed() { return this.isSet_; }
-}
-
-
-/** Intended to be a base class. */
-class GameEffect {
-	static create(type, opt_config) {
-		var element = Templates.inflate("game_effect", {
-			ID: Utils.UUID(),
-			TYPE: type
-		});
-		if (opt_config) GameEffect.setParams(element, opt_config);
-		return element;		
-	}
-	
-	static getType(elt) {
-		return elt.getAttribute("type");
-	}
-	
-	static getParent(elt) {
-		if (WoofType.has(elt, "Effect")) elt = elt.parentNode;
-		return WoofType.findUp(elt, "Effect");
-	}
-	
-	static findParentByType(elt, type) {
-		return Utils.findUp(elt, "[type='" + type + "']");
-	}
-	
-	static getParams(elt) {
-		var params = elt.getAttribute("params") || null;
-		if (!params) return null;
-		var json = JSON.parse(params);
-		return GameEffect.denormalize(elt, json);
-	}
-	
-	static getResult(elt) {
-		var result = elt.getAttribute("result") || null;
-		if (!result) return null;
-		var json = JSON.parse(result);
-		return GameEffect.denormalize(elt, json);
-	}
-	
-	static createResults(effect, selfResult, childResults) {
-		if (selfResult === undefined) selfResult = {};
-		if (childResults === undefined) childResults = [];
-		selfResult.type = GameEffect.getType(effect);
-		return {
-			result: selfResult,
-			results: childResults
-		};
-	}
-	
-	static baseResult(effect, value) {
-		value.type = GameEffect.getType(effect);
-		return {
-			result: value,
-			results: []
-		};
-	}
-	
-	static mergeResults(array, results) {
-		if (results.results !== undefined && results.results !== null) {
-			array.extend(results.results);
-		}
-		array.push(results.result);
-		return results.result;		
-	};
-	
-	static flattenResults(results) {
-		var array = results.results;
-		array.push(results.result);
-		return array;
-	}
-	
-	static chainResult(effect, result, previousResult) {
-		return GameEffect.createResults(effect, result, GameEffect.flattenResults(previousResult));
-	}
-	
-	static setParams(elt, params) {
-		if (params) {
-			var normalized = GameEffect.normalize(elt, params);
-			var serialized = JSON.stringify(normalized);
-			elt.setAttribute("params", serialized);
-		} else {
-			elt.removeAttribute("params");
-		}
-		return elt;
-	}
-
-	static __simpleClone(obj) {
-		var clone;
-		if (obj instanceof HTMLElement || obj == null) {
-			clone = obj; // No clone.
-		} else if (Array.isArray(obj)) {
-			clone = [];
-			for (var i = 0; i < obj.length; i++) {
-				clone[i] = GameEffect.__simpleClone(obj[i]);
-			}
-		} else if (typeof obj === 'object') {
-			clone = {};
-			for (var [key, value] of Object.entries(obj)) {
-				if (obj.hasOwnProperty(key)) clone[key] = GameEffect.__simpleClone(value);
-			}
-		} else {
-			clone = obj; // No clone.
-		}
-		return clone;
-	}
-	
-	static normalize(elt, params) {	
-		params = GameEffect.__simpleClone(params);
-		var serializeFn = function(obj) {
-			Object.keys(obj).forEach(function(key) {
-				var value = obj[key];
-				if (value instanceof HTMLElement) {
-					obj[key] = {
-						____: true,
-						element: WoofType.buildSelectorFor(value)
-					}
-				} else if (typeof obj[key] === 'object' && obj[key] !== null) {
-					serializeFn(obj[key]);
-				}
-			});	
-		}
-		serializeFn(params);
-
-		if (!params.type) {
-			params.type = GameEffect.getType(elt);
-		}
-		return params;
-	}
-
-	static denormalize(elt, params) {
-
-		var deserializeFn = function(obj) {
-			Object.keys(obj).forEach(function(key) {
-				if (obj[key] !== null && obj[key]["____"] && obj[key].element) {
-					obj[key] = Utils.bfind(elt, 'body', obj[key].element);
-				} else if (typeof obj[key] === 'object' && obj[key] !== null) {
-					deserializeFn(obj[key]);
-				}
-			});
-		};
-		deserializeFn(params);
-
-		return params;
-	}
-	
-	static setResult(elt, result) {
-		if (result) {
-			var normalized = GameEffect.normalize(elt, result);
-			var serialized = JSON.stringify(normalized);
-			elt.setAttribute("result", serialized);
-		} else {
-			elt.removeAttribute("result");
-		}
-		return elt;
-	}
-	
-	static push(base, newBoy) {
-		if (!newBoy) return;
-		return EffectQueue.pushEvent(base, newBoy);
-	}
-	
-	static enqueue(base, newBoy) {
-		var queue = EffectQueue.findUp(base);
-		if (!queue) throw boom("Can't find effect queue from", base);		
-		return EffectQueue.pushEvent(queue, newBoy);		
-	}
-	
-	static getChildEvents(base) {
-		return qsa(base, ":scope > queue > game-effect");
-	}
-	
-	static before(actualFn) {
-		return (current, handler) => {
-			var params = GameEffect.getParams(current);
-			return Promise.resolve(actualFn(handler, current, params));
-		};
-	}
-	
-	static handle(actualFn) {
-		return (current, handler) => {
-			var params = GameEffect.getParams(current);
-			return Promise.resolve(actualFn(handler, current, params));
-		}
-	}
-	
-	static after(actualFn) {
-		return (current, handler) => {
-			var params = GameEffect.getParams(current);
-			var result = GameEffect.getResult(current);
-			return Promise.resolve(actualFn(handler, current, params, result));
-		}
-	}
-	
-	static Type = new ScopedAttr("type", StringAttr);
-	static getType(event) {
-		return GameEffect.Type.findGet(event);
-	}
-	
-	static IsPending = new ScopedAttr("is-pending", BoolAttr);
-	static OnChildChange(event, handler) {
-		var parent;
-		if (WoofType.has(event.target, "Effect")) {
-			parent = WoofType.findUp(event.target.parentNode, "Effect");
-		} else {
-			parent = WoofType.findUp(event.target, "Effect");
-		}
-		if (!parent) return;
-		GameEffect.IsPending.set(parent, !!event.target.childElementCount);		
-	}
-
-	static findById(relativeElt, id) {
-		return Utils.bfind(relativeElt, 'body', WoofType.buildSelectorFrom('Effect', id));
-	}
-
-	static Cancelled = new ScopedAttr("cancelled", BoolAttr);
-	static cancel(effect) {
-		GameEffect.Cancelled.set(effect, true);
-	}
-
-	static cancelled(effect) {
-		return !!GameEffect.Cancelled.get(effect);
-	}
-}
-WoofRootController.register(GameEffect);
-
-class GameEffectInvoker {	
-	static Timeout = new ScopedAttr("timeout", IntAttr);
-
-	static start(queueElt) {
-		try {
-			var start = window.performance.now();
-			/** Ensure 60 FPS */
-			while (window.performance.now() - start < (1000.0 / 60)) {					
-				if (!EffectQueue.evoke(queueElt)) {
-					break;
-				}
-			}
-		} catch (e) {
-			Logger.err(e);
-		}
-		GameEffectInvoker.Timeout.set(queueElt, null);
-		var current = EffectQueue.findCurrentEvent(queueElt);
-		if (!!current && PendingOpAttr.size(current) == 0) {
-			// Set a timeout if we want to pick this up, but only if there are no pending
-			// operations.
-			var timeout = window.setTimeout(GameEffectInvoker.start.bind(this, queueElt), 0);	
-			GameEffectInvoker.Timeout.set(queueElt, timeout);
-		}
-	}	
-	
-	static stopTimer(queueElt) {
-		var timer = GameEffectInvoker.Timeout.get(queueElt);
-		if (typeof(timer) == 'number') {
-			window.clearTimeout(timer);
-		}		
-	}
-	
-	static OnNewElement(event, handler) {
-		var queue = EffectQueue.findDown(handler);
-		
-		var event = EffectQueue.findCurrentEvent(handler);
-		if (event) {
-			var timeout = GameEffectInvoker.Timeout.get(handler);
-			if (isNaN(timeout)) {
-				GameEffectInvoker.start(queue);
-			}
-		} else {
-			GameEffectInvoker.stopTimer(queue);
-		}
-	}
-}
-WoofRootController.register(GameEffectInvoker);

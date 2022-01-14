@@ -37,8 +37,7 @@ class CardRules {
         return Promise.resolve().then(function() {
             if (!CardHud.drawCard(cardHud, from == 'random')) {
                 // Unable to draw.  That means we need to shuffle and try again.
-                return GameEffect.push(effect, GameEffect.create("ShuffleDiscard", {
-                })).then(function() {
+                return GameEffect.push(effect, GameEffect.create("ShuffleDiscard", {}, handler)).then(function() {
                     // Then try to draw again.
                     return GameEffect.createResults(effect, {
                         drawn: CardHud.drawCard(cardHud, from == 'random')
@@ -51,7 +50,7 @@ class CardRules {
         }).then(function(result) {
             // No draw?  No result.
             var delta = CardHud.handSize(cardHud) - atMost;
-            if (!result.result.drawn || delta <= 0) return result;
+            if (!result.drawn || delta <= 0) return result;
 
             // We went over.  First, find the "oldest" cards.
             var toDiscard = [];
@@ -68,7 +67,7 @@ class CardRules {
 
             return GameEffect.push(effect, GameEffect.create("DiscardCards", {
                 cards: toDiscard
-            })).then(function() {
+            }, handler)).then(function() {
                 // Return the OG result.
                 return result;
             });
@@ -97,14 +96,14 @@ class CardRules {
         // Otherwise, we want to draw until either it fails, or we have enough cards.
         var drawFn = function(result) {
             // If we failed to draw, bail out.
-            if (!!result && !result.result.drawn) {
-                return GameEffect.createResults(effect, {});
+            if (!!result && !result.drawn) {
+                return GameEffect.createResults(effect);
             }
 
             var missing = atLeast - CardHud.handSize(cardHud);
-            if (missing <= 0) return GameEffect.createResults(effect, {});
+            if (missing <= 0) return GameEffect.createResults(effect);
 
-            return GameEffect.push(effect, GameEffect.create("DrawCard", {})).then(drawFn);
+            return GameEffect.push(effect, GameEffect.create("DrawCard", {}, handler)).then(drawFn);
         };
 
         return Promise.resolve().then(drawFn);
@@ -136,7 +135,7 @@ class CardRules {
         var cardHud = CardHud.find(handler);
         var card = params.card;
         CardHud.discardCard(card);
-        return GameEffect.createResults(effect, {});
+        return GameEffect.createResults(effect);
     });
 
     static discardSingleCard(elt, params, effect) {
@@ -173,7 +172,7 @@ class CardRules {
             if (cards.length > 0) {
                 return GameEffect.push(effect, GameEffect.create('DiscardSingleCard', {
                     card: cards.shift()
-                })).then(discardFn);
+                }, handler)).then(discardFn);
             }
             // And we're done.
             return GameEffect.createResults(effect);
@@ -195,12 +194,12 @@ class CardRules {
     static ShuffleDiscard = GameEffect.handle(function(handler, effect, params) {
         var cardHud = CardHud.find(handler);
         CardHud.shuffle(cardHud);
-        return GameEffect.createResults(effect, {});
+        return GameEffect.createResults(effect);
     });
 
     static PlayCard = GameEffect.handle(function(handler, effect, params) {
         // TODO
-        return GameEffect.createResults(effect, {});
+        return GameEffect.createResults(effect);
     });
 
     static OnCardSelected(event, handler) {

@@ -14,23 +14,17 @@ class Strike {
         if (targets.length == 0) {
             Logger.info("No valid target :(");
             return GameEffect.createResults(effect, {
+                noTarget: true
             });    
         }
         var target = targets[0];
         var damage = params.baseDamage;
 
-        var promise = GameEffect.push(effect, GameEffect.create("Attack", {
+        return GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
             source: unit,
             target: target
-        })).then(function(result) {
-            GameEffect.mergeResults(results, result);
-        });
-
-        return promise.then(function() {
-            return GameEffect.createResults(effect, {
-            }, results);
-        });
+        }));
     }
 
     static throwInvoke(units, ability, params, invokedEffects, targets, effect) {
@@ -40,7 +34,8 @@ class Strike {
         if (targets.length == 0) {
             Logger.info("No valid target :(");
             return GameEffect.createResults(effect, {
-            });    
+                noTarget: true
+            });
         }
 
         var myBlock = CellBlock.findByContent(unit);
@@ -51,25 +46,24 @@ class Strike {
         });
 
         var target = filteredTargets[0];
-        if (!target) {
-            Logger.info("No valid target :(");
-            return GameEffect.createResults(effect, {
-            });    
-        }
         var damage = params.baseDamage;
+        if (!target) {
+            // Our target is in this block.  Time to struggle.
+            damage = 1;
+            target = targets[0];
+            if (!target) {
+                Logger.info("No valid target :(");
+                return GameEffect.createResults(effect, {
+                    noTarget: true
+                });
+            }    
+        }
 
-        var promise = GameEffect.push(effect, GameEffect.create("Attack", {
+        return GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
             source: unit,
             target: target
-        })).then(function(result) {
-            GameEffect.mergeResults(results, result);
-        });
-
-        return promise.then(function() {
-            return GameEffect.createResults(effect, {
-            }, results);
-        });
+        }));
     }
 
     static shootInvoke(units, ability, params, invokedEffects, targets, effect) {
@@ -79,6 +73,7 @@ class Strike {
         if (targets.length == 0) {
             Logger.info("No valid target :(");
             return GameEffect.createResults(effect, {
+                noTarget: true
             });    
         }
 
@@ -94,26 +89,20 @@ class Strike {
         });
         var target = jammed[0];
         var damage = params.baseDamage;
-        if (target) {
-            // Half damage because jammed.
-            damage = Math.floor(damage / 2);
-        } else {
+        if (!target) {
             // Bows can shoot over everything.  Neat!
             target = targets.peek();
         }
+        if (CellBlock.findByContent(target) == myBlock) {
+            // Time to struggle!
+            damage = 1;
+        }
 
-        var promise = GameEffect.push(effect, GameEffect.create("Attack", {
+        return GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
             source: unit,
             target: target
-        })).then(function(result) {
-            GameEffect.mergeResults(results, result);
-        });
-
-        return promise.then(function() {
-            return GameEffect.createResults(effect, {
-            }, results);
-        });
+        }));
     }
 }
 WoofRootController.register(Strike);
@@ -167,14 +156,13 @@ class StepAbility {
             destination: targetCell,
             distance: distance
         })).then(function(result) {
-            var agilityStacksUsed = result.result.distanceMoved - baseDistance;
+            var agilityStacksUsed = result.distanceMoved - baseDistance;
             if (agilityStacksUsed > 0) {
                 AgilityStatus.SubtractStacks(unit, agilityStacksUsed);
-            } else if (result.result.distanceMoved == 0) {
+            } else if (result.distanceMoved == 0) {
                 AgilityStatus.AddStacks(unit, 1);
             }
-            return GameEffect.createResults(effect, {
-            }, [result]);
+            return GameEffect.createResults(effect);
         }); 
     }
 }
@@ -248,13 +236,11 @@ class Push {
     }
 
     static invoke(units, ability, params, invokedEffects, targets, effect) {
-        var results = [];
-
         var facing = Grid.getFacing(units[0]);
-
         if (targets.length == 0) {
             Logger.info("No valid target :(");
             return GameEffect.createResults(effect, {
+                noTarget: true
             });    
         };
         var target = targets[0];
@@ -263,11 +249,8 @@ class Push {
             target: target,
             direction: facing,
             amount: params.pushForce
-        })).then(function(result) {
-            GameEffect.mergeResults(results, result);
-        }).then(function() {
-            return GameEffect.createResults(effect, {
-            }, results);
+        })).then(function() {
+            return GameEffect.createResults(effect);
         });
     }
 }
@@ -349,7 +332,9 @@ class DistractAbility {
 
         if (!target) {
             // No target?  No action.
-            return GameEffect.createResults(effect);
+            return GameEffect.createResults(effect, {
+                noTarget: true
+            });
         }
 
         var amount = params.debuffSize;
@@ -383,7 +368,9 @@ class BleedAbility {
 
     static invoke(units, ability, params, invokedEffects, targets, effect) {
         if (targets.length == 0) {
-            return GameEffect.createResults(effect);
+            return GameEffect.createResults(effect, {
+                noTarget: true
+            });
         }
         var target = targets[0];
 
@@ -403,7 +390,9 @@ class SunderAbility {
 
     static invoke(units, ability, params, invokedEffects, targets, effect) {
         if (targets.length == 0) {
-            return GameEffect.createResults(effect);
+            return GameEffect.createResults(effect, {
+                noTarget: true
+            });
         }
         var target = targets[0];
 

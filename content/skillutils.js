@@ -386,7 +386,9 @@ class SkillParams {
 
         config.forEach(function(value) {
             var paramElt = Utils.bfind(units[0], 'body', 'skill-param-fn[type="' + value + '"]')
-            SkillParams.Function.invoke(paramElt, params, units, ability, mana, modifiers);
+            if (paramElt) {
+                SkillParams.Function.invoke(paramElt, params, units, ability, mana, modifiers);
+            }
         });
 
         return params;

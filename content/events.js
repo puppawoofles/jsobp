@@ -6,12 +6,8 @@ class Events {
     }
 
     static CostPerYunit = new ScopedAttr('cost-per-unit', IntAttr);
-    static CostPerUnit(assignment, assignElt, units) {
-        return units.length * Events.CostPerYunit.get(assignElt);
-    }
-
-    static MaxUnitsByCost(assignment, assignElt) {
-        return Math.floor(RunInfo.getCurrentGold(assignment) / Events.CostPerYunit.get(assignElt));
+    static CostPerUnit(assignment, units) {        
+        return units.length * Events.CostPerYunit.findGet(assignment);
     }
 
     // Nothing yet!!
@@ -20,10 +16,11 @@ class Events {
         return units.length;
     }
 
-    static DamagedUnits(assignment, assignElt, units) {
-        return function(unit) {
-            return Unit.currentHP(unit) < Unit.maxHP(unit);
-        };
+    // Returns true if all units are damaged.
+    static DamagedUnits(assignment, units) {
+        return !units.findFirst(function(unit) {
+            return Unit.currentHP(unit) >= Unit.maxHP(unit);
+        });
     }
 
     static MostDamage(assignment, assignElt, units) {

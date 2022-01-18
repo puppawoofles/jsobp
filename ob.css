@@ -142,7 +142,8 @@ info {
   right: 0;
   height: 60%;
   width: 300px;
-  background: #696969;
+  background: #252525;
+  color: #cfcfcf;
   overflow: scroll;
 }
 
@@ -152,7 +153,8 @@ info {
   right: 0;
   height: 40%;
   width: 300px;
-  background: #636363;    
+  background: #252525;
+  color: #cfcfcf;
 }
 
 
@@ -452,6 +454,102 @@ info {
 	height: 50px;
 }
 
+.facility_holder {
+	margin-top: 12px;
+}
+
+.facility_holder::before {
+	content: "Facilities";
+	font-weight: bolder;
+	font-size: 24px;
+	display: block;
+}
+
+.facility_holder .buttons {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 16px;
+  margin-left: 16px;
+}
+
+.facility_holder button {
+	height: 60px;
+}
+
+.visitor_holder {
+	margin-top: 12px;
+}
+
+.visitor_holder::before {
+	content: "Visitors";
+	font-weight: bolder;
+	font-size: 24px;
+}
+
+.visitor_holder:empty::after {
+	content: "No visitors today!";
+	font-size: 16px;
+	display: block;
+}
+
+.town_visitor {
+	position: relative;
+	margin-left: 16px;
+	margin-right: 16px;
+	margin-bottom: 4px;
+	overflow: hidden;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.1);
+	height: 60px;	
+}
+
+.town_visitor .appearance {
+	width: 40px;
+	height: 40px;
+	display: inline-block;
+	text-align: center;
+	background-color: #111111;
+	border-radius: 50%;
+	position: relative;
+	top: 8px;
+	left: 8px;
+}
+
+.town_visitor inventory {
+	display: none;
+}
+
+.town_visitor refill {
+	display: none;
+}
+
+.town_visitor .shopping .shopping_button::after {
+	content: '🛒';
+	font-size: 30px;
+}
+
+.town_visitor .shopping .shopping_button {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: 60px;
+}
+
+.town_visitor .name::before {
+	content: attr(name);
+}
+
+.town_visitor .name {
+	position: absolute;
+	top: 20px;
+	left: 60px;
+}
+
 .rumor_holder {
 	margin-top: 12px;
 }
@@ -482,7 +580,7 @@ info {
 }
 
 .town_rumor .name::after {
-	content: attr(name);
+	content: attr(label);
 	position: relative;
 }
 
@@ -545,62 +643,134 @@ info {
 	content: attr(min-cost) attr(unit);
 }
 
-.assignment_holder {
+.town_screen .assignment_holder {
 	margin-top: 12px;
 }
 
-.assignment_holder::before {
-	content: "What Your Units Are Going To Do Today";
+.town_screen .assignment_holder::before {
+	content: "Available Quests";
 	font-weight: bolder;
 	font-size: 24px;
 }
 
-.town_assignment {
-	position: relative;
+.town_screen .town_assignment {
 	margin-left: 16px;
 	margin-right: 16px;
 	margin-bottom: 4px;
-	border-radius: 8px;
-	overflow: hidden;
-	background: rgba(255, 255, 255, 0.1);
 	height: 85px;
 }
 
-.town_assignment .details {
-	position: absolute;
-	left: 16px;
-	top: 0;
-	bottom: 0;
-	right: 500px;
+.town_screen .town_assignment .populate_units {
+	display: none;
 }
 
-.town_assignment .details .name {
-	position: absolute;
-	top: 0; left: 0; right: 0; height: 20px;
+.town_assignment {
+	position: relative;
+	border-radius: 8px;
+	overflow: hidden;
+	background: rgba(255, 255, 255, 0.1);
 }
 
-.town_assignment .details .name::after {
+.town_assignment .quest_giver {
+    position: absolute;
+    top: 0;
+    height: 85px;
+    left: 0;
+    width: 65px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.town_assignment .quest_text {
+    position: absolute;
+    left: 95px;
+    top: 0;
+    height: 85px;
+    width: calc(50% - 95px);
+    display: inline-flex;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.town_assignment .quest_name {
+    font-size: 16px;
+}
+
+.town_assignment .quest_name::before {
 	content: attr(label);
 }
 
-.town_assignment .details .results {
-	position: absolute;
-	left: 0; right: 0; bottom: 0; height: 65px; 
+.town_assignment .quest_restrictions {
+    font-size: 12px;
 }
 
-.town_assignment .units {
-	text-align: center;
-	position: absolute;
-	right: 0;
-	top: 0;
-	bottom: 0;
-	width: 500px;
-	overflow-x: auto;
-	white-space: nowrap;
-	overflow-y: hidden;
+.town_assignment .quest_restrictions::before {
+	content: attr(req-label);
 }
 
-.town_screen result > * {
+.town_assignment .rewards {
+    position: absolute;
+    right: 0;
+    width: 50%;
+    top: 0;
+    height: 85px;
+    display: inline-flex;
+    justify-content: flex-end;
+    align-items: center;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+.town_assignment .populate_units {
+    align-items: center;
+    position: absolute;
+    bottom: 0;
+    left: 8px;
+    right: 8px;
+    height: 115px;
+    overflow-y: hidden;
+    overflow-x: scroll;
+    display: inline-flex;
+}
+
+.town_assignment .add_unit_button {
+    height: 90px;
+    width: 90px;
+	min-width: 90px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    border: 2px dashed rgba(255, 255, 255, .8);
+	display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+	margin-right: 20px;
+}
+
+.town_assignment[selected="false"] .add_unit_button {
+	visibility: hidden;
+}
+
+.town_assignment[selected="true"] .add_unit_button {
+	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+
+.town_assignment[selected="true"] .add_unit_button.remote_hover {
+	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite, activeGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;;
+}
+
+
+.town_assignment .add_unit_button::after {
+	content: '➕';
+}
+
+
+
+
+.town_assignment result > * {
 	display: block;
     width: 50px;
     height: 50px;
@@ -612,34 +782,34 @@ info {
 }
 
 
-.town_screen result {
+.town_assignment result {
 	display: inline-block;
 	height: 50px;
 	white-space: nowrap;
 }
 
 /* Does not apply */
-.town_screen result[ignored="true"] {
+.town_assignment result[ignored="true"] {
 	display: none;
 }
 
-.town_screen result[victory="true"] > * {
+.town_assignment result[victory="true"] > * {
     background: darkgreen;
 }
 
-.town_screen result[victory="false"] > * {
+.town_assignment result[victory="false"] > * {
     background: darkred;
 }
 
-.town_screen result > add-rumor {
+.town_assignment result > add-rumor {
 	display: none;
 }
 
-.town_screen result > add-gold::before {
+.town_assignment result > add-gold::before {
     content: '🟡';
 }
 
-.town_screen result > *::before {
+.town_assignment result > *::before {
     font-size: 39px;
     text-align: center;
     position: absolute;
@@ -647,7 +817,7 @@ info {
     left: -3px;
 }
 
-.town_screen result > *::after {
+.town_assignment result > *::after {
     position: absolute;
     font-size: 20px;
     top: 10px;
@@ -659,23 +829,23 @@ info {
 	text-shadow: var(--black-text-shadow);
 }
 
-.town_screen result > add-gold[amount]::after {
+.town_assignment result > add-gold[amount]::after {
 	content: attr(amount);
 }
 
-.town_screen result > add-gold:not([amount])::after {
+.town_assignment result > add-gold:not([amount])::after {
     content: '?';
 }
 
-.town_screen result > heal-units::before {
+.town_assignment result > heal-units::before {
 	content: '🩹'
 }
 
-.town_screen result > heal-units[amount]::after {
+.town_assignment result > heal-units[amount]::after {
 	content: attr(amount);
 }
 
-.town_screen result > heal-units:not([amount])::after {
+.town_assignment result > heal-units:not([amount])::after {
     content: '?';
 }
 
@@ -1529,10 +1699,10 @@ input {
 
 @keyframes activeGlowey {
 	0% {
-		box-shadow: 0px 0px 15px 0px rgba(255,255,255,1.0);		
+		box-shadow: 0px 0px 15px 3px rgba(255,0,0,1.0);		
 	}	
 	100% {
-		box-shadow: 0px 0px 15px 0px rgba(255,255,255,0.5);		
+		box-shadow: 0px 0px 15px 1px rgba(255,255,255,0.5);		
 	}
 }
 
@@ -1598,6 +1768,103 @@ input {
 	bottom: 0;
 }
 
+.compendium_view {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.compendium_view > .preparation {
+	position: relative;
+	display: inline-block;
+	height: 220px;
+	width: 145px;
+	border: 2px solid black;
+	background: white;
+	border-radius: 8px;
+	color: black;
+}
+
+.compendium_view > .preparation .name {
+	position: absolute;
+	left: 32px;
+	top: 3px;
+	width: 92px;
+	overflow: hidden;
+	font-size: 12px;
+	text-align: left;
+}
+
+.compendium_view > .preparation .name::after {
+	content: attr(label);
+}
+
+.compendium_view > .preparation .description {
+	position: absolute;
+	top: 48px;
+	bottom: 0;
+	padding: 6px;
+	font-size: 10px;
+	white-space: normal;
+}
+
+.compendium_view info[wt~=Hint] {
+	display: block;
+}
+
+.compendium_view > .town_assignment {
+	overflow: initial;
+	display: flex;
+	flex-flow: column;
+	justify-content: center;
+	align-items: center;
+	background: transparent;
+}
+
+.compendium_view > .town_assignment > div {
+	position: initial;
+	display: flex;
+	width: auto;
+	height: auto;
+	margin-bottom: 12px;
+}
+
+.compendium_view > .town_assignment .quest_name {
+	display: block;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+.compendium_view > .town_assignment .rewards {
+	flex-direction: column;
+}
+
+.compendium_view > .town_assignment .rewards::before {
+	display: block;
+	content: "When completing this quest, you will get:";
+	font-size: 10px;
+	font-weight: bold;
+}
+
+.compendium_view > .town_assignment > div.populate_units {
+	display: none;
+}
+
+.compendium_view info[wt~=BP] {
+	display: flex;
+}
+
+.compendium_view info[wt~=BP] info[wt~=Hint]::before {
+	content: "Hint";
+	font-weight: bold;
+	display: block;
+}
+
+.compendium_view info[wt~=BP] info[wt~=Hint] {
+	display: block;
+	font-size: 12px;
+}
+
 .preparation > .appearance {
 	position: absolute;
 	width: 40px;
@@ -1638,7 +1905,7 @@ input {
 	position: absolute;
 	left: 0;
 	right: 0;
-	height: 20px;
+	height: 22px;
 	text-align: center;
 	top: 30px;
 	overflow: hidden;
@@ -1792,19 +2059,23 @@ span[compendium] {
 	background: rgba(0, 0, 0, 0.8);
 }
 
-/* Unit Select */
-
-.unit_select {
-	background: black;
+.dialog {
+	position: absolute;
+	top: 0; bottom: 0; left: 0; right: 0;
 }
 
-.unit_select .button_holder {
+.dialog .button_holder {
 	position: absolute;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	height: 42px;
 	text-align: center;
+}
+
+/* Unit Select */
+.unit_select {
+	background: black;
 }
 
 .unit_select .unit_preview {
@@ -1878,13 +2149,340 @@ span[compendium] {
 	bottom: 42px;
 }
 
-/** Do some overrides to make cards look okay. */
 .unit_select .card {
 	margin-top: 10px;
 	margin-bottom: 10px;
 	margin-right: 4px;
 }
 
+/** Item Management */
+.manage_items {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+.manage_items .units_holder {
+	position: absolute;
+	right: 0;
+	width: 400px;
+	top: 42px;
+	box-sizing: border-box;
+	padding-left: 20px;
+	padding-right: 20px;
+	height: 120px;
+	overflow-x: scroll;
+	overflow-y: hidden;
+	white-space: nowrap;
+}
+
+
+.manage_items .units_holder .card[selected="true"] {
+	animation: selectedCardInManageItems cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+	opacity: 1;
+}
+
+.manage_items .units_holder .card[selected="false"] {
+	opacity: 0.6;
+}
+
+@keyframes selectedCardInManageItems {
+	0% {
+		border-color: black;
+	}
+	40% {
+		border-color: darkgoldenrod;
+	}
+	60% {
+		border-color: darkgoldenrod;
+	}
+	100% {
+		border-color: black;
+	}
+}
+
+.manage_items .unit_preview {
+	position: absolute;
+	right: 0;
+	bottom: 42px;
+	top: 162px;
+	width: 400px;
+	padding: 20px;
+	padding-left: 50px;
+	padding-right: 50px;
+	box-sizing: border-box;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.manage_items .storage_header {
+	position: absolute;
+	left: 0;
+	top: 42px;
+	height: 38px;
+	right: 400px;
+	box-sizing: border-box;
+	font-size: 28px;
+	text-align: center;
+}
+
+.manage_items .storage_holder {
+	position: absolute;
+	left: 0;
+	top: 80px;
+	bottom: 42px;
+	right: 400px;
+	padding-left: 20px;
+	padding-right: 20px;
+	box-sizing: border-box;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+.manage_items .unit_preview.exploded_cards .battlefield_unit .hp_tracker {
+	display: none;
+}
+
+.manage_items .unit_preview.exploded_cards .card .battlefield_unit .unit_script {
+	display: none;
+}
+
+.manage_items .unit_preview .battlefield_unit inventory::before {
+	margin-top: 0;
+}
+
+.shop_dialog {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+.shop_dialog .header {
+	position: absolute;
+	left: 0;
+	width: 50%;
+	top: 0;
+	height: 60px;
+}
+
+.shop_dialog .tab_controls {
+	position: absolute;
+	right: 0;
+	width: 50%;
+	top: 0;
+	height: 60px;
+}
+
+.shop_dialog .appearance {
+    width: 40px;
+    height: 40px;
+    display: inline-block;
+    text-align: center;
+    background-color: #111111;
+    border-radius: 50%;
+    position: relative;
+}
+
+.shop_dialog .name_holder {
+	position: absolute;
+	left: 0;
+	bottom: 2px;
+	font-size: 10px;
+	min-width: 42px;
+	text-align: center;
+}
+
+.shop_dialog .quote_holder {
+	display: inline-block;
+}
+
+.shop_dialog .quote_holder[text] {
+	animation: cantAfford cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s 1;
+}
+
+.shop_dialog .quote_holder[text]::after {
+	content: attr(text);
+	font-weight: bold;
+}
+
+@keyframes cantAfford {
+	0% {
+		transform: translateX(0) translateY(0);
+	}
+	5% {
+		transform: translateX(2px) translateY(2px);
+	}
+	15% {
+		transform: translateX(-2px) translateY(2px);
+	}
+	25% {
+		transform: translateX(2px) translateY(0px);
+	}
+	35% {
+		transform: translateX(-2px) translateY(2px);
+	}
+	45% {
+		transform: translateX(2px) translateY(2px);
+	}
+	55% {
+		transform: translateX(-2px) translateY(0px);
+	}
+	65% {
+		transform: translateX(2px) translateY(2px);
+	}
+	75% {
+		transform: translateX(-2px) translateY(2px);
+	}
+	85% {
+		transform: translateX(2px) translateY(0px);
+	}
+	95% {
+		transform: translateX(-2px) translateY(2px);
+	}
+	100% {
+		transform: translateX(0) translateY(0px);
+	}
+}
+
+.shop_dialog .name_holder::before {
+	content: attr(name);
+}
+
+.shop_dialog .inventory_header::before {
+	content: "Shop Inventory";
+	position: absolute;
+	left: 0;
+	width: 50%;
+	top: 60px;
+	height: 42px;
+	text-align: center;
+	font-size: 20px;
+}
+
+.shop_dialog .storage_header::before {
+	content: "Your Storage";
+	position: absolute;
+	right: 0;
+	width: 50%;
+	top: 60px;
+	height: 42px;
+	text-align: center;
+	font-size: 20px;
+}
+
+.shop_dialog .inventory_holder {
+	position: absolute;
+	left: 0;
+	top: 102px;
+	bottom: 42px;
+	width: 50%;
+	padding-left: 20px;
+	padding-right: 20px;
+	box-sizing: border-box;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+.shop_dialog .storage_holder {
+	position: absolute;
+	right: 0;
+	top: 102px;
+	bottom: 42px;
+	width: 50%;
+	padding-left: 20px;
+	padding-right: 20px;
+	box-sizing: border-box;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+.shop_dialog .quote_holder::after {
+	content: "Buy somethin' will ya!";
+}
+
+.shop_dialog .shop_item {
+	display: inline-block;
+}
+
+.shop_dialog .price_holder {
+	text-align: center;
+	padding-bottom: 5px;
+}
+
+.shop_dialog .price_holder::after {
+	content: "🟡" attr(price);
+}
+
+.shop_dialog .shop_item[can-afford=false] .price_holder {
+	color: red;
+}
+
+.embark_dialog {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+.embark_dialog .units_holder {
+	position: absolute;
+	left: 0;
+	top: 42px;
+	bottom: 42px;
+	width: 220px;
+	padding-left: 20px;
+	padding-right: 20px;
+	box-sizing: border-box;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+
+.embark_dialog .assignment_holder {
+	position: absolute;
+	right: 0;
+	top: 42px;
+	bottom: 42px;
+	left: 220px;
+	padding-left: 20px;
+	padding-right: 20px;
+	box-sizing: border-box;
+	overflow-x: hidden;
+	overflow-y: scroll;
+}
+
+.embark_dialog .add_card_target {
+	display: none;
+}
+
+.embark_dialog[selected="true"] .add_card_target {
+	height: 90px;
+	width: 145px;
+	border: 2px dashed rgba(255, 255, 255, 0.8);
+	background: transparent;
+	border-radius: 8px;
+	position: relative;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;  
+}
+
+.embark_dialog .units_holder .card {
+	opacity: 0.6;
+}
+
+
+.embark_dialog .units_holder .card[selected="true"] {
+	opacity: 1;
+	animation: selectedCardInManageItems cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+
+.embark_dialog .card[selected="true"] {
+	animation: selectedCardInManageItems cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+}
+
+
+.embark_dialog .town_assignment {
+	margin-bottom: 4px;
+	height: 200px;
+}
+
+
+/** Cards */
 .micro_cards .card {
 	display: inline-block;
 	height: 65px;
@@ -1942,6 +2540,7 @@ span[compendium] {
 .stumpy_cards .card {
 	height: 90px;
 	width: 145px;
+	min-width: 145px;
 	border: 2px solid black;
 	background: white;
 	border-radius: 8px;
@@ -2045,8 +2644,8 @@ span[compendium] {
 }
 
 .stumpy_cards .card .unit_script .ability.remote_hover {
-	animation: stumpyAbilityGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
-}
+}	animation: stumpyAbilityGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+
 
 @keyframes stumpyAbilityGlowey {
 	0% {
@@ -2088,6 +2687,46 @@ span[compendium] {
 .stumpy_cards .card .battlefield_unit info {
 	display: none;
 }
+
+/** Stumpy prep cards */
+.stumpy_cards .card > .preparation {
+	position: absolute;
+	top: 0; left: 0; right: 0; bottom: 0;
+}
+.stumpy_cards .card > .preparation .appearance {
+	top: 6px;
+	left: 6px;
+}
+
+.stumpy_cards .card > .preparation {
+	position: absolute;
+	top: 0; left: 0; right: 0; bottom: 0;
+}
+
+.stumpy_cards .card > .preparation .name {
+    position: absolute;
+    top: 8px;
+    left: 52px;
+    width: 88px;
+    text-align: left;
+    font-size: 10px;
+}
+
+.stumpy_cards .card > .preparation .name::after {
+	content: attr(label);
+}
+
+.stumpy_cards .card > .preparation .description {
+	display: none;
+}
+
+.stumpy_cards .card > .preparation .uses {
+	top: 48px;
+	height: 22px;
+
+}
+
+
 
 .exploded_cards .card {
 	display: block;
@@ -2220,7 +2859,7 @@ span[compendium] {
 }
 
 .exploded_cards .card inventory::before {
-	content: 'Inventory';
+	content: 'Inventory (max: ' attr(max-items) ')';
 	display: block;
 	text-align: center;
 	font-weight: bolder;
@@ -2328,7 +2967,7 @@ span[compendium] {
 
 @keyframes battlefieldActiveGlowey {
 	0% {
-		box-shadow: inset 0px 0px 200px 0px rgba(255,255,255,0.8);		
+		box-shadow: inset 0px 0px 200px 0px rgba(255,0,0,0.8);		
 	}	
 	100% {
 		box-shadow: inset 0px 0px 200px 0px rgba(255,255,255,0.5);		

@@ -28,6 +28,22 @@ class Compendiums {
         parent.appendChild(content);
     }
 
+    static RenderPreparation(parent, infoPanel, path, hash) {
+        var thing = Compendiums.__findOrDefault(parent, infoPanel, hash, true);
+        if (!thing) return;
+        var content = Templates.inflate(qs(infoPanel, 'template'));
+        qs(content, '.compendium_view').appendChild(thing);
+        parent.appendChild(content);
+    }
+
+    static RenderAssignment(parent, infoPanel, path, hash) {
+        var thing = Compendiums.__findOrDefault(parent, infoPanel, hash, true);
+        if (!thing) return;
+        var content = Templates.inflate(qs(infoPanel, 'template'));
+        qs(content, '.compendium_view').appendChild(thing);
+        parent.appendChild(content);
+    }
+
 
 }
 WoofRootController.register(Compendiums);

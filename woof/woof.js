@@ -39,6 +39,13 @@ Array.prototype["extend"] = function(newArr) {
 	return this;
 }
 
+Array.prototype["extendNoMove"] = function(newArr) {
+	if (this == newArr) return;
+	var clone = newArr.clone();
+	this.extend(clone);
+	return this;
+}
+
 Array.prototype["toObject"] = function(keyFn, opt_valueFn) {
 	var toPut = {};
 	for (var i = 0; i < this.length; i++) {
@@ -533,11 +540,15 @@ class WoofRootController {
 		//   AddChild from the parent.
 		for (var [key, value] of nodesRemoved.entries()) {
 			// Simulate the destroy on the node itself.
-			WoofRootController.invokeHandlersOnPath(WoofRootController.buildNativeEvent("Destroy", value, false), [key], "wh-c");
-			WoofRootController.dispatchNativeOn(value.from, "Destroy", value, false);
-			WoofRootController.invokeHandlersOnPath(WoofRootController.buildNativeEvent("Destroy", value, false), [key], "wh-b");
+			var path = WoofRootController.__buildParentPath(value.from);
+			path.push(key);
+			WoofRootController.invokeHandlersOnPath(WoofRootController.buildNativeEvent("Destroy", value, false), path, "wh-c");
+			WoofRootController.dispatchNativeOn(key, "Destroy", value, false);
+			path.reverse();
+			WoofRootController.invokeHandlersOnPath(WoofRootController.buildNativeEvent("Destroy", value, false), path, "wh-b");
 			
 			// Dispatch on the parent.
+			// Simulate on the parent.
 			WoofRootController.dispatchNativeOn(value.from, "RemoveChild", value, false);
 		}
 		for (var [key, value] of nodesAdded.entries()) {
@@ -553,6 +564,16 @@ class WoofRootController {
 				WoofRootController.dispatchNativeOn(attrChange.node, "Attr", attrChange, false);
 			}
 		}
+	}
+
+	static __buildParentPath(elt) {
+		var path = [];
+		var doc = elt.ownerDocument;
+		while (!!elt && elt != doc && !WoofRootController._roots.has(elt)) {
+			path.unshift(elt); // Add to path.
+			elt = elt.parentNode;
+		}
+		return path;
 	}
 	
 	static buildNativeEvent(type, detail, cancelable) {
@@ -715,6 +736,12 @@ class WoofRootController {
 		var objectTypes = [""];
 		if (targetElt) {
 			var types = WoofRootController.getEventTargetsFor(targetElt);
+			if (evt.type == "Destroy") {
+				// Hack: Destroy events are removed from the DOM, so we need to get all types below
+				// to ensure that we capture all destroys.
+				types.extend(WoofRootController.getEventTargetsRecursiveFor(targetElt));
+			}
+	
 			objectTypes.extend(types);		
 			objectTypes.extend(objectTypes.map(type => "!" + type));
 		}
@@ -726,6 +753,13 @@ class WoofRootController {
 	/** Returns the set of targets to expand. */
 	static getEventTargetsFor(element) {
 		return WoofType.get(element);
+	}
+	
+	/** Find all types below. */
+	static getEventTargetsRecursiveFor(element) {
+		return WoofType.findAll(element).map(function(elt) {
+			return WoofType.get(elt);
+		}).flat();
 	}
 	
 	static parseHandlers(handlers) {
@@ -892,7 +926,16 @@ class WoofType {
 	}
 
 	static buildSelector(type) {
-		return "[wt~='" + type + "']";
+		if (!Array.isArray(type)) {
+			type = [type];
+		}
+
+		return type.map(function(t) {
+			if (t === undefined) {
+				return "[wt]";
+			}
+			return "[wt~='" + t + "']";
+		}).join(", ")
 	}
 
 	static buildSelectorFrom(type, id) {
@@ -1762,6 +1805,15 @@ class SRNG {
 		return toReturn;
 	}
 
+	nextInRange(min, max) {
+		this.__refresh();
+
+		var toReturn = Noise.intInRange(this.values, min, max, this.seed);
+		this.__tick();
+		return toReturn;
+
+	}
+
 	nextIdx(forArr) {
 		this.__refresh();
 
@@ -1798,6 +1850,14 @@ class AbstractDomController {
 
 	static bfindAll(config, elt, matcher) {
 		return Utils.bfindAll(elt, matcher || config.upStop || 'body', config.matcher);
+	}
+
+	static bfindAllInner(config, elt, matcher) {
+		return bfa(elt, matcher, config.matcher);
+	}
+
+	static bfindInner(config, elt, matcher) {
+		return bf(elt, matcher, config.matcher);
 	}
 
 	static find(config, elt){

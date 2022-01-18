@@ -26,7 +26,7 @@ class DialogScreen {
                 var child = opt_controller.inflateIn(me, params);
                 if (opt_controller.setup) opt_controller.setup(child, params);
             }
-            DialogScreen._pendingScreens[id] = [resolve, reject, opt_controller];
+            DialogScreen._pendingScreens[id] = [resolve, reject, opt_controller, params];
         });
     }
 
@@ -36,7 +36,7 @@ class DialogScreen {
         var pending = DialogScreen._pendingScreens[id];        
         pending[0](value);
         delete DialogScreen._pendingScreens[id];
-        if (pending[2] && pending[2].teardown) pending[2].teardown(me.children[0] || me);
+        if (pending[2] && pending[2].teardown) pending[2].teardown(me.children[0] || me, pending[3]);
         me.remove();
     }
 
@@ -46,7 +46,7 @@ class DialogScreen {
         var pending = DialogScreen._pendingScreens[id];        
         pending[1](value);
         delete DialogScreen._pendingScreens[id];
-        if (pending[2] && pending[2].teardown) pending[2].teardown(me.children[0] || me);
+        if (pending[2] && pending[2].teardown) pending[2].teardown(me.children[0] || me, pending[3]);
         me.remove();
     }
 }

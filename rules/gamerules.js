@@ -8,21 +8,12 @@ class GameRules {
     
         // Put up the run screen.
         Screen.showScreen(handler, runScreen);
-
         NoiseCounters.setCounter('seed', params.seed);
+
+        var setupRNG = new SRNG(NC.Seed, true);
 
         // Next up, generate the starter deck.
         var starterDeck = [
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
             Tactic.inflate(Tactic.findBlueprint(handler, "retreat")),
             Tactic.inflate(Tactic.findBlueprint(handler, "reposition")),
             Tactic.inflate(Tactic.findBlueprint(handler, "pivot")),
@@ -32,16 +23,44 @@ class GameRules {
             Tactic.inflate(Tactic.findBlueprint(handler, "go-slower"))
         ];
         starterDeck.forEach(function(content) {
+            RunInfo.addToDeck(runScreen, content);
+        });
+
+        var starterUnits = [
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler),
+            Units.sample_hero(handler)
+        ];
+        starterUnits.forEach(function(content) {
             var card = Card.inflate(Utils.UUID());
             card.appendChild(content);
-            RunInfo.addToDeck(runScreen,card);
+            RunInfo.addUnit(runScreen,card);
         });
-        RunInfo.setCurrentGold(handler, params.startingGold);
+
+        RunInfo.setCurrentGold(handler, params.startingGold);        
 
         // Seed our starter rumors.
-
         Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-rumors'), 'assignment').forEach(function(rumor) {
             RunInfo.addRumor(runScreen, Rumor.FromAssignmentBlueprint(rumor))
+        });
+
+        // Generate our visitors.
+        Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-visitors'), 'visitor').forEach(function(bp) {
+            RunInfo.addVisitor(runScreen, Visitor.FromBlueprintWithParams(bp, Units.randomVisitor(effect), Units._rng));
+        });
+
+        // Give ourselves some starting items.
+        var preparations = Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-preparation'), 'preparation');
+        times(10).forEach(function() {
+            RunInfo.addStorageItem(effect, Preparation.inflate(setupRNG.randomValue(preparations)));
+
         });
 
         var act = 1;
@@ -78,8 +97,8 @@ class GameRules {
      * }
      */
 
-    static acts = ["⛰️", "🔥","🌪️","💧"];
-    static days = ["🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌕"];
+     static acts = ["⛰️", "🔥","🌪️","💧"];
+     static days = ["🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌕"];
      static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
      static InvokeFn = new ScopedAttr("assignment-invoke-fn", FunctionAttr);
      static NewDay = GameEffect.handle(function(handler, effect, params) {
@@ -87,6 +106,8 @@ class GameRules {
         NoiseCounters.setCounter(NC.Day, ((params.act|0) << 4) + params.day);
         NoiseCounters.setCounter(NC.Unit, 0);
         NoiseCounters.setCounter(NC.Event, 0);
+
+        var RNG = new SRNG(NC.Seed, true, NC.Day); 
 
         var runScreen = RunScreen.find(handler);
         var container = qs(runScreen, WoofType.buildSelector("ScreenWrapper"));
@@ -104,28 +125,36 @@ class GameRules {
         }
         var ticket = PendingOpAttr.storeTicketOn(runScreen, effect, "NewDay");
 
-        // Before we clear rumors, we should find the ones with ignore results and process those.
-        TownScreen.getRumors(townScreen).forEach(function(rumor) {
-            GameRules.ProcessResults(rumor, { ignored: true });
-        });
-
-        TownScreen.clearRumors(townScreen);
-        TownScreen.clearAssignments(townScreen);
-
-        var doingNothing = Assignment.FromBlueprint(townScreen, 'hangingout');
-        Assignment.tag(doingNothing, "idle");
-        TownScreen.addAssignment(townScreen, doingNothing);
-        // Put all of our units in the doing-nothing assignment.
-        Assignment.AssignCards(doingNothing, RunInfo.getDeck(townScreen).filter(function(card) {
-            return Card.CardType.findGet(card) == 'unit';
-        }));
+        // Populate our rest-up assignment.
+        TownScreen.addAssignment(townScreen, Assignment.FromBlueprint(townScreen, 'hangingout'));
 
         // Populate rumors.
+        // (At some point this will come from NPCs.)
         var rumors = RunInfo.getRumors(effect);
         rumors.forEach(function(rumor) {
-            TownScreen.addRumor(townScreen, rumor);
+            TownScreen.addAssignment(townScreen, Assignment.FromRumor(rumor));
+            rumor.remove();
         });
 
+        // Populate visitors, but only one or two!
+        var visitorDistribution = [0, 1, 1, 1, 1, 2, 2];
+        var visitorCount = RNG.randomValueR(visitorDistribution);
+        var visitorOptions = RunInfo.getVisitors(townScreen);
+        var newVisitors = times(visitorCount).map(function() {
+            return RNG.randomValueR(visitorOptions);
+        }).filter(function(elt) { return !!elt; });
+
+        // Now that we know what visitors we're getting, return our old ones.
+        TownScreen.getVisitors(townScreen).forEach(function(visitor) {
+            Visitor.leaveTown(visitor);
+            RunInfo.addVisitor(effect, visitor);
+        });
+
+        newVisitors.forEach(function(visitor) {
+            Visitor.joinTown(visitor, RNG);
+            TownScreen.addVisitor(townScreen, visitor);
+        });       
+    
         return null;
     });
 
@@ -210,41 +239,43 @@ class GameRules {
 
     /**
      * {
-     * 
+     *      encounters: [Assignment elt]
      * }
      */
      static Victory = new ScopedAttr("victory", BoolAttr);
      static Ignored = new ScopedAttr("ignored", BoolAttr);
      static Blueprint = new ScopedAttr("blueprint", StringAttr);
      static ExecuteDay = GameEffect.handle(function(handler, effect, params) {
-        var townScreen = TownScreen.bfind(handler, 'body');
-        var assignmentHolder = WoofType.find(townScreen, "AssignmentHolder");
-        var defaultAssignment = Utils.bfind(effect, 'body', 'default-assignment');
-        var bps = WoofType.findAll(assignmentHolder, 'AssignmentBP');
-
-        var invokeFns = bps.map(function(bp) {
-            return {
-                elt: WoofType.findUp(bp, 'Assignment'),
-                invokeFn: GameRules.InvokeFn.findDown(bp) || defaultAssignment
-            }
-        });
+        var encounters = params.encounters;
+        var toRun = encounters.clone();
 
         var dayFn = function() {
-            if (invokeFns.length == 0) {
-                // We've invoked everything.
-
-                // Let's move our units back to the deck.
-                qsa(townScreen, "[wt~=Card]").forEach(function(card) {
-                    RunInfo.addToDeck(townScreen, card);
-                });
-
+            if (toRun.length == 0) {
+                // End the day.  Good job!
                 return GameEffect.createResults(effect);
             }
-            // TODO: Noise counter for events.
-            
-            var t = invokeFns.shift();
-            return GameRules.InvokeFn.invoke(t.invokeFn, t.elt).then(function(result) {
-                GameRules.ProcessResults(t.elt, result);
+
+            var toInvoke = toRun.shift();
+            TownScreen.Selected.set(toInvoke, true);
+
+            if (Assignment.GetAssignedCards(toInvoke).length == 0) {
+                // This one is ignored.  TODO: Add custom ignore functions.
+                GameRules.ProcessResults(toInvoke, {
+                    ignored: true
+                });
+                TownScreen.Selected.set(toInvoke, false);
+                return Promise.resolve().then(dayFn);
+            }
+
+            var invokeFn = GameRules.InvokeFn.findDown(toInvoke);
+            if (!invokeFn) {
+                // Look up our default.
+                var base = Utils.bfind(handler, 'body', 'default-assignment');
+                invokeFn = GameRules.InvokeFn.findDown(base);
+            }
+            return GameRules.InvokeFn.invoke(invokeFn, toInvoke).then(function(result) {
+                GameRules.ProcessResults(toInvoke, result);
+                TownScreen.Selected.set(toInvoke, false);
             }).then(dayFn);
         };
 
@@ -260,6 +291,18 @@ class GameRules {
         })).then(function() {
             PendingOpAttr.returnTicketOn(runScreen);
             GameEffect.setResult(effect);
+
+            // Now that we're done executing our day, we should move all our shit back.
+            encounters.forEach(function(assignment) {
+                // Move units back to where they belong.
+                Assignment.GetAssignedCards(assignment).forEach(function(card) {
+                    RunInfo.addUnit(handler, card);
+                });
+
+                if (Assignment.IsResolved(assignment)) {
+                    assignment.remove();
+                };
+            });
         });
     }
 
@@ -303,10 +346,11 @@ class GameRules {
         Assignment.GetAssignedCards(assignment).forEach(function(unit) {
             unitHolder.appendChild(unit);
         });
-        // Update the deck.
+
+        // Update the deck by cloning copies in.
         var deckHolder = qs(eventScreen, 'deck');
         RunInfo.getDeck(townScreen).forEach(function(card) {
-            deckHolder.appendChild(card);
+            deckHolder.appendChild(Card.WrapInCard(card.cloneNode(true)));
         });
 
         Screen.showScreen(townScreen, eventScreen);
@@ -314,15 +358,10 @@ class GameRules {
         return GameEffect.push(queue, GameEffect.create("Event", {
             eventScreen: eventScreen
         })).then(function(result) {
-            // Do cleanup here.
-
-            // First: Move the deck back.
-            Array.from(deckHolder.children).forEach(function(c) {
-                RunInfo.addToDeck(townScreen, c);
-            });
-
             // Then move the units back.
-            Assignment.AssignCards(assignment, a(unitHolder.children));
+            a(unitHolder.children).forEach(function(unit) {
+                Assignment.AddUnit(assignment, unit);
+            });
 
             // Lastly, process our new results.
             var results = qsa(eventScreen, 'results > result');

@@ -4,27 +4,42 @@ class RunInfo {
     static Day = new ScopedAttr("day", StringAttr);
     static CurrentGold = new ScopedAttr("current-gold", IntAttr);
 
-    static addToDeck(elt, card) {
-        var runInfo = RunInfo.find(elt);
-        var deck = qs(runInfo, "deck");
-        deck.appendChild(card);
+    static __getThings(selector) {
+        return function(elt) {
+            var runInfo = RunInfo.find(elt);
+            var thingsContainer = qs(runInfo, selector);
+            return a(thingsContainer.children);
+        }
     }
 
-    static getDeck(elt) {
-        var runInfo = RunInfo.find(elt);
-        var deck = qs(runInfo, "deck");
-        return Array.from(deck.children);
+    static __getHolder(selector) {
+        return function(elt) {
+            var runInfo = RunInfo.find(elt);
+            return qs(runInfo, selector);
+        }
     }
 
-    static addRumor(elt, rumor) {
-        var runInfo = RunInfo.find(elt);
-        var holder = qs(runInfo, "rumors");
-        holder.appendChild(rumor);
+    static __addThing(selector) {
+        return function(elt, thing) {
+            var runInfo = RunInfo.find(elt);
+            var thingsContainer = qs(runInfo, selector);
+            thingsContainer.appendChild(thing);
+        }
     }
 
-    static getRumors(elt) {
-        return qsa(RunInfo.find(elt), "rumors > *");
-    }
+    static getStorageHolder = RunInfo.__getHolder("storage");
+    static getStorageItems = RunInfo.__getThings("storage");
+    static addStorageItem = RunInfo.__addThing("storage");
+    static getVisitors = RunInfo.__getThings("visitors");
+    static addVisitor = RunInfo.__addThing("visitors");
+    static getDeckHolder = RunInfo.__getHolder("deck");
+    static getDeck = RunInfo.__getThings("deck");
+    static addToDeck = RunInfo.__addThing("deck");
+    static getRumors = RunInfo.__getThings("rumors");
+    static addRumor = RunInfo.__addThing("rumors");
+    static getUnits = RunInfo.__getThings("units");
+    static addUnit = RunInfo.__addThing("units");
+    static getUnitHolder = RunInfo.__getHolder("units");
 
     static setMonth(elt, month) {
         var runInfo = RunInfo.find(elt);        

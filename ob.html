@@ -19,9 +19,10 @@
 	    wh-b="Target.click>TargetController.OnTargetClick,
 			 .mouseover>HoverHelper.OnMouseOver,
 			 .mouseout>HoverHelper.OnMouseOut">
-	<div class="debug_wrapper" wh-b="ScreenWrapper.ScreenChange>TutorialHelper.OnScreenChange">
+	<div class="debug_wrapper"
+			wh-b="ScreenWrapper.ScreenChange|!Dialog.Create|!Dialog.Destroy|!Screen.Create|!Screen.Destroy>TutorialHelper.OnScreenChange">
 		<!-- Debug stuff here. -->
-		<div class="debug_panel"><span compendium="tutorial/title2">👩‍🏫</span><span class="screen" screen-label></span></div>
+		<div class="debug_panel"><span class="tutorial_button" compendium="tutorial/title2">👩‍🏫</span><span class="screen" screen-label></span></div>
 		<div class="info_panel_widget">
 			<div class="info_panel_contents"></div>
 		</div>
@@ -429,6 +430,28 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.6">
+			<info-panel>
+				<h2>V0.0.6</h2>
+				<p>Changes:</p>
+				<ul>
+					<li>Merchants: Every day, a few merchants will show up to your town.  You can spend your hard-earned gold to buy some items!</li>
+					<li>Item Changes:<ul>
+						<li>Most items will now exhaust or degrade.  Exhaust items have had their costs reduced to 0.</li>
+						<li>Degrading items will permanently use a durability on their first use in combat, and all subsequent uses only temporarily use up the durability.</li>
+					</ul></li>
+					<li>Manage Items: A new screen that lets you move items around between units and storage.</li>
+					<li>Embark: Embarking is now different.  You assign all your units at once, so you have a chance to shuffle them as much as you need to.</li>
+					<li>Compendium changes: <ul>
+						<li>Right-clicking on a quest/assignment will show you a hint in the info panel.</li>
+						<li>Right-clicking on a preparation card will show you a copy of that card in the info panel.</li>
+					</ul></li>
+					<li>Tutorial Changes: Lots of tutorial changes.</li>
+					<li>Trappings: Some colors adjusted per feedback.</li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -468,19 +491,27 @@
 			<info-panel>
 				<h2>Town Screen</h2>
 
+				<p>For now, your goal in this game is to make as much money as possible while keeping as many units alive as you can.</p>
 				<p>The top bar shows current run info.  The only useful thing there for now is your <span hover-help=".run_bar .gold_container">current Gold</span>, represented by a yellow circle: 🟡</p>
 				<p>In general, 🟡 with a number in it indicates that it costs that much to do the thing.</p>
-				<p>If you scroll down, you can see your <span hover-help="[tag=idle] .appearance">list of units</span>, which generally will sit around and do chores unless they get assigned to a more exciting quest.</p>
 
-				<p>There are 2 combat missions you can send units on at the start of a run:<ul>
-					<li><span hover-help=".town_rumor[name=rats]">The Rats</span>: A beginner fight with 8 rats that all attack in an uncoordinated fashion for small amounts of damage.  If you win this, you'll unlock a harder fight against Jimmy, the Rat King.</li>
-					<li><span hover-help=".town_rumor[name=golems]">The Golems</span>: A harder fight that demonstrates enemies that are strong to some unit abilities and can combo with each other.</li>
+				<p>In the town screen, you can do the following:<ul>
+					<li><span hover-help="[wt~=StorageButton]">Manage Items</span>: You have a stash of items, and a bunch of units that can bring them into combat.  This button allows you to swap items around your units.</li>
+					<li><span hover-help="[wt~=GoShopping]">Go Shopping</span>: Spend your gold on new items.  Any purchased items will go to your storage.</li>
+					<li><span hover-help="[wt~=Go]">Embark</span>: Send your units out on their <span hover-help=".town_assignment">adventures</span> for some <span hover-help="result">rewards</span>.</li>
 				</ul></p>
-				<p>You can take on multiple missions each day, dividing up your units into groups that work well together.</p>
 
-				<p>Click one of the <span hover-help="[wt~=BuyRumor]:not([disabled=true]">Prepare buttons</span> to prepare for that encounter!</p>
-				<p>To prepare for combat, choose which units to send to that encounter.  In general, look for units that have similar numbers in their <span hover-help=".stumpy_cards [wt~=Ability]">action icons</span>, and similar non-face icons in their <span hover-help="[wt~=Unit] .appearance">appearances</span>.  When you've selected some units (try to pick at least 5), click <span hover-help="[wt~=Accept]">Accept</span>.</p>
-				<p>Once you've prepared for combat, scroll down and click the <span hover-help="[wt~=Go]">Embark button</span>. </p>
+				<p>Feel free to go shopping and assign some items to your units, then <span hover-help="[wt~=Go]">Embark!</span></p>
+			</info-panel>
+		</tutorial>
+
+		
+		<tutorial hash="vignette">
+			<info-panel>
+				<h2>Story Vignette</h2>
+
+				<p>For now, this is flavor text, but eventually there will be actual impact from what happens in these!</p>
+				<p>Feel free to read the hastily-thrown-together flavor text, then click a <span hover-help="[wt~=Choice]">button</span> to proceed.</p>
 			</info-panel>
 		</tutorial>
 
@@ -537,12 +568,61 @@
 			</info-panel>
 		</tutorial>
 
+		<tutorial hash="manageitems">
+			<info-panel>
+				<h2>Manage Items</h2>
+
+				<p>This dialog allows you to equip your units with item cards.</p>
+
+				<p>Select a unit by clicking a <span hover-help=".units_holder .card">unit card</span>.  The currently-selected one glows annoyingly.</p>
+
+				<p>Their items will be shown in the <span hover-help=".unit_preview">panel below</span>.</p>
+
+				<p>You can move items to the unit's inventory by clicking an <span hover-help="[wt~=Dialog] .card > [wt~=Item]">item in storage</span>.</p>
+
+				<p>You can move items back to storage by clicking the <span hover-help="[wt~=Dialog] .battlefield_unit inventory [wt~=Item]">item in the unit's inventory.</span></p>
+
+				<p>You can click the <span hover-help="[wt~=EmptyAll]">Empty All Units button</span> to move all units items back to storage.</p>
+
+				<p>When you're done, click <span hover-help="[wt~=Okay]">Done</span>.</p>
+
+			</info-panel>
+		</tutorial>
+
+		<tutorial hash="shop">
+			<info-panel>
+				<h2>Shop</h2>
+
+				<p>Spend your <span hover-help=".run_bar .gold_container">Gold</span> on sweet <span hover-help=".shop_item">merch for sale</span>.</p>
+				<p>Hopefully it's obvious, but you can only buy things <span hover-help="[can-afford=true]">that you can afford.</span></p>
+				<p>Things you own are shown in <span hover-help=".storage_holder">Your storage</span>.  You can't sell things; it's only here so you can see what you already have laying around.</p>
+				<p>When you're done shopping, click <span hover-help="[wt~=Okay]">Done.</span></p>
+
+			</info-panel>
+		</tutorial>
+
+		<tutorial hash="embark">
+			<info-panel>
+				<h2>Embark</h2>
+
+				<p>This is where you assign <span hover-help="[wt~=Card]">units</span> to <span hover-help=".town_assignment">missions.</span></p>
+				<p><span hover-help=".town_assignment [wt~=Card]">Units already assigned to missions</span> will appear within the mission's row.  You can click the unit cards to unassign them, back into the <span hover-help=".units_holder">pending area</span>.</p>
+				<p>All units must be assigned before you can <span hover-help="[wt~=Okay]">embark</span>.</p>
+				<p>For now, click the <span hover-help="[wt~=Reset]">Reset Assignments</span> button to unassign all your units.</p>
+				<p>You can select one or more <span hover-help=".units_holder [wt~=Card]">unassigned units</span> by clicking them.  Units that are selected will be fully opaque and have a flashing border.  Select a few now.</p>				
+				<p>After selecting a few, some <span hover-help="[wt~=AddUnit]">Plus buttons</span> will appear in the mission rows.  Click that button to assign all selected units to that mission.</p>
+				<p>You can right click a <span hover-help=".quest_name">mission title</span> to view a hint for that mission.  Remember you can <span hover-help=".tutorial_button">return to this tutorial by right-clicking the 👩‍🏫</span> icon in the upper-left!</p>
+				<p>If this is your first time playing, choose 5 units to assign to <span hover-help="[wt~=Assignment][name=rats]">The Rats</span>.  Choose units whose <span hover-help="[wt~=Ability]">abilities</span> have similar numbers and whose <span hover-help="[wt~=Card] .appearance">avatars</span> have similar non-face icons.</p>
+				<p>Assign your other 5 units to <span hover-help="[wt~=Assignment][name=hangingout]">Hang Around The Base</span>, then click <span hover-help="[wt~=Okay]">Embark!</span></p>
+				<p>If you want to go shopping and to rearrange items, you can click <span hover-help="[wt~=Cancel]">the go-back-to-town button</span>.</p>
+			</info-panel>
+		</tutorial>
+
 		<concept hash="coolseeds">
 			<info-panel>
 				<h2>Cool Seeds</h2>
 				<p>Page for seeds that have neat or silly generation.</p>
 				<p><ul>
-					<li><pre>beef</pre>: The first unit has a cowboy hat and a bull potion.</li>
 				</ul></p>
 			</info-panel>
 		</concept>
@@ -790,15 +870,23 @@
 		</concept>
 		
 		<concept hash="assignments">
-			<info-panel>
+			<info-panel renderer="Compendiums.RenderAssignment">
 				<h2>Assignments</h2>
 
-				<p>Assignments are things you do each day to make money and prepare for boss fights.</p>
+				<p>Assignments are basically quests.  I dunno why I didn't just call them that in the first place.</p>
+				<p>You send units on these when you embark, and you may get <span compendium="concept/assignments/concept/results">rewards</span> when you return.</p>
+
+				<template>
+					<p>Right-click <span compendium="concept/assignments">here for the base page on assignments</span></p>
+					<div class="compendium_view">
+
+					</div>
+				</template>
 			</info-panel>
 
 			<concept hash="results">
 				<info-panel>
-					<h2>Results</h2>
+					<h2>Assignment Results</h2>
 					<p>Possible results from an adventure thing are money and healing.  More to come!</p>
 				</info-panel>
 			</concept>
@@ -829,7 +917,8 @@
 				<config></config>
 				<info label="The Rats"></info>
 				<event bp="rats"></event>
-				<assign min-units="1" max-units="8" cost="0"></assign>
+				<assign max-units="8" require="false" req-label="Up to 8 units"></assign>
+				<info wt="Hint">A basic encounter against rats.  Bring damage and get ready to change directions.</info>
 				<result>
 					<!-- Add self back to the list for now. -->
 					<add-rumor>
@@ -844,8 +933,9 @@
 			<assignment-blueprint name="golems">
 				<config></config>
 				<info label="The Golems"></info>
+				<info wt="Hint">A more difficult encounter against some statues that combo together to sttack you and defend themselves.  A Fire Bomb is recommended unless you've got good combos and damage-dealing potential!  Note: Bleed does not work on these guys!  You can thank JakeBreak for that one.</info>
 				<event bp="golems"></event>
-				<assign min-units="1" max-units="8" cost="0"></assign>
+				<assign max-units="8" required="false" req-label="Up to 8 units"></assign>
 				<result>
 					<!-- Add self back to the list for now. -->
 					<add-rumor>
@@ -860,8 +950,9 @@
 			<assignment-blueprint name="ratking">
 				<config></config>
 				<info label="Jimmy, the Rat King"></info>
+				<info wt="Hint">Jimmy loves his rats so much, he summons them in your cell block!  Bring melee damage (Strike is a good choice), and bring units that combo effectively, otherwise you might find yourself falling behind to Jimmy's summoning!</info>
 				<event bp="jimmyTheRatKing"></event>
-				<assign min-units="1" max-units="8" cost="0"></assign>
+				<assign max-units="8" required="false" req-label="Up to 8 units"></assign>
 				<result>
 					<!-- Add self back to the list for now. -->
 					<add-rumor>
@@ -878,7 +969,10 @@
 				<config></config>
 				<info assignment-invoke-fn="GameRules.LaunchEffect"></info>
 				<info encounter-fn="Events.success"></info>
-				<info label="Do Chores (each unit heals 5 HP and gains 1 gold)"></info>
+				<info default-for-units="true"></info>
+				<info label="Hang Around Base"></info>
+				<info wt="Hint">This is what units do by default.  You probably have better choices!</info>
+				<assign required="false" req-label="Each unit finds 1 gold and heals 5 HP"></assign>
 				<result>
 					<add-gold amount-fn="Events.hangOutGold" amount="1+"></add-gold>
  				</result>
@@ -892,7 +986,8 @@
 				<info assignment-invoke-fn="GameRules.LaunchEffect"></info>
 				<info encounter-fn="Events.success"></info>
 				<info label="Get Medical Help"></info>
-				<assign min-units="1" cost-fn="Events.CostPerUnit" max-units-fn="Events.MaxUnitsByCost" cost-per-unit="20" unit-filter="Events.DamagedUnits" unit-sort="Events.MostDamage"></assign>
+				<info wt="Hint">Useful if you need some healing super badly!</info>
+				<assign required="false" max-units="5" unit-filter="Events.DamagedUnits" cost-fn="Events.CostPerUnit" cost-per-unit="20" req-label="Costs 20 🟡 per unit"></assign>
 				<result>
 					<heal-units amount="100"></heal-units>
 				</result>
@@ -903,6 +998,65 @@
 					</add-rumor>
 				</result>
 			</assignment-blueprint>
+		</concept>
+
+		<concept hash="visitor">
+			<info-panel>
+				<h2>Visitor</h2>
+				<p>These people sell you stuff and tell you about interesting rumors!</p>				
+			</info-panel>
+			
+
+			<starting-visitors>
+				<visitor bp="soldier"></visitor>
+				<visitor bp="artificer"></visitor>
+				<visitor bp="apothecary"></visitor>
+			</starting-visitors>
+
+			<!-- Visitors -->
+			<visitor-blueprint name="soldier">
+				<info appearance-options="👨‍🏭 👩‍🏭"></info>
+				<merchant bp="soldier"></merchant>
+			</visitor-blueprint>
+			
+			<visitor-blueprint name="artificer">
+				<info appearance-options="🧙‍♂️ 🧙‍♀️"></info>
+				<merchant bp="artificer"></merchant>
+			</visitor-blueprint>
+
+			<visitor-blueprint name="apothecary">
+				<info appearance-options="👨‍⚕️ 👩‍⚕️"></info>
+				<merchant bp="apothecary"></merchant>
+			</visitor-blueprint>
+
+
+			<!-- Merchant blueprints -->
+			<merchant-blueprint name="soldier">
+				<inventory>
+					<preparation bp="barricade"></preparation>
+					<preparation bp="throwingknife"></preparation>
+					<preparation bp="fireBomb"></preparation>
+				</inventory>
+			</merchant-blueprint>
+
+			<merchant-blueprint name="artificer">
+				<inventory>
+					<preparation bp="blinkCrystal"></preparation>
+					<preparation bp="retreatCloak"></preparation>
+					<preparation bp="fireBomb"></preparation>
+				</inventory>
+			</merchant-blueprint>
+
+			<merchant-blueprint name="apothecary">
+				<inventory>
+					<preparation bp="minorDamagePot"></preparation>
+					<preparation bp="minorDefensePot"></preparation>
+					<preparation bp="turtlePot"></preparation>
+					<preparation bp="cheetahPot"></preparation>
+					<preparation bp="fireBomb"></preparation>
+				</inventory>
+			</merchant-blueprint>
+
 
 		</concept>
 
@@ -1055,7 +1209,7 @@
 		</concept>
 
 		<concept hash="preparations">
-			<info-panel>
+			<info-panel renderer="Compendiums.RenderPreparation">
 				<h2>Preparations</h2>
 
 				<p>Preparations are cards that you can play to create instant efects on the battlefield.  They're a way that you can trade money for immediate efficacy.</p>
@@ -1066,12 +1220,38 @@
 				</ul></p>
 				<p>If the card has no available uses (all ❌), it's removed from the combat, but will be put back in the owning unit's inventory after combat.</p>
 				<p>If the card has no available uses because they were all 🔴, the card is gone forever.  Go buy more, when that's implemented.  Use those firebombs wisely.</p>
+
+				<template>
+					<p>Right-click <span compendium="concept/preparations">here for the base page on Preparations.</span></p>
+					<div class="compendium_view">
+
+					</div>
+				</template>
 			</info-panel>
+
+			<starting-preparation>
+				<preparation bp="barricade"></preparation>
+				<preparation bp="minorDamagePot"></preparation>
+				<preparation bp="throwingknife"></preparation>
+				<preparation bp="turtlePot"></preparation>
+				<preparation bp="cheetahPot"></preparation>
+				<preparation bp="minorDefensePot"></preparation>
+				<preparation bp="blinkCrystal"></preparation>
+				<preparation bp="fireBomb"></preparation>
+				<preparation bp="retreatCloak"></preparation>
+			</starting-preparation>
+
+			<preparation-mode name="default" init-fn="Preparation.InitDefaultMode"></preparation-mode>
+			<preparation-mode name="degrade" init-fn="Preparation.InitDegradeMode"></preparation-mode>
+			<preparation-mode name="exhaust" init-fn="Preparation.InitExhaustMode"></preparation-mode>
+
+			<preparation-use-type name="default" on-use-fn="Preparation.OnDefaultUse"></preparation-use-type>
+			<preparation-use-type name="exhaust" on-use-fn="Preparation.OnExhaustUse"></preparation-use-type>
 
 			<preparation-blueprint name="barricade" target-fn="Barricade.target" invoke-fn="Barricade.invoke">
 				<div label="Barricade" appearance_1="🧱"></div>
 				<div class="description">Drops a barricade onto the battlefield.  Barricades can be used to block cells, which affects targeting.</div>
-				<div cost="3" uses="5"></div>
+				<div cost="3" uses="5" mode="degrade"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="throwingknife" target-fn="Preparations.FrontEnemyInAdjacentBlockTarget" invoke-fn="OffensiveItems.throwingKnife">
@@ -1083,43 +1263,43 @@
 			<preparation-blueprint name="minorDamagePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.minorBaseDamage">
 				<div label="Bull Potion" appearance_1="🧪" appearance_2="🐂"></div>
 				<div class="description">Increases damage dealt by your unit's ⚔️⚾🏹 skills by 3.</div>
-				<div cost="3" uses="1"></div>
+				<div cost="0" uses="1" mode="exhaust"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="minorDefensePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.minorBaseDefense">
 				<div label="Bear Potion" appearance_1="🧪" appearance_2="🐻"></div>
 				<div class="description">Increases defense gained by your unit's 🛡️ skills by 3.</div>
-				<div cost="3" uses="1"></div>
+				<div cost="0" uses="1" mode="exhaust"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="turtlePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.turtlePotion">
 				<div label="Turtle Soup" appearance_1="🥣" appearance_2="🐢"></div>
 				<div class="description">Increase cooldowns on all your skills by 2.  Gain 15 🛡️.</div>
-				<div cost="3" uses="1"></div>
+				<div cost="0" uses="2" mode="exhaust"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="cheetahPot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.cheetahPotion">
 				<div label="Cheetah Soup" appearance_1="🥣" appearance_2="🐆"></div>
 				<div class="description">Decrease cooldowns on all your skills to 1.</div>
-				<div cost="3" uses="1"></div>
+				<div cost="0" uses="2" mode="exhaust"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="blinkCrystal" target-fn="BlinkCrystal.TargetFn" invoke-fn="BlinkCrystal.invoke">
 				<div label="Blink Crystal" appearance_1="💎" appearance_2="🧿"></div>
 				<div class="description">Teleport a unit to a space in the same cell block.</div>
-				<div cost="3" uses="3"></div>
+				<div cost="3" uses="3" mode="degrade"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="fireBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.fireBomb">
 				<div label="Fire Bomb" appearance_1="💣" appearance_2="🔥"></div>
 				<div class="description">Deal 50 damage to enemies in a cell and the 4 adjacent cells around them within their block.</div>
-				<div cost="5" uses="1" exhaust="true"></div>
+				<div cost="0" uses="1" mode="exhaust"></div>
 			</preparation-blueprint>
 
 			<preparation-blueprint name="retreatCloak" target-fn="Preparations.AllyUnitTarget" invoke-fn="DefensiveItems.instantRetreat">
 				<div label="Raven Hat" appearance_1="🎩" appearance_2="🐦"></div>
 				<div class="description">A selected unit immediately retreats from the battlefield.</div>
-				<div cost="3" uses="1"></div>
+				<div cost="0" uses="3" mode="exhaust"></div>
 			</preparation-blueprint>
 		</concept>
 
@@ -1388,7 +1568,7 @@
 		</template>
 
 		<template name="unit_select_screen">
-			<div class="unit_select EXTRA_CLASSES" minimum_units="MINIMUM_UNITS" maximum_units="MAXIMUM_UNITS"
+			<div wt="Dialog" class="unit_select dialog EXTRA_CLASSES" minimum_units="MINIMUM_UNITS" maximum_units="MAXIMUM_UNITS"
 			    wh-c="Accept.click>UnitSelect.Accept,
 					  Cancel.click>UnitSelect.Cancel,
 					  Card.Attr:selected>UnitSelect.OnSelected,
@@ -1408,14 +1588,82 @@
 
 			</div>
 		</template>
+
+		<template name="manage_items_dialog">
+			<div wt="Dialog" class="manage_items dialog EXTRA_CLASS"
+			screen-label="Manage Items" tutorial-label="tutorial/manageitems"
+			    wh-c="Okay.click>ManageItemsDialog.Accept,
+					  EmptyAll.click>ManageItemsDialog.EmptyAll"
+				wh-b="Card.click>ManageItemsDialog.CardClicked,
+					  Item.click>ManageItemsDialog.ItemClicked">
+				<div class="header"><span class="first"></span></div>
+				<div class="storage_header"></div>
+				<div class="storage_holder stumpy_cards"></div>
+				<div class="units_holder stumpy_cards"></div>
+				<div class="unit_preview exploded_cards" facing="up"></div>
+				<div class="button_holder">
+					<button wt="EmptyAll">Empty All Units</button>
+					<button wt="Okay">Done</button>
+				</div>
+			</div>
+		</template>
 		
-		<template name="dialog_tester">
-			<div wh-c="Resolve.click>DialogTester.Resolve, Reject.click>DialogTester.Reject">
-				<button wt="Resolve">Resolve</button>
-				<button wt="Reject">Reject</button>
+		<template name="shop_dialog">
+			<div wt="Dialog" class="shop_dialog dialog EXTRA_CLASS"
+			screen-label="Shop" tutorial-label="tutorial/shop"
+			    wh-c="Okay.click>ShopDialog.Done"
+				wh-b="Card.click>ShopDialog.ShopItemClick,
+					  Tab.click>ShopDialog.TabClicked">				
+				<div class="header"><span class="appearance_holder"></span><span class="name_holder"></span><span class="quote_holder"></span></div>				
+				<div class="inventory_header"></div>
+				<div class="inventory_holder stumpy_cards"></div>
+
+				<div class="tab_controls">
+					<div wt="Tab" mode-class="view_storage" class="unit_tab"></div>
+					<div wt="Tab" mode-class="view_units" class="unit_tab"></div>
+				</div>
+
+				<!-- Tab 1: Looking at storage. -->
+				<div class="storage_header"></div>
+				<div class="storage_holder stumpy_cards"></div>
+
+				<!-- Tab 2: Looking at units.  -->
+				<div class="units_holder stumpy_cards"></div>
+				<div class="unit_preview exploded_cards" facing="up"></div>
+
+				<div class="button_holder">
+					<button wt="Okay">Done</button>
+				</div>
 			</div>
 		</template>
 
+		<template name="shop_item">
+			<div class="shop_item"wt="ShopItem">		
+				<div class="card_holder"></div>		
+				<div class="price_holder"></div>
+			</div>
+		</template>
+
+		<template name="embark_dialog">
+			<div wt="Dialog" class="embark_dialog dialog EXTRA_CLASS"
+					screen-label="Embark" tutorial-label="tutorial/embark"
+					wh-c="Okay.click>EmbarkDialog.Accept,
+						  Cancel.click>EmbarkDialog.Cancel,
+						  Reset.click>EmbarkDialog.Reset"
+		  			wh-b="Card.click>EmbarkDialog.ClickCard,
+					  	  AddUnit.click>EmbarkDialog.ClickAddUnit">
+				<div class="header"></div>
+				<div class="units_holder stumpy_cards">
+				</div>
+				<div class="assignment_holder stumpy_cards"></div>
+				<div class="button_holder">
+					<button wt="Reset">Reset Assignments</button>
+					<button wt="Cancel">Wait, go back to town</button>
+					<button wt="Okay">Embark!</button><span class="pending_cost" cost="0"></span>
+				</div>
+			</div>
+		</template>		
+		
 		<template name="title_screen">
 			<div class="title_screen modal_screen" wt="Screen TitleScreen" screen-label="Title Screen" tutorial-label="tutorial/title2">
 				<h1> JSOBP Prototype</h1>
@@ -1442,6 +1690,7 @@
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
 						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span> <span compendium="version/0.0.5.7">V0.0.5.7</span> <span compendium="version/0.0.5.8">V0.0.5.8</span></li>
+						<li><span compendium="version/0.0.6">V0.0.6</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1465,14 +1714,25 @@
 		<template name="town_screen">
 			<div class="town_screen modal_screen" wt="Screen TownScreen" screen-label="Town Screen" tutorial-label="tutorial/townscreen"
 			    wh-c="BuyRumor.click>TownScreen.BuyRumor,
+					  StorageButton.click>TownScreen.ViewStorage,
+					  GoShopping.click>TownScreen.GoShopping,
 					  Go.click>TownScreen.OnEmbark"
 				wh-b="AssignmentHolder.AddChild|AssignmentHolder.RemoveChild>TownScreen.RefreshEmbark">
 				<h2>Town</h2>
 
-				<b>Assign your units to rumors and facilities!</b>
+				<p>Welcome to your town screen.  You can talk to visitors to buy supplies, and you can assign units to rumors to send them on adventures.</p>
+
+				<div class="facility_holder">
+					<div class="buttons">
+						<button wt="StorageButton">Manage Items</button>
+						<button wt="TacticsButton" disabled="true">Manage Tactics <br />(Coming Soon)</button>
+					</div>
+				</div>
+
+
+				<div class="visitor_holder"></div>
 				
 				<div class="rumor_holder">
-
 				</div>
 
 				<div class="assignment_group">
@@ -1480,7 +1740,7 @@
 
 					</div>
 					<div class="button_holder">
-						<button class="embark_button" wt="Go" disabled>Embark!</button>
+						<button class="embark_button" wt="Go">Embark!</button>
 					</div>
 				</div>
 
@@ -1488,10 +1748,26 @@
 			</div>
 		</template>
 
+		<template name="town_visitor">
+			<div wt="Visitor" class="town_visitor" compendium="concept/visitor">
+				<div class="appearance">
+					<div class="month" month="MONTH"></div>
+					<div class="day" day="DAY"></div>
+					<div class="avatar" appearance="AVATAR"></div>
+				</div>
+				<div class="name" name="NAME"></div>
+				<div class="shopping">
+					<button wt="GoShopping" class="shopping_button"></button>
+					<inventory></inventory>
+					<refill></refill>
+				</div>
+			</div>
+		</template>
+
 		<!-- Structure of a rumor -->
 		<template name="town_rumor">
 			<div class="town_rumor" wt="Rumor">
-				<span class="name" name="NAME"></span>
+				<span class="name" label="NAME"></span>
 				<span class="results" compendium="concept/assignments/concept/results"></span>
 				<span class="button_container">
 					<button wt="BuyRumor" compendium="concept/assignments/concept/cost">
@@ -1506,15 +1782,17 @@
 
 		<!-- Structure of an assignent.  -->
 		<template name="town_assignment">
-			<div class="town_assignment" wt="Assignment">
-				<span class="details">
-					<div class="name" label="NAME"></div>
-					<div class="results" compendium="concept/assignments/concept/results">
-					</div>
-				</span>
-				<span class="units micro_cards"></span>
-				<info wt="BP AssignmentBP">
-				</info>
+			<div class="town_assignment" wt="Assignment" pending-cost="0" compendium="concept/assignments"  compendium-hash-fn="WoofType.buildSelectorFor">
+				<div class="quest_text">
+					<div class="quest_name" label="NAME"></div>
+					<div class="quest_restrictions" req-label=""></div>
+				</div>
+				<div class="quest_giver"></div>
+				<div class="rewards" compendium="concept/assignments/concept/results"></div>
+				<div class="populate_units stumpy_cards">
+					<div wt="AddUnit" class="add_unit_button"></div>
+				</div>
+				<info wt="BP AssignmentBP"></info>
 			</div>
 		</template>
 
@@ -1536,7 +1814,7 @@
 		
 		<!-- Structure of an vignette -->
 		<template name="vignette_screen">
-			<div class="vignette_screen" wt="Screen VignetteScreen" screen-label="Vignette"
+			<div class="vignette_screen" wt="Screen VignetteScreen" screen-label="Vignette" tutorial-label="tutorial/vignette"
 					wh-b="Choice.click>EventRules.PickChoice">
 				<div class="story">
 					<div class="title"></div>
@@ -1715,13 +1993,16 @@
 		</template>
 
 		<template name="preparation">
-			<div class="preparation" card-type="preparation" target-fn="TARGET_FN" invoke-fn="INVOKE_FN" compendium="concept/preparations">
+			<div class="preparation" wt="Item" name="NAME" card-type="preparation" target-fn="TARGET_FN" invoke-fn="INVOKE_FN" compendium="concept/preparations" compendium-hash-fn="WoofType.buildSelectorFor">
 				<div class="appearance APPEARANCE_CLASS" appearance-1="APPEARANCE_1" appearance-2="APPEARANCE_2">
 					<div class="cost" cost="COST"></div>
 				</div> 
 				<div class="name" label="LABEL"></div>
-				<div class="uses" uses="USES" exhaust="EXHAUST"></div>
+				<div class="uses" uses="USES"></div>
 				<div class="description">DESCRIPTION</div>
+				<info wt="BP">
+
+				</info>
 			</div>
 		</template>
 
@@ -1810,7 +2091,6 @@
 				<inventory max-items="2">
 				</inventory>
 				<combos max-combos="2">
-
 				</combos>
 		</div>
 		</template>
@@ -1875,16 +2155,30 @@
 				<info wt="RunInfo" current-gold="0" day="🌖" month="⛰️"></info>
 				<deck wh-c=".AddChild>Ability.HoverHelpRefresh">
 					<!-- Where we store cards between encounters. -->
+
 				</deck>
 				<rumors>
-					<!-- Where we store options for random rumors between encounters. -->
+					<!-- Where we jam available rumors that aren't associated with other visitors. -->
 					
 				</rumors>
-				<reserved-units>
-					<dorm>
 
-					</dorm>
-				</reserved-units>				
+				<visitors>					
+					<!-- Where you jam visitors outside of known areas. -->
+
+				</visitors>
+
+				<storage>
+					<!-- Where you jam items not in unit inventories. -->
+
+				</storage>
+
+				<units>
+
+				</units>
+
+				<graveyard>
+
+				</graveyard>
 			</run-info>
 		</template>
 		
@@ -1935,7 +2229,11 @@
 		"ui/shared/unitselect",
 
 		"ui/town/assignment",
+		"ui/town/embarkscreen",
+		"ui/town/manageitems",
 		"ui/town/rumor",
+		"ui/town/shopdialog",
+		"ui/town/visitor",
 
 		// Misc shit.
 		// TODO: Try to get rid of this one.

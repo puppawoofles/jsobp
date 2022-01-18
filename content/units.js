@@ -38,6 +38,20 @@ class Units {
 
     static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
 
+    static _generate_birthdays() {
+        var returnMe = [];
+        for (var i = 0; i < Units._birthday_days.length; i++) {
+            for (var j = 0; j < Units._birthday_months.length; j++) {
+                returnMe.push({
+                    month: Units._birthday_months[j],
+                    day: Units._birthday_days[i]
+                });
+            }
+        }
+        return returnMe;
+    }
+    static _visitors_birthdays = Units._generate_birthdays();
+
     static _generate_units() {
         if (Units._all_units.length > 0) {
             return;
@@ -65,18 +79,6 @@ class Units {
         return returnMe;
     }
 
-    static _starting_preparation = [
-        "barricade",
-        "minorDamagePot",
-        "throwingknife",
-        "turtlePot",
-        "cheetahPot",
-        "minorDefensePot",
-        "blinkCrystal", 
-        "fireBomb",
-        "retreatCloak"
-    ];
-
     static __unit(innerFn) {
         return function(root) {            
             var unit = innerFn(root);
@@ -87,6 +89,12 @@ class Units {
             return unit;
         }
     }
+
+    static randomVisitor = Units.__unit(function(rootElt) {
+        var birthday = Units._rng.randomValueR(Units._visitors_birthdays);
+        birthday.name = Units._rng.randomValueR(Units._all_names);
+        return birthday;
+    });
 
     static Name = new ScopedAttr("name", StringAttr);
     static sample_hero = Units.__unit(function (rootElt) {
@@ -100,8 +108,7 @@ class Units {
         if (!!matched) {
             name = Units.Name.get(matched);
         } else {
-            var idx = Units._rng.nextIdx(Units._all_names);
-            name = Units._all_names.splice(idx, 1)[0];
+            name = Units._rng.randomValueR(Units._all_names);
         }
 
         var unit = Unit.inflate({
@@ -133,10 +140,6 @@ class Units {
         abilities.forEach(function(a) {
             script.appendChild(a);
         });
-
-        // Add random inventory item.
-
-        Unit.addToInventory(unit, Preparation.inflate(Preparation.findBlueprint(rootElt || document, randomValue(Units._starting_preparation))));
 
         TeamAttr.set(unit, Teams.Player);
 
@@ -248,6 +251,8 @@ class Units {
 
         Ability.applySkill(rootElt, firstAbility, "rat-redirect");
         Ability.applySkill(rootElt, secondAbility, "summon-rats");
+        var cooldown = Ability.CooldownDuration.findGet(secondAbility);
+        Ability.CooldownDuration.set(cooldown, 12); // Make this a little longer.
         Ability.applySkill(rootElt, thirdAbility, "shoot");
         Ability.applySkill(rootElt, fourthAbility, "scurry");
 

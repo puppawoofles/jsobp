@@ -6,7 +6,7 @@ class TutorialHelper {
     static OnScreenChange(event, handler) {
         var debugScreenLabel = qs(handler, ".debug_panel " + TutorialHelper.ScreenLabel.buildSelector());
         var debugScreenCompendium = qs(handler, ".debug_panel " + TutorialHelper.Compendium.buildSelector());
-        var screens = qsa(handler, WoofType.buildSelector("Screen"));
+        var screens = qsa(handler, WoofType.buildSelector(["Screen", "Dialog"]));
         var title = '';
         var titleSet = false;
         while (screens.length > 0) {
@@ -21,14 +21,18 @@ class TutorialHelper {
                 titleSet = true;
             }
             // Update our tutorial.  We use our "last" one because that's the most specific one.
-            if (TutorialHelper.TutorialLabel.has(screen)) {
-                var currentNav = InfoPanel.currentNav(screen);
-                var newTutorialNav = TutorialHelper.TutorialLabel.get(screen);
-                TutorialHelper.Compendium.set(debugScreenCompendium, newTutorialNav);
 
-                if (currentNav.startsWith("tutorial") && currentNav != newTutorialNav) {
-                    // Attempt to auto-navigate                    
-            		Utils.setFragment(newTutorialNav);
+            var inHolder = WoofType.findUp(screen, "ScreenHolder");
+            if (!inHolder) {
+                if (TutorialHelper.TutorialLabel.has(screen)) {
+                    var currentNav = InfoPanel.currentNav(screen);
+                    var newTutorialNav = TutorialHelper.TutorialLabel.get(screen);
+                    TutorialHelper.Compendium.set(debugScreenCompendium, newTutorialNav);
+
+                    if (currentNav.startsWith("tutorial") && currentNav != newTutorialNav) {
+                        // Attempt to auto-navigate                    
+                        Utils.setFragment(newTutorialNav);
+                    }
                 }
             }
         }

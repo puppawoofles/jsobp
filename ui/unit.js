@@ -16,6 +16,8 @@ class Unit {
     static Appearance = new ScopedAttr('appearance', StringAttr);
     static Name = new ScopedAttr('name', StringAttr);
 
+    static MaxItems = new ScopedAttr("max-items", IntAttr);
+
     static Ephemeral = new ScopedAttr("ephemeral", BoolAttr);
     static Construct = new ScopedAttr("construct", BoolAttr);
 

@@ -12,24 +12,22 @@ class Preparations {
         var cost = Preparation.Cost.findGet(preparation);
         RunInfo.setCurrentGold(preparation, currentGold - cost);
 
-        var uses = Preparation.Used.findAll(preparation, false);
-        Preparation.Used.set(uses[0], true);
-        if (uses.length == 1) {
-            if (Preparation.Exhaust.findGet(preparation)) {
-                // This card exhausts.  It should be removed.
-                preparation.remove();
-                return false;
-            }
-            // This card needs a break and needs to go back to the deck.
-
-            // TODO: This is kind of gross.  Maybe something saner?
+        Preparation.OnUse(preparation);        
+        if (Preparation.HasAvailableUses(preparation)) {
+            // Discard.
+            return true;
+        }
+        if (Preparation.HasRemainingUses(preparation)) {
+            // Return to deck.
+            Preparation.resetUses(preparation);
             var current = EffectQueue.findCurrentEvent(preparation);
             var encounterParams = GameEffect.getParams(GameEffect.findParentByType(current, 'Encounter'));
-            Preparation.resetUses(preparation);
             encounterParams.deck.appendChild(preparation);
             return false;
         }
-        return true;
+        // This card is fully drained.
+        preparation.remove();
+        return false;
     }
     
     static AllyUnitTarget(card) {

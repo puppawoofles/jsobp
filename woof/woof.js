@@ -984,6 +984,29 @@ class Counters {
 
 }
 
+class WeightedValue {
+	/**
+	 * Obj has a set of KV pairs, where the K is the thing and the V is the weight.
+	 */
+	static getValue(obj, float) {
+		var total = 0;
+		var kInOrder = [];
+		for (var [k, v] of Object.entries(obj)) {
+			total += v;
+			kInOrder.push(k);
+		};
+		if (total == 0) return null; // No valid options.
+		var selected = Math.floor(float * total);
+		return kInOrder.findFirst(function(v) {
+			if (selected < obj[v]) {
+				return true;
+			}
+			selected -= obj[v];
+			return false;
+		});
+	}
+}
+
 class ParamList {
 	static add(element, param, type) {
 		param = param.toLowerCase();
@@ -1146,7 +1169,7 @@ class Utils {
 
 	static deserializeBlob(relativeTo, blob) {
 		var parsed = JSON.parse(blob);
-		return Utils.normalizeBlob(relativeTo, parsed);
+		return Utils.denormalizeBlob(relativeTo, parsed);
 	}
 
 	static denormalizeBlob(elt, params) {
@@ -1822,12 +1845,24 @@ class SRNG {
 		return toReturn;
 	}
 
-	randomValue(forArr) {
-		return forArr[this.nextIdx(forArr)];
+	randomValue(forArr, optWeights) {
+		if (optWeights) {
+			var idx = WeightedValue.getValue(optWeights, this.next());
+			if (idx === null) return null;
+			return forArr[idx];
+		} else {
+			return forArr[this.nextIdx(forArr)];
+		}
 	}
 
-	randomValueR(forArr) {
-		return forArr.splice(this.nextIdx(forArr), 1)[0];
+	randomValueR(forArr, optWeights) {
+		if (optWeights) {
+			var idx = WeightedValue.getValue(optWeights, this.next());
+			if (idx === null) return null;
+			return forArr.splice(idx, 1)[0];
+		} else {
+			return forArr.splice(this.nextIdx(forArr), 1)[0];
+		}
 	}
 }
 

@@ -241,7 +241,9 @@ class EffectQueue {
                 // This will eventually slow the DOM to a crawl, but whatevs lol.
                 var resultElt = GameEffect.dumpToResult(current);
                 var parentEffect = GameEffect.getParent(current);
-                GameEffect.addResultElt(parentEffect, resultElt);
+				if (parentEffect) {
+					GameEffect.addResultElt(parentEffect, resultElt);
+				}
 				current.parentNode.removeChild(current);
 				break;
 		}

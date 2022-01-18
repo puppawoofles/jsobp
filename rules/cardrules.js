@@ -25,7 +25,8 @@ class CardRules {
 
     /**
      * {
-     *   from: top | random
+     *   from: top | random | specific
+     *   card: If specific, the card to draw.
      * }
      */
     static DrawCard = GameEffect.handle(function(handler, effect, params) {
@@ -35,14 +36,18 @@ class CardRules {
         var from = params.from || "random";
 
         return Promise.resolve().then(function() {
-            if (!CardHud.drawCard(cardHud, from == 'random')) {
-                // Unable to draw.  That means we need to shuffle and try again.
-                return GameEffect.push(effect, GameEffect.create("ShuffleDiscard", {}, handler)).then(function() {
-                    // Then try to draw again.
-                    return GameEffect.createResults(effect, {
-                        drawn: CardHud.drawCard(cardHud, from == 'random')
-                    });                        
-                });
+            if (params.card) {
+                CardHud.drawCard(cardHud, params.card);
+            } else {
+                if (!CardHud.drawCard(cardHud, from == 'random')) {
+                    // Unable to draw.  That means we need to shuffle and try again.
+                    return GameEffect.push(effect, GameEffect.create("ShuffleDiscard", {}, handler)).then(function() {
+                        // Then try to draw again.
+                        return GameEffect.createResults(effect, {
+                            drawn: CardHud.drawCard(cardHud, from == 'random')
+                        });                        
+                    });
+                }
             }
             return GameEffect.createResults(effect, {
                 drawn: true
@@ -73,9 +78,6 @@ class CardRules {
             });
         });
     });
-
-    
-
     
     static drawCard(elt, params, effect) {
         if (!effect) {     

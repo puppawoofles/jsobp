@@ -249,11 +249,7 @@ class EncounterRules {
                     Preparation.resetUses(card);
                 }
 
-                if (isElement(params.deck)) {
-                    params.deck.appendChild(card);
-                } else {
-                    RunInfo.addToDeck(handler, card);
-                }
+                params.deck.appendChild(card);
             });
 
             return GameEffect.createResults(effect, winOrLoss);            

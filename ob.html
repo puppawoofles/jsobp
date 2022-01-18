@@ -116,6 +116,7 @@
 						<handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
 						<handler label="VolleyTrackerVolley" handler="VolleyCounter.BeforeVolley" event-types="Volley:before"></handler>
 						<handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>
+						<handler label="ResetRNG" handler="Preparations.resetRng" event-types="PlayRound:after"></handler>
 
 					</handlers>
 
@@ -448,6 +449,24 @@
 					</ul></li>
 					<li>Tutorial Changes: Lots of tutorial changes.</li>
 					<li>Trappings: Some colors adjusted per feedback.</li>
+				</ul>
+			</info-panel>
+		</version>
+
+		<version hash="0.0.6.1">
+			<info-panel>
+				<h2>V0.0.6.1</h2>
+				<p>Changes:</p>
+				<ul>					
+					<li>Visitors: Added weights to visitors, so some appear more frequently than others.  In addition, their weights change if they show up or if they don't.</li>
+					<li>Merchants: Added a new merchant: the Mysterious Stranger.  He has something odd for sale, but better grab it, because you'll probably never see him again once he appears!</li>
+					<li>Preparations: <ul>
+						<li>Mystery Box: I wonder what it does?</li>
+						<li>Ice Bomb: Freezes enemies for ~6 volleys.</li>
+						<li>Gust Bomb: Pushes enemies away from a central point.</li>
+						<li>Pebble Bomb: Shreds armor (and creates vulnerability).</li>
+					</ul></li>
+					<li>Game: Upped the max number of days to 32 days (up from 8).</li>
 				</ul>
 			</info-panel>
 		</version>
@@ -1008,6 +1027,7 @@
 			
 
 			<starting-visitors>
+				<visitor bp="mysterious_stranger"></visitor>
 				<visitor bp="soldier"></visitor>
 				<visitor bp="artificer"></visitor>
 				<visitor bp="apothecary"></visitor>
@@ -1015,47 +1035,70 @@
 
 			<!-- Visitors -->
 			<visitor-blueprint name="soldier">
+				<info frequency="8" on-join-fn="Visitors.HalfFrequency" on-skip-fn="Visitors.PlusOneFrequency"></info>
 				<info appearance-options="👨‍🏭 👩‍🏭"></info>
 				<merchant bp="soldier"></merchant>
 			</visitor-blueprint>
 			
 			<visitor-blueprint name="artificer">
+				<info frequency="7" on-join-fn="Visitors.HalfFrequency" on-skip-fn="Visitors.PlusOneFrequency"></info>
 				<info appearance-options="🧙‍♂️ 🧙‍♀️"></info>
 				<merchant bp="artificer"></merchant>
 			</visitor-blueprint>
 
 			<visitor-blueprint name="apothecary">
+				<info frequency="6" on-join-fn="Visitors.HalfFrequency" on-skip-fn="Visitors.PlusOneFrequency"></info>
 				<info appearance-options="👨‍⚕️ 👩‍⚕️"></info>
 				<merchant bp="apothecary"></merchant>
+			</visitor-blueprint>
+
+			<visitor-blueprint name="mysterious_stranger">
+				<info frequency="1" on-join-fn="Visitors.ZeroFrequency" ></info>
+				<info>
+					<name-option value="Mysterious Stranger"></name-option>
+				</info>
+				<info appearance-options="😎" extra-classes="mysterious_stranger"></info>
+				<merchant>
+					<inventory-bp items-for-sale="1">
+						<preparation bp="sp_mysteryBox"></preparation>
+					</inventory-bp>
+				</merchant>
 			</visitor-blueprint>
 
 
 			<!-- Merchant blueprints -->
 			<merchant-blueprint name="soldier">
-				<inventory>
+				<inventory-bp items-for-sale="3">
 					<preparation bp="barricade"></preparation>
 					<preparation bp="throwingknife"></preparation>
 					<preparation bp="fireBomb"></preparation>
-				</inventory>
+					<preparation bp="iceBomb"></preparation>
+					<preparation bp="windBomb"></preparation>
+					<preparation bp="earthBomb"></preparation>
+				</inventory-bp>
 			</merchant-blueprint>
 
 			<merchant-blueprint name="artificer">
-				<inventory>
+				<inventory-bp items-for-sale="3">
 					<preparation bp="blinkCrystal"></preparation>
 					<preparation bp="retreatCloak"></preparation>
 					<preparation bp="fireBomb"></preparation>
-				</inventory>
+					<preparation bp="iceBomb"></preparation>
+					<preparation bp="windBomb"></preparation>
+					<preparation bp="earthBomb"></preparation>
+				</inventory-bp>
 			</merchant-blueprint>
 
 			<merchant-blueprint name="apothecary">
-				<inventory>
+				<inventory-bp items-for-sale="3">
 					<preparation bp="minorDamagePot"></preparation>
 					<preparation bp="minorDefensePot"></preparation>
 					<preparation bp="turtlePot"></preparation>
 					<preparation bp="cheetahPot"></preparation>
-					<preparation bp="fireBomb"></preparation>
-				</inventory>
+				</inventory-bp>
 			</merchant-blueprint>
+
+
 
 
 		</concept>
@@ -1229,7 +1272,7 @@
 				</template>
 			</info-panel>
 
-			<starting-preparation>
+			<starting-preparation count="10">
 				<preparation bp="barricade"></preparation>
 				<preparation bp="minorDamagePot"></preparation>
 				<preparation bp="throwingknife"></preparation>
@@ -1240,13 +1283,19 @@
 				<preparation bp="fireBomb"></preparation>
 				<preparation bp="retreatCloak"></preparation>
 			</starting-preparation>
+			
+			<starting-preparation count="0"> <!-- Debug item test. -->
+				<preparation bp="sp_mysteryBox"></preparation>
+			</starting-preparation>
 
-			<preparation-mode name="default" init-fn="Preparation.InitDefaultMode"></preparation-mode>
-			<preparation-mode name="degrade" init-fn="Preparation.InitDegradeMode"></preparation-mode>
-			<preparation-mode name="exhaust" init-fn="Preparation.InitExhaustMode"></preparation-mode>
+			<preparation-mode name="default" init-fn="Preparations.InitDefaultMode"></preparation-mode>
+			<preparation-mode name="degrade" init-fn="Preparations.InitDegradeMode"></preparation-mode>
+			<preparation-mode name="exhaust" init-fn="Preparations.InitExhaustMode"></preparation-mode>
+			<preparation-mode name="gift" init-fn="Preparations.InitGiftMode"></preparation-mode>
 
-			<preparation-use-type name="default" on-use-fn="Preparation.OnDefaultUse"></preparation-use-type>
-			<preparation-use-type name="exhaust" on-use-fn="Preparation.OnExhaustUse"></preparation-use-type>
+			<preparation-use-type name="default" on-use-fn="Preparations.OnDefaultUse"></preparation-use-type>
+			<preparation-use-type name="exhaust" on-use-fn="Preparations.OnExhaustUse"></preparation-use-type>
+			<preparation-use-type name="gift" on-use-fn="Preparations.OnGiftUse"></preparation-use-type>
 
 			<preparation-blueprint name="barricade" target-fn="Barricade.target" invoke-fn="Barricade.invoke">
 				<div label="Barricade" appearance_1="🧱"></div>
@@ -1292,7 +1341,25 @@
 
 			<preparation-blueprint name="fireBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.fireBomb">
 				<div label="Fire Bomb" appearance_1="💣" appearance_2="🔥"></div>
-				<div class="description">Deal 50 damage to enemies in a cell and the 4 adjacent cells around them within their block.</div>
+				<div class="description">Deal 30 damage to enemies in a cell and the 4 adjacent cells around them within their block.</div>
+				<div cost="0" uses="1" mode="exhaust"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="iceBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.iceBomb">
+				<div label="Ice Bomb" appearance_1="💣" appearance_2="💧"></div>
+				<div class="description">Deal 15 damage to enemies in a cell and the 4 adjacent cells around them within their block and delays their actions by 6 volleys.</div>
+				<div cost="0" uses="1" mode="exhaust"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="windBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.windBomb">
+				<div label="Gust Bomb" appearance_1="💣" appearance_2="🌪️"></div>
+				<div class="description">Enemies in the same cell block adjacent to the chosen cell are pushed away from the chosen cell.</div>
+				<div cost="0" uses="1" mode="exhaust"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="earthBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.earthBomb">
+				<div label="Pebble Bomb" appearance_1="💣" appearance_2="⛰️"></div>
+				<div class="description">Applies 45 vulnerability to enemies in a cell and the 4 adjacent cells around them within their block.</div>
 				<div cost="0" uses="1" mode="exhaust"></div>
 			</preparation-blueprint>
 
@@ -1300,6 +1367,21 @@
 				<div label="Raven Hat" appearance_1="🎩" appearance_2="🐦"></div>
 				<div class="description">A selected unit immediately retreats from the battlefield.</div>
 				<div cost="0" uses="3" mode="exhaust"></div>
+			</preparation-blueprint>
+			
+			<preparation-blueprint name="sp_bombBag" target-fn="Preparations.Owner" invoke-fn="SpecialItems.bombBag">
+				<div label="Bomb Bag" appearance_1="👜" appearance_2="💣"></div>
+				<div class="description">Must be played on its owner.  Create a random bomb card in your hand.</div>
+				<div cost="10" uses="3"></div>
+			</preparation-blueprint>
+
+			<preparation-blueprint name="sp_mysteryBox" target-fn="Preparations.Owner" invoke-fn="SpecialItems.mysteryBox">
+				<div label="Mystery Box" appearance_1="🎁" appearance_2="❓"></div>
+				<div class="description">Must be played on its owner. Keep using it and maybe you'll get something nice!</div>
+				<div cost="5" uses="4" mode="gift"></div>
+				<info class="gift">
+					<preparation bp="sp_bombBag"></preparation>
+				</info>
 			</preparation-blueprint>
 		</concept>
 
@@ -1690,7 +1772,7 @@
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
 						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span> <span compendium="version/0.0.5.7">V0.0.5.7</span> <span compendium="version/0.0.5.8">V0.0.5.8</span></li>
-						<li><span compendium="version/0.0.6">V0.0.6</span></li>
+						<li><span compendium="version/0.0.6">V0.0.6</span> <span compendium="version/0.0.6.1">V0.0.6.1</span></li>
 					</ul>
 				</div>
 			</div>
@@ -1756,10 +1838,12 @@
 					<div class="avatar" appearance="AVATAR"></div>
 				</div>
 				<div class="name" name="NAME"></div>
+				<info wt="VisitorBP"></info>
 				<div class="shopping">
 					<button wt="GoShopping" class="shopping_button"></button>
 					<inventory></inventory>
 					<refill></refill>
+					<info wt="BP"></info>
 				</div>
 			</div>
 		</template>
@@ -2101,7 +2185,6 @@
 					wh-b=".Attr:volley_count>Ability.OnChange,
 						  .Attr:current-cooldown>Ability.OnCooldownChange,
     					  .Attr:active-in>Ability.OnChange" slot-type="SLOT_TYPE">
-				<span class="volley_count" volley_count="VOLLEY" og_volley_count="VOLLEY" warmup-time="VOLLEY" cooldown-duration="8" current-cooldown="VOLLEY"><span class="useful_icon"></span></span>
 				<div class="activation_info" active-in="" compendium="concept/unit/concept/activation">
 					<div class="dir"></div>
 					<div class="box f1 front left"></div>
@@ -2115,6 +2198,7 @@
 					<div class="box b3 back right"></div>
 				</div>
 				<span class="label" label="" short-label=""></span>
+				<span class="volley_count" volley_count="VOLLEY" og_volley_count="VOLLEY" warmup-time="VOLLEY" cooldown-duration="8" current-cooldown="VOLLEY"><span class="useful_icon"></span></span>
 				<blueprints wh-b=".AddChild|.RemoveChild|.Attr>Ability.OnChange"></blueprints>
 			</div>
 		</template>
@@ -2265,6 +2349,7 @@
 		"content/tactics",
 		"content/units",
 		"content/unitskills",
+		"content/visitors",
 		"ob"
 		).then(function() {
 			// Register our document root to be handled by the framework.

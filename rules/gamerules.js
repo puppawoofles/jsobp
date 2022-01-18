@@ -2,6 +2,8 @@ class GameRules {
     static RunTicket = new ScopedAttr("run-ticket", StringAttr);
     static RunEffect = new ScopedAttr("run-effect", StringAttr);
 
+    static Count = new ScopedAttr("count", IntAttr);
+
     static NewRun = GameEffect.handle(function(handler, effect, params) {
         Logger.info("Got a request for a run, seed: ", params.seed);
         var runScreen = RunScreen.inflate();
@@ -57,10 +59,12 @@ class GameRules {
         });
 
         // Give ourselves some starting items.
-        var preparations = Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-preparation'), 'preparation');
-        times(10).forEach(function() {
-            RunInfo.addStorageItem(effect, Preparation.inflate(setupRNG.randomValue(preparations)));
-
+        Utils.bfindAll(effect, 'body', 'starting-preparation').forEach(function(startingPreparation) {
+            var count = GameRules.Count.get(startingPreparation);
+            var preparations = Blueprint.findAll(startingPreparation, 'preparation');
+            times(count).forEach(function() {
+                RunInfo.addStorageItem(effect, Preparation.inflate(setupRNG.randomValue(preparations)));
+            });    
         });
 
         var act = 1;
@@ -68,7 +72,7 @@ class GameRules {
         var maxDay = 8;
 
         var dayFn = function() {
-            if (act > 1) {
+            if (act > 4) {
                 // Run over!
                 return GameEffect.createResults(effect);
             }
@@ -96,6 +100,8 @@ class GameRules {
      *   day: int
      * }
      */
+
+    static Frequency = new ScopedAttr("frequency", IntAttr);
 
      static acts = ["⛰️", "🔥","🌪️","💧"];
      static days = ["🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌕"];
@@ -141,20 +147,30 @@ class GameRules {
         var visitorCount = RNG.randomValueR(visitorDistribution);
         var visitorOptions = RunInfo.getVisitors(townScreen);
         var newVisitors = times(visitorCount).map(function() {
-            return RNG.randomValueR(visitorOptions);
+            var visitorsByWeight = visitorOptions.toObject(function(v, i) {
+                return i;
+            }, function(v, i) {
+                return GameRules.Frequency.findGet(v) || 0;
+            });
+
+            return RNG.randomValueR(visitorOptions, visitorsByWeight);
         }).filter(function(elt) { return !!elt; });
 
         // Now that we know what visitors we're getting, return our old ones.
         TownScreen.getVisitors(townScreen).forEach(function(visitor) {
-            Visitor.leaveTown(visitor);
+            Visitor.leaveTown(visitor, RNG);
             RunInfo.addVisitor(effect, visitor);
+        });
+
+        visitorOptions.forEach(function(visitor) {
+            Visitor.skipTown(visitor, RNG);
         });
 
         newVisitors.forEach(function(visitor) {
             Visitor.joinTown(visitor, RNG);
-            TownScreen.addVisitor(townScreen, visitor);
-        });       
-    
+            TownScreen.addVisitor(townScreen, visitor);            
+        });
+
         return null;
     });
 

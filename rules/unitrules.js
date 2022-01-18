@@ -245,7 +245,6 @@ class UnitRules {
      *   target: unit ref,
      *   direction: direction (FacingAttr)
      *   amount: the number of squares to push.
-     *   bonusDamage: int
      * }
      */
     static PushUnit = GameEffect.handle(function(handler, effect, params) {
@@ -339,7 +338,6 @@ class UnitRules {
      * {
      *  firstUnit: Required unit ref
      *  secondUnit: Optional unit ref
-     *  bonusDamage: How much extra damage.
      * }
      */
     static UnitCollision = GameEffect.handle(function(handler, effect, params) {

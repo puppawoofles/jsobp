@@ -1923,6 +1923,10 @@ input {
 	content: '🔴';
 }
 
+.preparation .uses .use[gift=true]::before {
+	content: '🎁';
+}
+
 .preparation .uses .use[exhaust=true][used=true]::before {
 	content: '';
 }
@@ -2723,7 +2727,6 @@ span[compendium] {
 .stumpy_cards .card > .preparation .uses {
 	top: 48px;
 	height: 22px;
-
 }
 
 
@@ -2887,14 +2890,6 @@ span[compendium] {
 }
 
 /** SPLIT SHENANIGANS HERE */
-
-.preparation .uses .use::before {
-	content: '✔️';
-}
-
-.preparation .uses .use[used=true]::before {
-	content: '❌';
-}
 
 .exploded_cards .card inventory .preparation .name {
 	position: absolute;
@@ -3216,6 +3211,12 @@ span[compendium] {
 
 [team="player"] .appearance {
 	border: 2px solid skyblue;
+}
+
+
+
+.mysterious_stranger .appearance .avatar::after {
+	filter: contrast(2.50) grayscale(1) invert(1) ;
 }
 
 .appearance {

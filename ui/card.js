@@ -5,7 +5,6 @@ class Card {
 
     // Properties for ownership.
     static ForUnit = new ScopedAttr('for-unit', StringAttr);
-    static OwnerUnit = new ScopedAttr("owner-unit", StringAttr);
     static Ephemeral = new ScopedAttr("ephemeral", BoolAttr);
 
     static ToggleSelected(event, handler) {
@@ -29,7 +28,7 @@ class Card {
         var card = Card.inflate(Utils.UUID());
         var forUnit = Card.ForUnit.findGet(elt);        
         if (forUnit) {
-            Card.OwnerUnit.set(card, forUnit);
+            Card.ForUnit.set(card, forUnit);
         }
         card.appendChild(elt);
         return card;
@@ -90,6 +89,7 @@ class Preparation {
     static Used = new ScopedAttr('used', BoolAttr);
     static Mode = new ScopedAttr("mode", StringAttr);
     static Exhaust = new ScopedAttr("exhaust", BoolAttr);
+    static Gift = new ScopedAttr("gift", BoolAttr);
     static InitFn = new ScopedAttr("init-fn", FunctionAttr);
     static OnUseFn = new ScopedAttr("on-use-fn", FunctionAttr);
 
@@ -105,62 +105,12 @@ class Preparation {
         });
         Preparation.InitFn.invoke(modeFn, elt, useTypes);
     }
-
-    static InitDefaultMode(elt, useTypes) {
-        var usesParent = Preparation.Uses.find(elt);
-        Utils.clearChildren(usesParent);
-        var maxUses = Preparation.Uses.get(usesParent)
-        times(maxUses).forEach(function(idx) {
-            var use = Templates.inflateIn("preparation_use", usesParent);
-            Preparation.Used.set(use, false);
-            Preparation.OnUseFn.copy(use, useTypes["default"]);
-        });
-    }
     
-    static InitExhaustMode(elt, useTypes) {
-        var usesParent = Preparation.Uses.find(elt);
-        Utils.clearChildren(usesParent);
-        var maxUses = Preparation.Uses.get(usesParent);
-        times(maxUses).forEach(function(idx) {
-            var use = Templates.inflateIn("preparation_use", usesParent);
-            Preparation.Used.set(use, false);
-            Preparation.OnUseFn.copy(use, useTypes["exhaust"]);
-            Preparation.Exhaust.set(use, true);
-        });
-    }
-
-    static InitDegradeMode(elt, useTypes) {
-        var usesParent = Preparation.Uses.find(elt);
-        Utils.clearChildren(usesParent);
-        var maxUses = Preparation.Uses.get(usesParent);
-        times(maxUses).forEach(function(idx) {
-            var use = Templates.inflateIn("preparation_use", usesParent);
-            if (idx == 0) {
-                Preparation.OnUseFn.copy(use, useTypes["exhaust"]);
-                Preparation.Exhaust.set(use, true);
-            } else {
-                Preparation.OnUseFn.copy(use, useTypes["default"]);
-            }
-            Preparation.Used.set(use, false);
-        });
-    }
-
     static OnUse(preparation) {
         var use = qs(preparation, '.use' + Preparation.Used.buildSelector(false));
-        if (!use) return;  // Sad.
+        if (!use) return true;  // Sad.
 
-        Preparation.OnUseFn.invoke(use, preparation, use);
-    }
-
-    static OnDefaultUse(preparation, use) {
-        Preparation.Used.set(use, true);        
-    }
-
-    static OnExhaustUse(preparation, use) {
-        use.remove();
-        var usesElt = Preparation.Uses.find(preparation);        
-        var uses = Preparation.Uses.get(usesElt);
-        Preparation.Uses.set(usesElt, uses - 1);
+        return Preparation.OnUseFn.invoke(use, preparation, use);
     }
     
     static HasAvailableUses(preparation) {

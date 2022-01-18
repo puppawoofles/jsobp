@@ -7,6 +7,7 @@ class ShopDialog {
     }
 
     static Text = new ScopedAttr('text', StringAttr);
+    static OnSaleFn = new ScopedAttr('on-sale-fn', FunctionAttr);
     static ShopItemClick(event, handler) {
         var shopItem = WoofType.findUp(event.target, 'ShopItem');
         if (!ShopDialog.CanAfford.findGet(shopItem)) {
@@ -19,7 +20,13 @@ class ShopDialog {
         }
 
         // Let's gooooooo.
-        var price = ShopDialog.Price.findGet(shopItem);
+        var found = ShopDialog.OnSaleFn.find(handler);
+        if (found) {
+            var blob = ShopDialog.Params.get(handler);
+            ShopDialog.OnSaleFn.invoke(found, blob.merchant, shopItem);
+        }
+
+        var price = ShopDialog.Price.findGet(shopItem);        
         var item = Card.CardType.find(shopItem);
         ShopDialog.addItemToStorage(handler, item);
         shopItem.remove();
@@ -29,7 +36,9 @@ class ShopDialog {
     }
 
     static Name = new ScopedAttr("name", StringAttr);
+    static Params = new ScopedAttr("params", BlobAttr);
     static setup(self, params) {
+        ShopDialog.Params.set(self, params);
         var merchant = params.merchant;
         var appearance = qs(merchant, '.appearance');
         if (appearance) {
@@ -44,6 +53,13 @@ class ShopDialog {
             // TODO: Make this price configurable.
             ShopDialog.addShopItem(self, item, 30);
         });
+
+        // Copy over this event handler, if relevant.
+        var onSaleFn = ShopDialog.OnSaleFn.findDown(merchant);
+        if (onSaleFn) {
+            var storage = qs(self, '.inventory_holder');
+            ShopDialog.OnSaleFn.copy(storage, onSaleFn);
+        }
 
         a(params.itemsHolder.children).forEach(function(item) {
             ShopDialog.addItemToStorage(self, item);

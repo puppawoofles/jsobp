@@ -136,7 +136,9 @@ class CardHud {
 		
 		if (!deck.firstElementChild) return false;
 		
-		if (!random) {
+		if (isElement(random)) {
+			hand.appendChild(random);
+		} else if (random == false) {
 			hand.appendChild(deck.firstElementChild);
 		} else {
 			var childIdx = Math.floor(Math.random() * deck.childElementCount);
@@ -194,6 +196,11 @@ class CardHud {
 	static addCardToPurgatory(root, card) {
 		var purgatory = CardHud._findPurgatory(root);
 		purgatory.appendChild(card);
+	}
+
+	static addCardToDrawPile(root, card) {
+		var drawPile = CardHud._findDeckContent(root);
+		drawPile.appendChild(card);
 	}
 }
 WoofRootController.register(CardHud);

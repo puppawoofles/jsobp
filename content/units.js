@@ -1,4 +1,221 @@
+class UnitGenerator {
+    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
+    static getRng = function() { return UnitGenerator._rng; }
+
+    static Alias = new ScopedAttr("alias", StringAttr);
+    static Value = new ScopedAttr("value", StringAttr);
+    static Fn = new ScopedAttr("fn", FunctionAttr);
+    static Params = new ScopedAttr("params", ListAttr);
+    static FromGroup = new ScopedAttr("from-group", StringAttr);
+    static Choices = new ScopedAttr("choices", ListAttr);
+    static ModTags = new ScopedAttr("mod-tags", ListAttr);
+
+    static generate(name, defs) {
+        // This is basically a tree-traversal to generate the whole thing.
+        var script = qs(document, 'unit-gen[name="' + name + '"]');
+        defs = defs || {}; // Normalize.
+        var unit = Templates.inflate('unit', {
+            UNIT_ID: Utils.UUID()
+        });
+
+        var currentNode = [script.firstElementChild];
+
+        // Defined here for easy access to defs, unit, currentNodes
+        var operations = {
+            'unit': function(elt) {
+                // Apply a unit blueprint.
+                var bp = Blueprint.resolve(elt);
+                Unit.applyBlueprint(unit, bp);
+            },
+            'def': function(elt) {
+                // Set defs so we can reference them with invoke.
+                var alias = UnitGenerator.Alias.get(elt);
+                if (UnitGenerator.Fn.has(elt)) {
+                    var params = (UnitGenerator.Params.get(elt) || []).map(function(key) {
+                        return defs[key];
+                    });
+                    params.unshift(elt);
+                    params.unshift(unit);
+                    defs[alias] = UnitGenerator.Fn.aInvoke(elt, params);
+                } else if (UnitGenerator.Value.has(elt)) {
+                    defs[alias] = UnitGenerator.Value.get(elt);
+                }
+            },
+            'invoke': function(elt) {
+                // Call a function with the unit + the requested defs.
+                var params = (UnitGenerator.Params.get(elt) || []).map(function(key) {
+                    return defs[key];
+                });
+                params.unshift(elt);
+                params.unshift(unit);
+                UnitGenerator.Fn.aInvoke(elt, params);
+            },
+            'apply-modifier': function(elt) {
+                var modOptions = [];
+                if (UnitGenerator.FromGroup.has(elt)) {
+                    var groupName = UnitGenerator.FromGroup.get(elt);
+                    modOptions = bfa(elt, 'unit-mods[group="' + groupName + '"] > unit-mod', 'body');
+                } else {
+                    modOptions = qsa(elt, 'unit-mod');
+                }
+                // Filter them down.
+                var existing = UnitGenerator.ModTags.get(unit) || [];
+                var availableMods = modOptions.filter(function(mod) {
+                    // If there's any intersection our existing tags and this set of tags,
+                    // we want to skip it.
+                    return !(UnitGenerator.ModTags.get(mod) || []).findFirst(function(tag) {                        
+                        return existing.includes(tag);
+                    });
+                });
+                // Choose one.
+                var modifier = UnitGenerator._rng.randomValue(availableMods);
+
+                // Extend tags so we don't get duplicate tags.
+                var modTags = UnitGenerator.ModTags.get(modifier) || [];
+                existing.extend(modTags);
+                UnitGenerator.ModTags.set(unit, existing);
+        
+                Unit.applyModifier(unit, modifier);
+            },
+            'choose': function(elt) {
+                var choice;
+                if (UnitGenerator.Fn.has(elt)) {
+                    var params = (UnitGenerator.Params.get(elt) || []).map(function(key) {
+                        return defs[key];
+                    });
+                    params.unshift(elt);
+                    params.unshift(unit);
+                    choice = UnitGenerator.Fn.aInvoke(elt, params);
+                } else if (UnitGenerator.Choices.has(elt)) {
+                    var choices = UnitGenerator.Choices.get(elt);
+                    choice = UnitGenerator._rng.randomValue(choices);
+                }
+                var result = qs(elt, 'result[value="' + choice + '"]');
+                if (!result) {
+                    result = qs(elt, 'result[default="true"]');
+                }
+                if (result && result.firstElementChild) {
+                    currentNode.push(result.firstElementChild)
+                }
+            }
+        };
+
+        while (currentNode.length > 0) {
+            var idx = currentNode.length - 1;
+            var current = currentNode.splice(idx, 1)[0];
+            if (current.nextElementSibling) {
+                currentNode.push(current.nextElementSibling);
+            }
+            for (var [key, value] of Object.entries(operations)) {
+                if (current.matches(key)) {
+                    value(current);
+                }
+            }
+        }
+
+        // Things that are not correctly set, but it's bedtime:
+        // Unit.mana
+        // Unit.hpTracker.max, value (can I make progress::after content: attr(current) '/' attr(max) work?)
+        // Unit.info.base_damage and Unit.info.base_defense
+
+        // TODO: Do some cleanup around mana and combo-with stuff.
+        // But otherwise this seems to work?
+
+        return unit;
+    }
+}
+WoofRootController.register(UnitGenerator);
+
+class PlayerUnits {
+    static _generateNames(elt) {
+        var runInfo = RunInfo.find(elt);
+        var workspace = qs(runInfo, 'workspace');
+        // We've got names already.
+        if (qs(workspace, 'name-option')) return;
+        var optionsHolder = bf(elt, 'name-options', 'body').cloneNode(true);
+        Utils.moveChildren(optionsHolder, workspace);    
+    }
+
+    static Alias = new ScopedAttr("alias", StringAttr);
+    static Value = new ScopedAttr("value", StringAttr);
+    static Values = new ScopedAttr("values", ListAttr);
+    static Data = new ScopedAttr("data", BlobAttr);
+    static _generateDemographics(elt) {
+        var runInfo = RunInfo.find(elt);
+        var workspace = qs(runInfo, 'workspace');
+        if (qs(workspace, 'player-demographic')) return;
+        var axes = bfa(elt, 'player-demographics > def', 'body');
+        var template = bf(elt, 'player-demographics > template[name="demographic"]', 'body');
+
+        var results = [{}]
+        var workingSet = [];
+        axes.forEach(function(axis) {
+            var alias = PlayerUnits.Alias.get(axis);
+            PlayerUnits.Values.get(axis).forEach(function(value) {
+                results.forEach(function(existing) {
+                    var thing = {};
+                    thing[alias] = value;
+                    workingSet.push(Object.assign(thing, existing));
+                });
+            });
+
+            results = workingSet;
+            workingSet = [];
+        });
+
+        results.forEach(function(result) {
+            var obj = Templates.inflateIn(template, workspace, {})
+            PlayerUnits.Data.set(obj, result);
+        });
+    }
+
+    static TakeName(unit, elt, rng) {
+        var runInfo = RunInfo.find(elt);
+        var workspace = qs(runInfo, 'workspace');
+        PlayerUnits._generateNames(elt);
+        var options = qsa(workspace, 'name-option');
+        var option = rng.randomValue(options);
+        option.remove();
+
+        return PlayerUnits.Value.get(option);
+    }
+
+    static TakeDemographic(unit, elt, rng) {
+        var runInfo = RunInfo.find(elt);
+        var workspace = qs(runInfo, 'workspace');
+        PlayerUnits._generateDemographics(elt);
+        var options = qsa(workspace, 'player-demographic');
+        var option = rng.randomValue(options);
+        // No longer an option.
+        option.remove();
+
+        return PlayerUnits.Data.get(option);
+    }
+
+    static ApplyDemographic(unit, elt, demographic) {
+        Unit.Month.findSetAll(unit, demographic.month);
+        Unit.Day.findSetAll(unit, demographic.day);
+        Unit.Appearance.findSetAll(unit, demographic.appearance);
+    }
+
+    static MonthFromDemographic(unit, elt, demographic) {
+        return demographic.month;
+    }
+
+    static DemographicString(unit, elt, demographic) {
+        return demographic.appearance + demographic.month + demographic.day;
+    }
+
+}
+WoofRootController.register(PlayerUnits);
+
+
+
 class Units {
+    static SetName(unit, elt, name) {
+        Unit.setName(unit, name);
+    }
+
     static __nameCounter = 0;
 
     static _front_row = ["F1", "F2", "F3"];
@@ -289,3 +506,4 @@ class Units {
         return abilities;
     }
 }
+WoofRootController.register(Units);

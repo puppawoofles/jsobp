@@ -46,6 +46,9 @@ class GameRules {
             RunInfo.addUnit(runScreen,card);
         });
 
+        // Test: Test the new unit generator.
+        var unit = UnitGenerator.generate("player_unit");
+
         RunInfo.setCurrentGold(handler, params.startingGold);        
 
         // Seed our starter rumors.

@@ -475,6 +475,61 @@ class Unit {
         var args = a(arguments).splice(2);
         fn.apply(this, args);
     }
+
+    static Damage = new ScopedAttr("damage", IntAttr);
+    static Defense = new ScopedAttr("defense", IntAttr);
+    static Cunning = new ScopedAttr("cunning", IntAttr);
+    static Move = new ScopedAttr("move", IntAttr);
+    static Mass = new ScopedAttr("mass", IntAttr);
+    static applyBlueprint(unit, bp) {
+        var elt = bp;
+        // Apply the blueprint here.
+        bp = bp.cloneNode(true);
+        qs(unit, WoofType.buildSelector('UnitBP')).appendChild(bp);
+
+        Unit.Appearance.findGetCopySetAll(bp, unit);
+        Unit.Month.findGetCopySetAll(bp, unit);
+        Unit.Day.findGetCopySetAll(bp, unit);
+
+        var inventory = qs(bp, 'has-inventory');
+        if (inventory) {
+            Unit.MaxItems.copy(inventory, qs(unit, 'inventory'));
+        }
+        var combos = qs(bp, 'has-combos');
+        if (combos) {
+            Unit.MaxItems.copy(combos, qs(unit, 'combos'))
+        }
+    }
+
+    static Ordinal = new ScopedAttr("ordinal", IntAttr);
+
+    static applyModifier(unit, modifier) {
+        // Apply the modifier here.
+        qsa(modifier, 'slot').forEach(function(slotElt) {
+            var ability = Ability.inflate({
+                volley: Unit.Ordinal.findGet(slotElt)
+            });
+            // Generate an ID.
+            IdAttr.generate(ability);
+            Ability.Type.findGetCopySetAll(slotElt, ability);
+
+            // TODO: When you rewrite ability/skill stuff to use the same
+            // blueprint system everyone else does, remember this spot.
+            var skill = Blueprint.find(slotElt, 'skill');
+            if (skill) {
+                Ability.applySkill(modifier, ability, skill.getAttribute('name'));
+            }
+
+            Unit._findScript(unit).appendChild(ability);
+        });
+
+        // Add our modifier to our list of mod blueprints.
+        qs(unit, WoofType.buildSelector('ModBP')).appendChild(modifier.cloneNode(true));
+    }
+
+    static setName(unit, name) {
+        Unit.Name.set(qs(unit, '.name[name]'), name);
+    }
 }
 WoofRootController.register(Unit);
 Utils.classMixin(Unit, AbstractDomController, {

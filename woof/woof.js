@@ -1517,6 +1517,21 @@ class StringAttr {
 		}		
 	}
 
+	static findGetCopySetAll(config, from, to) {
+		var value = StringAttr.findGet(config, from);
+		StringAttr.findSetAll(config, to, value);
+	}
+
+	static findSetAll(config, element, value) {
+		var selector = StringAttr.buildSelector(config);
+		if (element.matches(selector)) {
+			StringAttr.set(config, element, value);
+		}
+		StringAttr.findAll(config, element).forEach(function(elt) {
+			StringAttr.set(config, elt, value);
+		});
+	}
+
 	static findGet(config, element) {
 		var elt = StringAttr.findDown(config, element);
 		return !!elt ? StringAttr.get(config, elt) : null;
@@ -2003,13 +2018,17 @@ class Blueprint {
 		return Blueprint.findAll(element, type)[0] || null;
 	}
 
+	static resolve(ref) {
+		if (Blueprint.Bp.has(ref)) {
+			var bpName = Blueprint.Bp.get(ref);
+			return Utils.bfind(ref, 'body', ref.tagName.toLowerCase() + '-blueprint[name="' + bpName + '"]');
+		}
+		return ref;
+	}
+
 	static findAll(element, type) {
 		return qsa(element, type).map(function(candidate) {
-			if (Blueprint.Bp.has(candidate)) {
-				var bpName = Blueprint.Bp.get(candidate);
-				return Utils.bfind(element, 'body', type + '-blueprint[name="' + bpName + '"]');
-			}
-			return candidate;	
+			return Blueprint.resolve(candidate);
 		});		
 	}
 	

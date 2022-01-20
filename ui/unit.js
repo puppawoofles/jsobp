@@ -1063,14 +1063,16 @@ class BaseStatus {
 
         var id = IdAttr.get(status);
         var container = EffectQueue.getHandlerContainer(status);
-        var handlerSets = BaseStatus.ForStatusIds.findAll(container, id);
+        if (container) {
+            var handlerSets = BaseStatus.ForStatusIds.findAll(container, id);
 
-        // Uninstall handlers if needed.
-        for (var i = 0; i < handlerSets.length; i++) {
-            var set = handlerSets[i];
-            BaseStatus.ForStatusIds.remove(set, id);
-            if (BaseStatus.ForStatusIds.size(set) == 0) {
-                set.remove();
+            // Uninstall handlers if needed.
+            for (var i = 0; i < handlerSets.length; i++) {
+                var set = handlerSets[i];
+                BaseStatus.ForStatusIds.remove(set, id);
+                if (BaseStatus.ForStatusIds.size(set) == 0) {
+                    set.remove();
+                }
             }
         }
 

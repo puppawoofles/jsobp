@@ -37,6 +37,7 @@ class EffectQueue {
 		if (!queue) {
 			queue = EffectQueue.findDown(elt);
 		}
+		if (!queue) return null;
 		return qs(queue, 'handlers');
 	}
 	

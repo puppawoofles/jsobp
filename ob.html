@@ -1244,9 +1244,88 @@
 				
 				<skill-blueprint name="summon-rats" label="Come my pretties!" short-label="🐀" type="🔮" invoke-fn="JimmyAI.summonInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
 				</skill-blueprint>
+
+
+				<combo-blueprint name="x-strike">
+					<info label="X-Strike"></info>
+					<info cooldown="10"></info>
+					<info invoke-fn="ComboMoves.XStrike"></info>
+					<decor icon="⚔️"></decor>
+					<recipe>
+						<required skill="⚔️"></required>
+						<required skill="⚔️"></required>
+						<optional skill="⚔️"></optional>
+						<optional skill="⚔️"></optional>
+						<optional skill="⚔️"></optional>
+					</recipe>
+					<description>Hit an enemy extra-hard.  More ⚔️ means more damage</description>
+				</combo-blueprint>
 				
+				<combo-blueprint name="arrow-rain">
+					<info label="Arrow Rain"></info>
+					<info cooldown="10"></info>
+					<info invoke-fn="ComboMoves.ArrowRain"></info>
+					<decor icon="🏹"></decor>
+					<recipe>
+						<required skill="🏹"></required>
+						<required skill="🏹"></required>
+						<optional skill="🏹"></optional>
+						<optional skill="🏹"></optional>
+						<optional skill="🏹"></optional>
+					</recipe>
+					<description>Hit all enemies.  More 🏹 means more damage</description>
+				</combo-blueprint>
+				
+				<combo-blueprint name="line-drive">
+					<info label="Line Drive"></info>
+					<info cooldown="10"></info>
+					<info invoke-fn="ComboMoves.LineDrive"></info>
+					<decor icon="⚾"></decor>
+					<recipe>
+						<required skill="⚾"></required>
+						<required skill="⚾"></required>
+						<optional skill="⚾"></optional>
+						<optional skill="⚾"></optional>
+						<optional skill="⚾"></optional>
+					</recipe>
+					<description>Damage all enemies in a line ahead.  More ⚾ means more damage</description>
+				</combo-blueprint>
 
+				<combo-blueprint name="blade-boomerang">
+					<info label="Blade Boomerang"></info>
+					<info cooldown="10"></info>
+					<info invoke-fn="ComboMoves.BladeBoomerang"></info>
+					<decor icon="🔄"></decor>
+					<recipe>
+						<required skill="⚾"></required>
+						<required skill="⚔️"></required>
+					</recipe>
+					<description>Up to 2 enemies in a line get hit twice each</description>
+				</combo-blueprint>
 
+				<combo-blueprint name="setup-shot">
+					<info label="Setup Shot"></info>
+					<info cooldown="10"></info>
+					<info invoke-fn="ComboMoves.SetupShot"></info>
+					<decor icon="⚙️"></decor>
+					<recipe>
+						<required skill="⚾"></required>
+						<required skill="🏹"></required>
+					</recipe>
+					<description>Make an enemy vulnerable, then hit that same enemy</description>
+				</combo-blueprint>
+
+				<combo-blueprint name="potato">
+					<info label="Unnamed Potato Move"></info>
+					<info cooldown="10"></info>
+					<info invoke-fn="ComboMoves.PotatoMove"></info>
+					<decor icon="🥔"></decor>
+					<recipe>
+						<required skill="⚔️"></required>
+						<required skill="🏹"></required>
+					</recipe>
+					<description>Reduce an enemy's block to 0, then hit them</description>
+				</combo-blueprint>
 
 			</info-panel>
 		</concept>
@@ -2229,6 +2308,19 @@
 			</div>
 		</template>
 
+		<template name="combo">
+			<div class="combo_card" wt="Combo" card-type="combo" compendium="concept/combos" compendium-hash-fn="WoofType.buildSelectorFor">
+				<div class="appearance">
+					<div class="cooldown" cooldown="9000" reset-cooldown="9000"></div>
+				</div>
+				<div class="name" label="Combo name here!"></div>
+				<div class="recipe"></div>
+				<div class="description"></div>
+
+				<info wt="BP"></info>
+			</div>
+		</template>
+
 		<template name="preparation">
 			<div class="preparation" wt="Item" name="NAME" card-type="preparation" target-fn="TARGET_FN" invoke-fn="INVOKE_FN" compendium="concept/preparations" compendium-hash-fn="WoofType.buildSelectorFor">
 				<div class="appearance APPEARANCE_CLASS" appearance-1="APPEARANCE_1" appearance-2="APPEARANCE_2">
@@ -2237,9 +2329,7 @@
 				<div class="name" label="LABEL"></div>
 				<div class="uses" uses="USES"></div>
 				<div class="description">DESCRIPTION</div>
-				<info wt="BP">
-
-				</info>
+				<info wt="BP"></info>
 			</div>
 		</template>
 
@@ -2301,8 +2391,8 @@
 		<template name="unit">
 			<div class="battlefield_unit" wt="Unit" card-type="unit" w-id="UNIT_ID" highlight-scroll-to="true" compendium="concept/unit" compendium-hash-fn="WoofType.buildSelectorFor"
 					target-fn="UnitRules.TargetUnitPlacement" invoke-fn="UnitRules.InvokeUnitPlacement"
-					wh-c="HPBar.Attr:value|HPBar.Attr:max>Unit.OnHPBarUpdate,
-						Ability.Updated>Unit.OnUnit,
+					wh-c="
+					    Ability.Updated>Unit.OnUnit,
 						Ability.AddChild>Ability.HoverHelpRefresh,
 						Unit.Attr:month|Unit.Attr:day|Unit.Attr:avatar>Unit.RefreshAppearance"
 					month="MONTH" day="DAY" appearance="APPEARANCE" mana="MONTH" mana-fn="Mana.DefaultMana" hover-help="[hover-on-unit='UNIT_ID']">
@@ -2316,7 +2406,6 @@
 				<div class="hurt_taunt"><div class="decor"></div></div>
 				<div class="hp_tracker">
 					<progress class="hp_bar" wt="HPBar" max="HP_AMOUNT" value="HP_AMOUNT"> </progress>
-					<div class="hp_text">HP_AMOUNT/HP_AMOUNT</div>
 					<div class="defend"><div class="decor"></div></div>
 				</div>
 				<div class="unit_script">

@@ -154,10 +154,13 @@ NodeList.prototype["map"] = Array.prototype["map"];
 
 HTMLCollection.prototype["indexOf"] = Array.prototype["indexOf"];
 
+isInDocument = function(elt) {
+	return !!matchParent(elt, 'body');
+}
+
 isElement = function(elt) {
 	return elt instanceof Element;
 };
-
 
 emptyObjectFn = function() { return {}; }
 
@@ -898,7 +901,7 @@ class WoofType {
 	}
 	
 	static findUp(element, type) {
-		while (element.ownerDocument != null) {
+		while (!!element && element.ownerDocument != null) {
 			if (WoofType.has(element, type)) return element;
 			element = element.parentNode;
 		}

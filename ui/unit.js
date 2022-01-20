@@ -82,12 +82,6 @@ class Unit {
         return qs(unit, ".appearance").cloneNode(true);
     }
 
-	static OnHPBarUpdate(event, handler) {
-		var text = qs(handler, ".hp_text");
-		var progressBar = qs(handler, "progress.hp_bar");
-		text.innerHTML = progressBar.getAttribute("value") + "/" + progressBar.getAttribute("max");
-	}
-
     static Defend = new ScopedAttr("defend", IntAttr);
     static Vulnerable = new ScopedAttr("vulnerable", BoolAttr);
 

@@ -74,6 +74,26 @@ Utils.classMixin(Tactic, AbstractDomController, {
 });
 
 
+class ComboCard {
+
+
+
+    static resetFromBlueprint(card) {
+
+    }
+}
+WoofRootController.register(ComboCard);
+Utils.classMixin(ComboCard, AbstractDomController, {
+    matcher: "[card-type='combo']",
+    template: "combo",
+    params: function() {},
+    decorate: function(elt, bp) {
+        WoofType.find(elt, 'BP').appendChild(bp.cloneNode(true));
+        IdAttr.generate(elt);
+        ComboCard.resetFromBlueprint(elt);
+    }
+});
+
 
 
 class Preparation {

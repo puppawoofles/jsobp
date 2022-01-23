@@ -106,18 +106,20 @@ class GameRules {
 
     static Frequency = new ScopedAttr("frequency", IntAttr);
 
-     static acts = ["⛰️", "🔥","🌪️","💧"];
-     static days = ["🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌕"];
-     static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
-     static InvokeFn = new ScopedAttr("assignment-invoke-fn", FunctionAttr);
-     static NewDay = GameEffect.handle(function(handler, effect, params) {
+    static _dayRng = ASRNG.newRng(NC.Seed, true, NC.Day);
+
+    static acts = ["⛰️", "🔥","🌪️","💧"];
+    static days = ["🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌕"];
+    static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
+    static InvokeFn = new ScopedAttr("assignment-invoke-fn", FunctionAttr);
+    static NewDay = GameEffect.handle(function(handler, effect, params) {
          // Set our noise counters for dat sweet sweet RNGsus
         NoiseCounters.setCounter(NC.Day, ((params.act|0) << 4) + params.day);
         NoiseCounters.setCounter(NC.Unit, 0);
         NoiseCounters.setCounter(NC.Event, 0);
 
-        var RNG = new SRNG(NC.Seed, true, NC.Day); 
-
+        var RNG = GameRules._dayRng;
+        
         var runScreen = RunScreen.find(handler);
         var container = qs(runScreen, WoofType.buildSelector("ScreenWrapper"));
 
@@ -342,6 +344,8 @@ class GameRules {
      */
     static Event = new ScopedAttr("event", StringAttr);
     static Label = new ScopedAttr("label", StringAttr);
+    static Name = new ScopedAttr("name", StringAttr);
+    static Namespace = new ScopedAttr("namespace", StringAttr);
     static LaunchEvent(assignment) {
         var assignmentBp = WoofType.findDown(assignment, 'AssignmentBP');
         var queue = EffectQueue.currentQueue(assignmentBp);        
@@ -356,9 +360,15 @@ class GameRules {
         // Find our results holder.
 
         // Copy blueprint in.
-        Utils.moveChildren(blueprint.cloneNode(true), qs(eventScreen, "blueprint"));
+        var blueprintHolder = qs(eventScreen, 'blueprint');
+        Utils.moveChildren(blueprint.cloneNode(true), blueprintHolder);
         // Normalize the blueprint.
-        Blueprint.normalizeAll(townScreen, qs(eventScreen, "blueprint"), 'encounter');
+        Blueprint.normalizeAll(townScreen, blueprintHolder, 'encounter');
+        // Copy the name, if there is one.
+        if (GameRules.Name.has(blueprint)) {
+            GameRules.Namespace.set(blueprintHolder, GameRules.Name.get(blueprint));
+        }
+
 
         // Move units in.
         var unitHolder = qs(eventScreen, 'units');

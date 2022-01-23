@@ -1,3 +1,102 @@
+
+
+class EncounterGenerator {
+
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
+
+    static Count = new ScopedAttr("count", IntAttr);
+    static Name = new ScopedAttr("name", StringAttr);
+    static Location = new ScopedAttr("location", ListAttr);
+    static generate(encounter, encounterBp, defs) {
+        // Find our defaults first.
+        var defaultEncounter = Utils.bfind(encounter, 'body', 'default-encounter');
+
+        var bfBp = Blueprint.find(encounterBp, 'battlefield');
+        // Generate our battlefield.
+        Battlefields.Generate(encounter, bfBp);
+
+        // Either call our custom function or spawn according to our blueprint.
+        var encounterBpElt = EncounterRules.EncounterFn.find(encounterBp);
+        if (encounterBpElt) {
+            EncounterRules.EncounterFn.findInvoke(encounterBpElt, encounter, encounterBpElt);
+        } else {
+
+            // Okay, here's where it gets John Madden.
+            // Place all of our units, being sure to filter as needed.
+            qsa(encounterBp, 'place-units').filter(DefHelper.filterFor(defs)).forEach(function(placeUnitsElt) {
+                var options = qsa(placeUnitsElt, 'from-unit-gen').filter(DefHelper.filterFor(defs));
+                if (options.length == 0) return;
+                var toGen = [];
+
+                // Decide which ones.
+                if (!EncounterGenerator.Count.has(placeUnitsElt)) {
+                    toGen = options;
+                } else {
+                    var count = EncounterGenerator.Count.get(placeUnitsElt);
+                    while (toGen.length < count) {
+                        options.push(EncounterGenerator._rng.randomValue(options));
+                    }
+                }
+
+                // Actually do unit gen here.
+                var candidateLocations = EncounterGenerator.Location.get(placeUnitsElt).map(function(label) {
+                    return CellBlock.findByLabel(encounter, label);  
+                }).map(function(block) {
+                    return Cell.findAllInBlock(block);
+                }).flat().filter(function(coord) {
+                    return !BattlefieldHandler.unitAt(encounter, coord);
+                });
+
+                toGen.forEach(function(genMe) {
+                    var spawnLocation = EncounterGenerator._rng.randomValueR(candidateLocations);
+                    if (!spawnLocation) return;
+
+                    var unit = UnitGenerator.generate(EncounterGenerator.Name.get(genMe));
+                    BattlefieldHandler.addUnitTo(encounter, unit, UberCoord.big(spawnLocation), UberCoord.small(spawnLocation));
+                });
+            });            
+        }
+
+        // Next up, we look for things in our blueprint, and if they're not there, we copy them over from the default.
+        // Add our end conditions.
+        var endConditionElt = EncounterRules.EndConditions.find(encounterBp);
+        if (!endConditionElt) {
+            endConditionElt = EncounterRules.EndConditions.find(defaultEncounter);
+            encounterBp.appendChild(endConditionElt.cloneNode(true));
+        }
+
+        var maxPlayerUnitElt = EncounterRules.MaxPlayerUnits.findDown(encounterBp);
+        if (!maxPlayerUnitElt) {
+            maxPlayerUnitElt = EncounterRules.MaxPlayerUnits.findDown(defaultEncounter);
+            encounterBp.appendChild(maxPlayerUnitElt.cloneNode(true));
+        }
+
+        var initOrderElt = EncounterRules.InitiativeOrder.find(encounterBp);
+        if (!initOrderElt) {
+            initOrderElt = EncounterRules.InitiativeOrder.find(defaultEncounter);
+            encounterBp.appendChild(initOrderElt.cloneNode(true));
+        }
+
+        /** Set up the additional deck stuff here */
+        qsa(encounterBp, 'bonus-cards').filter(DefHelper.filterFor(defs)).forEach(function(blob) {
+            var cards = Blueprint.findAll(blob, 'preparation').map(function(p) {
+                return Preparation.inflate(p);
+            }).extend(Blueprint.findAll(blob, 'tactic').map(function(t) {
+                return Tactic.inflate(t);
+            }));
+            cards = cards.map(function(c) {
+                c = Card.WrapInCard(c);
+                Card.Ephemeral.set(c, true);
+                return c;
+            });
+            CardHud.populateDrawPile(encounter, cards);
+        });
+    }
+
+}
+
+
+
 class ActionMode {
     static Disabled = '';
     static Go = "go";
@@ -96,12 +195,12 @@ class EncounterRules {
         });
     }
 
-    static WinConditionFn = new ScopedAttr("win-condition-fn", FunctionAttr);
-    static LoseConditionFn = new ScopedAttr("lose-condition-fn", FunctionAttr);
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
     static Battlefield = new ScopedAttr("battlefield", StringAttr);
     static EncounterFn = new ScopedAttr("encounter-fn", FunctionAttr);
     static EndConditions = new ScopedAttr("end-condition-fns", ListAttr);
     static MaxPlayerUnits = new ScopedAttr("max-player-units", IntAttr);
+    static InitiativeOrder = new ScopedAttr('initiative-order', ListAttr);
 
     /**
      * Populates the screen.
@@ -109,6 +208,7 @@ class EncounterRules {
      *   encounter: fn for creating the battlefield.
      *   encounterBp: <encounter-blueprint>
      *   deck: The element that houses cards that are going into and leaving this combat.
+     *   defs: Object blob representing our parent defs. Used to plumb to the generator.
      * }
      */
     static Encounter = GameEffect.handle(function(handler, effect, params) {
@@ -118,71 +218,30 @@ class EncounterRules {
         var parentScreen = params.container;
         Screen.showScreen(parentScreen, encounter);
 
-        var defaultEncounter = Utils.bfind(handler, 'body', 'default-encounter');
-        var endConditions = EncounterRules.EndConditions.findGet(defaultEncounter);
-        var maxPlayerUnits = EncounterRules.MaxPlayerUnits.findGet(defaultEncounter);
+        // Copy over our blueprint.
+        var bpHolder = WoofType.findDown(encounter, "EncounterBP");
+        var encounterBp = params.encounterBp.cloneNode(true);
+        bpHolder.appendChild(encounterBp)
 
+        // Inflate child widgets.
         var battlefield = BattlefieldHandler.inflateIn(EncounterScreenHandler.findBattlefieldContainer(encounter));
+        var cardHud = CardHud.find(encounter);
+        CardHud.inflateIn(cardHud, []);
+        CardHud.setDrawCost(cardHud, 1);
 
-        var encounterBp = params.encounterBp;
+        var cards = Array.from(params.deck.children);
+        CardHud.populateDrawPile(cardHud, cards);
 
-        var bfBp = Blueprint.find(encounterBp, 'battlefield');
-        // Generate our battlefield.
-        Battlefields.Generate(encounter, bfBp);
-        // Spawn our enemies.
-        var encounterBpElt = EncounterRules.EncounterFn.find(encounterBp);            
-
-        EncounterRules.EncounterFn.findInvoke(encounterBpElt, encounter, encounterBpElt);
+        // Generate the encounter according to the blueprint.
+        EncounterGenerator.generate(encounter, encounterBp, params.defs || {});
 
         // Update initial facing.
         EncounterRules.setDefaultFacing(encounter);
 
-        // Find new end conditions.
-        var newEndConditions = EncounterRules.EndConditions.findGet(encounterBp);
-        endConditions.extend(newEndConditions);
-        EncounterRules.EndConditions.set(encounter, endConditions);
-
-        // Set max player unit count.
-        maxPlayerUnits = EncounterRules.MaxPlayerUnits.findGet(encounterBp) || maxPlayerUnits;
-        EncounterRules.MaxPlayerUnits.set(encounter, maxPlayerUnits);
-
-        var teams = [Teams.Player, Teams.Enemy];
-        InitiativeOrderAttr.put(encounter, teams);
-
-        // TODO: Copy this deck over from somewher else.
-        var cardHud = CardHud.find(encounter);
-        CardHud.inflateIn(cardHud, []);
-
-        var cards = Array.from(params.deck.children);
-
-        // Extend with any encounter-specific bonus cards.
-        cards.extend(qsa(encounterBp, 'bonus-cards').map(function(cardHolder) {
-            return Blueprint.findAll(cardHolder, 'preparation').map(function(prep) {
-                return Card.WrapInCard(Preparation.inflate(prep));
-            }).extend(Blueprint.findAll(cardHolder, 'tactic').map(function(tactic) {
-                return Card.WrapInCard(Tactic.inflate(tactic));
-            })).map(function(card)  {
-                Card.Ephemeral.set(card, true);
-                return card;    
-            });
-        }).flat());
-
-        // Put units at the top.
-        cards.sort(function(a, b) {
-            var aType = Card.CardType.findGet(a) == 'unit';
-            var bType = Card.CardType.findGet(b) == 'unit';            
-            if (aType == bType) {
-                return 0;
-            }
-            if (aType) return -1;
-            return 1;
-        })
-        var unitCount = cards.filter(function(card) {
-            return Card.CardType.findGet(card) == 'unit';
-        }).length;;
-
-        CardHud.populateDrawPile(cardHud, cards);
-        CardHud.setDrawCost(cardHud, 1);
+        // Find our units.
+        var unitsToDraw = CardHud.drawPileCards(encounter).filter(function(card) {
+            return Card.CardType.findGet(card) === 'unit';
+        });
 
         // Next up, try to determine the overall facing.
         var blocks = CellBlock.findAllByTeam(battlefield, Teams.Player);
@@ -198,10 +257,14 @@ class EncounterRules {
                 return;
             }
             toDraw--;
-            unitCount--;
+            if (unitsToDraw.length > 0) {
+                return GameEffect.push(effect, GameEffect.create("DrawCard", {
+                    card: EncounterRules._rng.randomValueR(unitsToDraw)
+                })).then(drawFn);
+            }
             return GameEffect.push(effect, GameEffect.create("DrawCard", {
-                from: unitCount >= 0 ? "top" : "random"
-            }, handler)).then(drawFn);
+                from: 'random'
+            })).then(drawFn);
         };
 
         // Next up, we want to loop until our end condition is met.
@@ -682,7 +745,7 @@ class RoundRules {
         var encounter = EncounterScreenHandler.find(handler);
         var battlefield = BattlefieldHandler.find(handler);
 
-        var teamOrder = InitiativeOrderAttr.get(encounter);       
+        var teamOrder = EncounterRules.InitiativeOrder.findGet(encounter); 
         var blocks = Array.from(CellBlock.findAll(battlefield)).sort(function(a, b) {
             if (!!DisabledAttr.get(a) !== !!DisabledAttr.get(b)) {
                 if (DisabledAttr.get(a)) return 1;

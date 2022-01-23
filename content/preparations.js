@@ -1,6 +1,6 @@
 
 class Preparations {
-    static rng = new SRNG(NC.Seed, true, NC.Encounter, NC.Round, NC.Day);
+    static rng = ASRNG.newRng(NC.Seed, true, NC.Encounter, NC.Round, NC.Day);
     static resetRng = Preparations.rng.invalidate;
 
     static InitDefaultMode(elt, useTypes) {

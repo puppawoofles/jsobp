@@ -387,12 +387,15 @@ class UnitRules {
         // Need to reset the unit first.
         Unit.retreat(unit);
         BattlefieldHandler.resetUnit(unit);
-        var card = Card.inflate(Utils.UUID());
-        card.appendChild(unit);
-        CardHud.addCardToPurgatory(handler, card);
-        CardRules.discardSingleCard(handler, {
-            card: card
-        }, effect);
+
+        if (TeamAttr.get(unit) === Teams.Player) {
+            var card = Card.inflate(Utils.UUID());
+            card.appendChild(unit);
+            CardHud.addCardToPurgatory(handler, card);
+            CardRules.discardSingleCard(handler, {
+                card: card
+            }, effect);    
+        }
 
         return GameEffect.createResults(effect);
     })

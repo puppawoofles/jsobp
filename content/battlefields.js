@@ -1,14 +1,6 @@
 class Battlefields {
 
-    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
-
-    static __b(innerFn) {
-        return function(...args) {
-            var toReturn = innerFn.apply(this, args);
-            Battlefields._rng.invalidate();
-            return toReturn;
-        };
-    }
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
 
     static BattlefieldFn = new ScopedAttr('battlefield-fn', FunctionAttr);
     static Generate(encounter, bp) {
@@ -21,7 +13,7 @@ class Battlefields {
     static Property = new ScopedAttr('property', StringAttr);
     static Value = new ScopedAttr('value', StringAttr);
 
-    static Standard = Battlefields.__b(function(battlefield, bp) {
+    static Standard(battlefield, bp) {
         var generate = qs(bp, 'generate');
         Battlefields.Fn.invoke(generate, battlefield, generate);
 
@@ -39,7 +31,7 @@ class Battlefields {
                 block.setAttribute(Battlefields.Property.get(modifier), Battlefields.Value.get(modifier));
             });
         });
-    });
+    }
 
     /** Generate functions */
     static Width = new ScopedAttr('width', IntAttr);

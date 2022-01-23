@@ -12,6 +12,10 @@ class CardHud {
 		})
 	}
 
+	static drawPileCards(parentElt) {
+		return a(CardHud._findDeckContent(parentElt).children);
+	}
+
 	static allCards(parentElt) {
 		var hud = CardHud.find(parentElt);
 		return qsa(hud, WoofType.buildSelector("Card"));
@@ -129,7 +133,7 @@ class CardHud {
 		SelectedAttr.set(card, value);
 	}
 	
-	static drawCard(parentElt, random) {
+	static drawCard(parentElt, random, srng) {
 		var deck = CardHud._findDeckContent(parentElt);
 		var hand = CardHud._findHandContent(parentElt);
 		if (!deck || !hand) throw boom("Unable to find card hud from", parentElt);
@@ -141,8 +145,8 @@ class CardHud {
 		} else if (random == false) {
 			hand.appendChild(deck.firstElementChild);
 		} else {
-			var childIdx = Math.floor(Math.random() * deck.childElementCount);
-			hand.appendChild(deck.children[childIdx]);			
+			var toDraw = srng.randomValue(a(deck.children));
+			hand.appendChild(toDraw);
 		}
 		
 		return true;

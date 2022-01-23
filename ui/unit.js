@@ -186,10 +186,24 @@ class Unit {
         return Object.keys(preferredCells);
     }
 
+    /** Called when they enter the battlefield. */
+    static Status = new ScopedAttr("status", StringAttr);
+    static Stacks = new ScopedAttr("stacks", IntAttr);
+    static join(unit) {
+        // Look for statuses the unit should get for free and apply them.
+        qsa(unit, 'apply-status').forEach(function(statusElt) {
+            var stacks = Unit.Stacks.get(statusElt) || 1;
+            var status = Unit.Status.get(statusElt);
+            BaseStatus.Apply(status, unit, stacks);
+        });
+    }
+
     static retreat(unit) {
         // Remove statuses.
         var status = UnitStatus.findAll(unit);
         status.forEach(function(s) {
+            // Skip this one; already removed.
+            if (Unit.findUp(s) != unit) return;
             var type = UnitStatus.getType(s);
             // Remove the real way.
             BaseStatus.Remove(type, unit, s);
@@ -354,7 +368,7 @@ class Unit {
 
         for (var [team, unit] of Object.entries(tauntedUnitsByTeam)) {
             var selector = bigCoordSelector + Unit.CurrentTaunt.buildSelector(team);
-            var current = Utils.bfind(unit, '[wt~=Battlefield]', selector);
+            var current = BattlefieldHandler.bFindInner(unit, selector);
             if (current != unit) {
                 if (current != null) {
                     Unit.setCurrentTaunt(current, team, false);
@@ -406,7 +420,7 @@ class Unit {
         });
         var blockHints = [];
         tauntKeys.forEach(function(key) {
-            var block = Utils.bfindAll(handler, 'body', Unit.TauntPriority.buildSelector(key));            
+            var block = bfa(handler, Unit.TauntPriority.buildSelector(key));            
             block.forEach(function(b) {
                 blockHints.push(b);
                 Unit.TauntPriority.remove(b, key);
@@ -626,7 +640,7 @@ class Ability {
     }
     
     static findSkill(relativeTo, skillLookup) {
-        return Utils.bfind(relativeTo, "body", "skill-blueprint[name='" + skillLookup + "']");        
+        return bf(relativeTo, "skill-blueprint[name='" + skillLookup + "']");        
     }
 
     static Fallback = new ScopedAttr("fallback", StringAttr);
@@ -926,7 +940,7 @@ class BaseStatus {
         if (forbidden.includes(statusName)) {
             return;
         }
-        var bp = Utils.bfind(unit, 'body', 'status-blueprint[type="' + statusName + '"]');
+        var bp = bf(unit, 'status-blueprint[type="' + statusName + '"]');
         var container = EffectQueue.getHandlerContainer(unit);
         var existingHandlerSet = BaseStatus.ForStatus.find(container, statusName);
 
@@ -1033,7 +1047,7 @@ class BaseStatus {
     
     static handleStackCountChange(unit, status, oldValue) {
         var statusType = UnitStatus.getType(status);
-        var bp = Utils.bfind(unit, 'body', 'status-blueprint[type="' + statusType + '"]');
+        var bp = bf(unit, 'status-blueprint[type="' + statusType + '"]');
         if (BaseStatus.StackCountFn.has(bp)) {
             BaseStatus.StackCountFn.invoke(bp, status, unit, oldValue);
         }
@@ -1077,7 +1091,7 @@ class BaseStatus {
         }
 
         // Invoke the On-Remove handler.
-        var bp = Utils.bfind(unit, 'body', 'status-blueprint[type="' + config + '"]');
+        var bp = bf(unit, 'status-blueprint[type="' + config + '"]');
         if (BaseStatus.RemoveFn.has(bp)) {
             BaseStatus.RemoveFn.invoke(bp, unit, status);
         }

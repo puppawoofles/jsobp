@@ -173,7 +173,11 @@ arrayToObject = function(array, keyFn) {
 }
 
 parseBoolean = function(thingToBool) {
-	return thingToBool == 'true';
+	if (thingToBool === null || thingToBool === undefined) return null;
+	thingToBool = thingToBool.toLowerCase();
+	if (thingToBool === 'true') return true;
+	if (thingToBool === 'false') return false;
+	return null;
 }
 
 boom = function() {
@@ -381,7 +385,7 @@ class Att {
 	
 	static bool(elt, attr, opt_default) {
 		var strValue = elt.getAttribute(attr);
-		return parseBoolean(strValue);
+		return parseBoolean(strValue) || false;
 	}
 }
 
@@ -1365,7 +1369,7 @@ class BoolAttr {
 	}
 	
 	static get(config, element) {
-		return parseBoolean(element.getAttribute(config));
+		return parseBoolean(element.getAttribute(config)) || false;
 	}
 	
 	static set(config, element, value, opt_clear) {
@@ -1756,6 +1760,79 @@ class ScopedAttr {
 }
 
 
+/** Helper class for juggling <def> elements. */
+class DefHelper {
+	static Name = new ScopedAttr('name', StringAttr);
+	static Value = new ScopedAttr('value', StringAttr);
+	static Fn = new ScopedAttr('fn', FunctionAttr);
+	static Params = new ScopedAttr('params', ListAttr);
+
+	static processAll(defElts, defBlob, ...prefixParams) {
+		return defElts.map(function(defElt) {
+			return DefHelper.process(defElt, defBlob, ...prefixParams);
+		}).merge(function(blob, next) {
+			return Object.assign(blob, next);
+		});
+	}
+
+	static _normalizeString(valueAsStr) {
+		var valueAsBool = parseBoolean(valueAsStr);
+		if (valueAsBool !== null) return valueAsBool;
+		var valueAsInt = parseInt(valueAsStr);
+		if (!isNaN(valueAsInt)) return valueAsInt;
+		var valueAsFloat = parseFloat(valueAsStr);
+		if (!isNaN(valueAsFloat)) return valueAsFloat;
+		if (valueAsStr === 'null') return null;
+		return valueAsStr;
+	}
+
+	static process(defElt, defBlob, ...prefixParams) {
+		var name = DefHelper.Name.get(defElt);
+		var value = null;
+		// Branch: Do we have a value or a function?
+		if (DefHelper.Value.has(defElt)) {
+			value = DefHelper._normalizeString(DefHelper.Value.get(defElt) || "");
+		} else if (DefHelper.Fn.has(defElt)) {
+			var params = (DefHelper.Params.get(defElt) || []).map(function(key) {
+				return defBlob[key];
+			});
+			var actualParams = a(prefixParams).clone().extend(params);
+			actualParams.unshift(defElt); // Always first!
+			value = DefHelper.Fn.aInvoke(defElt, actualParams);
+		}
+		defBlob[name] = value;
+		var toReturn = {};
+		toReturn[name] = value;
+		return toReturn;
+	}
+
+	static invoke(toInvoke, attr, defBlob, ...prefixParams) {
+		var params = (DefHelper.Params.get(toInvoke) || []).map(function(key) {
+			return defBlob[key];
+		});
+		var actualParams = a(prefixParams).clone().extend(params);
+		actualParams.unshift(toInvoke); // Always first!
+		return attr.aInvoke(toInvoke, actualParams);
+	}
+
+	static Flag = new ScopedAttr("flag", ListAttr);
+	static FilterFn = new ScopedAttr("filter-fn", FunctionAttr);
+	static filterFor(defs) {
+		return function(elt) {
+			if (DefHelper.Flag.has(elt)) {
+				if (DefHelper.Flag.get(elt).findFirst(function(flag) {
+					return defs[flag] !== true;
+				})) return false;
+			}
+			if (DefHelper.FilterFn.has(elt)) {
+				return DefHelper.invoke(elt, DefHelper.FilterFn, defs);
+			}
+			return true;
+		};
+	}
+
+}
+
 
 /** Used to track noise input parts. */
 class NoiseCounters {
@@ -1884,6 +1961,34 @@ class SRNG {
 	}
 }
 
+/** A RNG factory that also registers for auto-invalidation. */
+class ASRNG {
+    static __rngs = {};
+
+    static newRng(seed, implicitFirst, ...names) {
+        var rng = new SRNG(seed, implicitFirst, ...names);
+
+        names.forEach(function(name) {
+            if (!ASRNG.__rngs[name]) {
+                ASRNG.__rngs[name] = [];
+            }
+            ASRNG.__rngs[name].push(rng);
+        });
+
+        return rng;
+    }
+
+    static Counter = new ScopedAttr("counter", StringAttr);
+    static __invalidateHandler(effect, handler) {
+        var counter = ASRNG.Counter.get(handler);
+        if (!counter) return;
+        if (!ASRNG.__rngs[counter]) return;
+        ASRNG.__rngs[counter].forEach(function(srng) {
+            srng.invalidate();
+        });
+    }
+}
+WoofRootController.register(ASRNG);
 
 class AbstractDomController {
 	static Tag = new ScopedAttr('tag', StringAttr);
@@ -2017,8 +2122,8 @@ class Blueprint {
 	// - If it does, bfind for <type-bp name=[value of bp]>
 	// - Otherwise return element.
 	static Bp = new ScopedAttr("bp", StringAttr);
-	static find(element, type) {
-		return Blueprint.findAll(element, type)[0] || null;
+	static find(element, ...types) {
+		return Blueprint.findAll(element, ...types)[0] || null;
 	}
 
 	static resolve(ref) {
@@ -2029,33 +2134,37 @@ class Blueprint {
 		return ref;
 	}
 
-	static findAll(element, type) {
-		return qsa(element, type).map(function(candidate) {
-			return Blueprint.resolve(candidate);
-		});		
+	static findAll(element, ...types) {
+		return types.map(function(type) {
+			return qsa(element, type).map(function(candidate) {
+				return Blueprint.resolve(candidate);
+			});			
+		}).flat();
 	}
 	
 	/** this is a destructive operation on the DOM, so make sure you're working from a copy. */
-	static normalizeAll(relativeTo, element, type) {
-		qsa(element, type).forEach(function(candidate) {
-			if (Blueprint.Bp.has(candidate)) {
-				// Okay, this is where it gets screwy.  We want to basically replace this inline.
-				var bpName = Blueprint.Bp.get(candidate);
-				var bp = Utils.bfind(relativeTo, 'body', type + '-blueprint[name="' + bpName + '"]');
-				if (!bp) return; // Skip this one if there's no blueprint.
-
-				Blueprint.Bp.set(candidate); // Remove the BP ref so it can't be double-normalized.
-				bp = bp.cloneNode(true); // Make a copy and never look at the original again.
-				Utils.moveChildren(bp, candidate);  // Copy children over.  Existing children will be in front, which in theory will be an override.
-
-				// Copy over attributes.
-				for (var i = 0; i < bp.attributes.length; i++) {
-					var attribute = bp.attributes[i];
-					if (attribute.specified) {
-						candidate.setAttribute(attribute.name, attribute.value);
+	static normalizeAll(relativeTo, element, ...types) {
+		types.forEach(function(type) {
+			qsa(element, type).forEach(function(candidate) {
+				if (Blueprint.Bp.has(candidate)) {
+					// Okay, this is where it gets screwy.  We want to basically replace this inline.
+					var bpName = Blueprint.Bp.get(candidate);
+					var bp = Utils.bfind(relativeTo, 'body', type + '-blueprint[name="' + bpName + '"]');
+					if (!bp) return; // Skip this one if there's no blueprint.
+	
+					Blueprint.Bp.set(candidate); // Remove the BP ref so it can't be double-normalized.
+					bp = bp.cloneNode(true); // Make a copy and never look at the original again.
+					Utils.moveChildren(bp, candidate);  // Copy children over.  Existing children will be in front, which in theory will be an override.
+	
+					// Copy over attributes.
+					for (var i = 0; i < bp.attributes.length; i++) {
+						var attribute = bp.attributes[i];
+						if (attribute.specified) {
+							candidate.setAttribute(attribute.name, attribute.value);
+						}
 					}
 				}
-			}
+			});	
 		});
 	}
 }

@@ -21,6 +21,7 @@ class BattlefieldHandler {
 		if (!TeamAttr.get(unit)) TeamAttr.copy(unit, block);
 		IdAttr.generate(unit);
 		overlay.appendChild(unit);
+		Unit.join(unit);
 	}
 
     static unitAt(battlefield, uberCoord) {

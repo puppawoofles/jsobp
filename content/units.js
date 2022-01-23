@@ -1,5 +1,5 @@
 class UnitGenerator {
-    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
     static getRng = function() { return UnitGenerator._rng; }
 
     static Alias = new ScopedAttr("alias", StringAttr);
@@ -253,7 +253,7 @@ class Units {
         "⛰️": ["defend", "protect"]
     };
 
-    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
 
     static _generate_birthdays() {
         var returnMe = [];

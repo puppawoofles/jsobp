@@ -1,6 +1,3 @@
-class InitiativeOrderAttr {}
-Utils.classMixin(InitiativeOrderAttr, ListAttr, "initiative-order");
-
 class EncounterScreenHandler {
     static BlockHintAttr = new ScopedAttr("block-hover-hint", StringAttr);
 

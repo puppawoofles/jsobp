@@ -2,7 +2,15 @@
 
 class EventRules {
 
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event);
+
+    static findDefs(elt) {
+
+    }
+
     static Name = new ScopedAttr("name", StringAttr);
+    static Namespace = new ScopedAttr("namespace", StringAttr);
+    static Glob = new ScopedAttr("glob", BlobAttr);
     static Type = new ScopedAttr("type", StringAttr);
     static End = new ScopedAttr("end", BoolAttr);
     static NextState = new ScopedAttr('next-state', StringAttr);
@@ -11,6 +19,8 @@ class EventRules {
     static Label = new ScopedAttr("label", StringAttr);
     static Choice = new ScopedAttr("choice", StringAttr);
     static Victory = new ScopedAttr("victory", BoolAttr);
+    static Globals = new ScopedAttr("global-keys", ListAttr);
+    static Defs = new ScopedAttr("defs", BlobAttr);
 
     /**
      * {
@@ -26,6 +36,39 @@ class EventRules {
             return GameEffect.createResults(effect, {victory:false});            
         }
 
+        // First, we should set up our defs/variables.
+        var defs = {};
+        var globals = {};
+
+        // Find the blueprint and see if it has a namespace, and if so, look it up or create it.
+        var blueprintElt = qs(screen, 'blueprint');
+        var defNamespace = EventRules.Namespace.get(blueprintElt) || null;
+        var workspace = RunInfo.getWorkspace(handler);
+        if (!!defNamespace) {
+            var globalsElt = qs(workspace, 'event-state[namespace="' + defNamespace + '"]');
+            if (!globalsElt) {
+                globalsElt = Templates.inflateIn('event_global_state', workspace);
+                EventRules.Namespace.copy(globalsElt, blueprintElt);
+                EventRules.Glob.set(globalsElt, {});
+            }
+            globals = EventRules.Glob.get(globalsElt, {});
+        }
+
+        // Next up, find all top-level global defs off the blueprint and if they're not already defined, define them.
+        var globs = DefHelper.processAll(qsa(blueprintElt, ':scope > def[global="true"]'), {});
+        if (globs) {
+            for (var [key, value] of Object.entries(globs)) {
+                if (globals[key] === undefined) globals[key] = value;
+            }    
+        }
+
+        // Lastly, populate our defs with our top-level non-globals and our globals.
+        defs = Object.assign(defs, globals);
+        DefHelper.processAll(qsa(blueprintElt, ':scope > def:not([global="true"])'), defs);
+
+        EventRules.Globals.set(screen, Object.keys(globals));
+        EventRules.Defs.set(screen, defs);
+
         var holder = qs(screen, WoofType.buildSelector("ScreenWrapper"));
         var currentState = start;
 
@@ -34,6 +77,16 @@ class EventRules {
             Utils.clearChildren(holder);
 
             if (!!end) {
+                // Read our globals/defs and update our global map.
+                if (!!defNamespace) {
+                    var globKeys = EventRules.Globals.get(screen);
+                    var defValues = EventRules.Defs.get(screen);
+                    var globs = globKeys.map(function(key) { return defValues[key]; });
+    
+                    var globalsElt = qs(workspace, 'event-state[namespace="' + defNamespace + '"]');
+                    EventRules.Glob.set(globalsElt, globs);
+                }
+
                 return GameEffect.createResults(effect, end);
             }
 
@@ -139,6 +192,9 @@ class EventRules {
      *   vignette: Element (state)
      * }
      */
+    static Flag = new ScopedAttr("flag", StringAttr);
+    static FilterFn = new ScopedAttr("filter-fn", FunctionAttr);
+    static Choose = new ScopedAttr("choose", IntAttr);
     static Vignette = GameEffect.handle(function(handler, effect, params) {
         PendingOpAttr.storeTicketOn(params.eventScreen, effect, "EventRules.Vignette");
 
@@ -146,8 +202,58 @@ class EventRules {
         var vignetteScreen = Templates.inflateIn('vignette_screen', params.holder, {});
         var state = params.vignette;
 
+        // Get our defs.
+        var defs = EventRules.Defs.findUp(vignetteScreen);
+        defs = EventRules.Defs.get(defs);
+
         // Render choices.
-        var choices = qsa(state, 'choice');
+        var workingChoices = [state];
+        var noWorkDone = false;
+        var filterFn = function(elt) {
+            // If it has no flag set, keep it, but if it does, only keep if true.
+            return (!EventRules.Flag.has(elt) || defs[EventRules.Flag.get(elt)] === true) &&
+                (!EventRules.FilterFn.has(elt) || DefHelper.invoke(elt, EventRules.FilterFn, defs));
+        };
+        while (!noWorkDone) {
+            noWorkDone = true;
+            workingChoices = workingChoices.filter(filterFn).map(function(elt) {
+                // Possibly expand.
+                // Choices just get returned straight-up.
+                if (elt.tagName.toLowerCase() == 'choice') return elt;
+                noWorkDone = false;
+                var choiceQuery = ':scope > choice, :scope > choice-group';
+                if (!EventRules.Choose.has(elt)) return qsa(elt, choiceQuery);
+                // This is specifically a choice-group, which has semantics around prioritization.
+                var count = EventRules.Choose.get(elt);
+                var toReturn = [];
+
+                // We want to process our children for choices until we have enough choices.
+                // First, our priority choices:
+                var priority = qsa(elt, ':scope > choice[priority="true"]').filter(filterFn);
+                while (priority.length > 0 && toReturn.length < count) {
+                    // These go in order.
+                    toReturn.push(priority.shift());
+                }
+                if (toReturn.length >= count) return toReturn;
+                // Next up, our regular choices:
+                var choices = qsa(elt, ':scope > choice:not([priority="true"]):not([fallback="true"])').filter(filterFn);
+                while (choices.length > 0 && toReturn.length < count) {
+                    toReturn.push(EventRules._rng.randomValueR(choices));
+                }
+                if (toReturn.length >= count) return toReturn;
+                // Lastly, fallbacks.
+                var fallbacks = qsa(elt, ':scope > choice[fallback="true"]').filter(filterFn);
+                while (fallbacks.length > 0 && toReturn.length < count) {
+                    // These go in order.
+                    toReturn.push(fallbacks.shift());
+                }
+                return toReturn;
+            }).flat();
+
+
+        }
+
+        var choices = workingChoices;
         var choiceHolder = qs(vignetteScreen, '.choices');
         choices.forEach(function(choice) {
             Templates.inflateIn('vignette_choice', choiceHolder, {

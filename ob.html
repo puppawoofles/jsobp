@@ -118,6 +118,16 @@
 						<handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>
 						<handler label="ResetRNG" handler="Preparations.resetRng" event-types="PlayRound:after"></handler>
 
+
+
+
+
+						<!-- Common handlers for resetting RNG -->
+						<handler label="ResetRNG-Day" handler="ASRNG.__invalidateHandler" event-types="NewDay:after" counter="day"></handler>
+						<handler label="ResetRNG-Event" handler="ASRNG.__invalidateHandler" event-types="Event:after" counter="event"></handler>
+						<handler label="ResetRNG-Round" handler="ASRNG.__invalidateHandler" event-types="Round:after" counter="round"></handler>
+						<handler label="ResetRNG-Encounter" handler="ASRNG.__invalidateHandler" event-types="Encounter:after" counter="encounter"></handler>
+						<handler label="ResetRNG-EncounterAfterVignette" handler="ASRNG.__invalidateHandler" event-types="Vignette:after" counter="encounter"></handler>
 					</handlers>
 
 					<queue wh-c=".AddChild|.RemoveChild>GameEffect.OnChildChange">
@@ -471,6 +481,17 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.6.2">
+			<info-panel>
+				<h2>V0.0.6.2</h2>
+				<p>Changes:</p>
+				<ul>					
+					<li>Made card draw/discard obey seeded RNG.</li>
+					<li>Mostly refactoring / prep for new encounters and events and wanted to checkpoint.</li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -706,6 +727,125 @@
 
 			<default-event-state name="fail" custom-fn="Events.fail"></default-event-state>
 
+			<event-blueprint name="lost_city" label="The Lost City">
+				<state type="vignette" name="gates" start="true">
+					<flavor>
+						<p>You stand outside the gates of the ruined city.  What treasures and wonders lie within?</p>
+					</flavor>
+					<choice result="1" label="Step through the gate [Outer City]"></choice>
+					<event-result choice="1" next-state="outer_city"></event-result>
+				</state>
+
+				<!-- Outer City -->
+				<def name="outer_progress" value="0" global="true"></def>
+				<def name="outer_boss_alive" value="true" global="true"></def>
+				<state type="vignette" name="outer_city">
+					<flavor>
+						<p>You walk through the outer ring of the lost city.</p>
+					</flavor>
+					<!-- TODO: Make this somewhat dynamic so you can only win each encounter once. -->
+					<choice-group choose="3">
+						<choice result="outer_boss" label="Hey, who is that big guy over there?" filter-fn="LostCity.progress" progress-min="6" params="outer_progress" flag="outer_boss_alive" priority="true"></choice>
+
+						<choice result="hall_of_bugs" label="I wonder where that passage leads?" flag="hall_of_bugs"></choice>
+
+						<choice result="leave" label="Let's head home. [END]" fallback="true"></choice>
+						<choice result="gates" label="Maybe we should go back to the gates and regroup?" fallback="true"></choice>
+					</choice-group>
+					<event-result choice="leave" victory="false"></event-result>
+					<event-result choice="gates" next-state="gates"></event-result>
+					<event-result choice="outer_boss" next-state="outer_boss"></event-result>
+					<event-result choice="hall_of_bugs" next-state="hall_of_bugs"></event-result>
+				</state>
+
+				<!-- Bug Hallway -->
+				<def name="hall_of_bugs" value="true" global="true"></def>
+				<state type="vignette" name="hall_of_bugs" label="Webbed Passage">
+					<flavor>
+						<p>This large archway was clearly an important thoroughfare at some point, though now it is collapsed and covered in webs.</p>
+					</flavor>
+					<choice result="fast" label="The faster we go, the sooner it's done [Combat: +2 March]"></choice>
+					<choice result="careful" label="We should tread carefully [Combat: +2 Reposition]"></choice>
+					<choice result="fire" label="Nothing a well-placed firebomb can't fix! [Combat: Lose Fire Bomb]" filter-fn="LostCity.ItemAvailable" item="fireBomb"></choice>
+					<event-result choice="fast" next-state="hall_of_bugs_fight">
+						<def name="hall_of_bugs_webs" value="true"></def>
+						<def name="hall_of_bugs_fast" value="true"></def>
+					</event-result>
+					<event-result choice="careful" next-state="hall_of_bugs_fight">
+						<def name="hall_of_bugs_webs" value="true"></def>
+						<def name="hall_of_bugs_careful" value="true"></def>
+					</event-result>
+					<event-result choice="fire" next-state="hall_of_bugs_fight">
+						<remove-item item="fireBomb"></remove-item>
+					</event-result>
+				</state>
+				<state type="encounter" name="hall_of_bugs_fight" label="Webbed Passage">
+					<encounter>
+						<battlefield bp="hallway"></battlefield>
+						<place-units location="A2" count="3">
+							<from-unit-gen name="pill_bug"></from-unit-gen>
+						</place-units>
+						<place-units location="A2" count="3" flag="hall_of_bugs_webs">
+							<from-unit-gen name="web_scenery"></from-unit-gen>
+						</place-units>
+						<place-units location="A3" count="3">
+							<from-unit-gen name="pill_bug"></from-unit-gen>
+						</place-units>
+						<place-units location="A3" count="3" flag="hall_of_bugs_webs">
+							<from-unit-gen name="web_scenery"></from-unit-gen>
+						</place-units>
+						<info end-condition-fns="EndCondition.AllAlliesIn EncounterRules.DefaultWipe" location="A4" win-label="Get all your units here!" win-label-highlight="[wt~=CellBlock][big-label=A4]" lose-label="Don't let all your units die!"></info>
+						<bonus-cards>
+							<tactic bp="march"></tactic>
+						</bonus-cards>
+						<bonus-cards flag="hall_of_bugs_careful">
+							<tactic bp="reposition"></tactic>
+							<tactic bp="reposition"></tactic>							
+						</bonus-cards>
+						<bonus-cards flag="hall_of_bugs_fast">
+							<tactic bp="march"></tactic>
+							<tactic bp="march"></tactic>
+						</bonus-cards>
+						<combat_script>
+							<!-- Handlers go here! -->
+						</combat_script>		
+					</encounter>
+					<event-result choice="victory" next-state="hall_of_bugs_win">
+						<!-- Set it to true for now until I have enough combats to fill the outer city. -->
+						<def name="hall_of_bugs" value="true"></def>
+						<def name="outer_progress" fn="LostCity.MakeProgress" params="outer_progress"></def>
+					</event-result>
+					<event-result choice="wipe" next-state="hall_of_bugs_wipe"></event-result>
+					<event-result choice="giveUp" next-state="hall_of_bugs_retreat"></event-result>
+				</state>
+				<state type="vignette" name="hall_of_bugs_win" label="Webbed Passage">
+					<flavor>
+						<p>Congrats!  You've cleared the path for next time! I should write more.</p>
+					</flavor>
+					<choice result="1" label="Head back"></choice>
+					<event-result choice="1" victory="true">
+					</event-result>
+				</state>
+				<state type="vignette" name="hall_of_bugs_wipe" label="Webbed Passage">
+					<flavor>
+						<p>They were eaten by the bugs. :(</p>
+					</flavor>
+					<choice result="1" label="Well, that sucks"></choice>
+					<event-result choice="1" victory="false">
+					</event-result>
+				</state>
+				<state type="vignette" name="hall_of_bugs_retreat" label="Webbed Passage">
+					<flavor>
+						<p>Screw that noise.  Maybe there's somewhere else we can go.</p>
+					</flavor>
+					<choice result="1" label="Look Elsewhere"></choice>
+					<choice result="2" label="Head back home [END]"></choice>
+					<event-result choice="1" next-state="outer_city"></event-result>
+					<event-result choice="2" victory="false"></event-result>
+				</state>
+
+			</event-blueprint>			
+
 			<event-blueprint name="rats" label="The Rats">
 				<state type="vignette" start="true" name="start">
 					<flavor stand-ins="BLAH1 BLAH2">
@@ -719,9 +859,6 @@
 
 				<state type="encounter" name="encounter">
 					<encounter bp="rats">
-						<bonus-cards>
-							<!-- Put <preparation bp=> and <tactic bp=> to make combat-specific cards.  Cool! -->
-						</bonus-cards>
 					</encounter>
 					<event-result choice="victory" next-state="win"></event-result>
 					<event-result choice="wipe" next-state="wipe"></event-result>
@@ -842,8 +979,9 @@
 			</info-panel>
 
 			<default-encounter >
-				<info end-condition-fns="EncounterRules.DefaultWin EncounterRules.DefaultWipe"></info>
+				<info end-condition-fns="EncounterRules.DefaultWin EncounterRules.DefaultWipe" win-label="Defeat all enemies!" lose-label="Don't let all your units die!"></info>
 				<info max-player-units="5"></info>
+				<info initiative-order="player enemy"></info>
 			</default-encounter>
 
 			<encounter-blueprint name="rats">
@@ -860,6 +998,13 @@
 				<battlefield bp="team_duel"></battlefield>
 				<info encounter-fn="Encounters.golems"></info>
 			</encounter-blueprint>
+
+			<battlefield-blueprint name="hallway">
+				<info battlefield-fn="Battlefields.Standard"></info>
+				<generate fn="Battlefields.generateRect" width="4" height="1"></generate>
+				<modify labels="A1" property="team" value="player"></modify>
+				<modify labels="A2 A3 A4" property="team" value="enemy"></modify>
+			</battlefield-blueprint>
 
 			<battlefield-blueprint name="basic_cross">
 				<info battlefield-fn="Battlefields.Standard"></info>
@@ -922,6 +1067,7 @@
 				<assignment bp="rats"></assignment>
 				<assignment bp="golems"></assignment>
 				<assignment bp="doctor"></assignment>
+				<!-- <assignment bp="lost_city"></assignment> -->
 			</starting-rumors>
 
 			<result-handlers>
@@ -932,6 +1078,23 @@
 			</result-handlers>
 
 			<default-assignment assignment-invoke-fn="GameRules.LaunchEvent"></default-assignment>
+			<assignment-blueprint name="lost_city">
+				<info label="Explore the Ruined City"></info>
+				<event bp="lost_city"></event>
+				<assign max-units="8" require="false" req-label="Up to 8 units"></assign>
+				<info wt="Hint">A quest chain I intend to build out to be many adventures deep.  Be on your toes!"</info>
+				<result>
+					<add-rumor>
+						<assignment bp="lost_city"></assignment>
+					</add-rumor>
+				</result>
+				<result victory="true">
+					<add-gold amount="50"></add-gold>
+				</result>
+			</assignment-blueprint>
+
+
+
 			<assignment-blueprint name="rats">
 				<config></config>
 				<info label="The Rats"></info>
@@ -1244,6 +1407,12 @@
 				
 				<skill-blueprint name="summon-rats" label="Come my pretties!" short-label="🐀" type="🔮" invoke-fn="JimmyAI.summonInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
 				</skill-blueprint>
+
+				<!-- Bug skills. -->
+				<skill-blueprint name="bug_spit_web" label="Spit Web" short-label="🕸️" type="💫" invoke-fn="BugEnemy.SpitWeb" target-fn="Targeting.StandardEnemy" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3"></skill-blueprint>
+
+				<!-- Generic enemy skills. -->
+				<skill-blueprint name="str_gain" label="Buff!" short-label="💪" type="✨" amount="1" status="base_damage" invoke-fn="GenericMoves.AddStatus" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3"></skill-blueprint>
 
 
 				<combo-blueprint name="x-strike">
@@ -1695,6 +1864,105 @@
 				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="distract"></skill></slot></unit-mod>
 			</unit-mods>
 
+			<!-- ENEMY GEN GOES HERE -->
+
+			<!-- Basic for all enemies as options.  -->
+			<unit-mod-group for="generic_enemies">
+				<unit-mods group="enemy_scurry">
+					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
+				</unit-mods>
+				<unit-mods group="enemy_shoot">
+					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
+				</unit-mods>
+				<unit-mods group="enemy_strike">
+					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
+				</unit-mods>
+			</unit-mod-group>
+
+			<!-- Pill bug -->
+			<unit-gen name="pill_bug">
+				<unit bp="bug"></unit>
+				<def alias="rng" fn="UnitGenerator.getRng"></def>				
+				<apply-modifier>
+					<unit-mod><apply-status status="bug_curl_up" stacks="12"></apply-status></unit-mod>
+				</apply-modifier>
+				<choose choices="melee range">
+					<result value="melee">
+						<apply-modifier from-group="enemy_strike" exclude-tags="1 2 7 8"></apply-modifier>
+						<apply-modifier from-group="bug_buff" exclude-tags="1 2 3 4"></apply-modifier>
+						<apply-modifier from-group="enemy_scurry" exclude-tags="5 6 7 8"></apply-modifier>
+						<apply-modifier>
+							<unit-mod><apply-status status="front_row_ai"></apply-status></unit-mod>
+						</apply-modifier>
+					</result>
+					<result value="range">
+						<apply-modifier from-group="enemy_shoot" exclude-tags="1 2 7 8"></apply-modifier>
+						<apply-modifier from-group="bug_spitweb" exclude_tags="1 2 3 4"></apply-modifier>
+						<apply-modifier from-group="enemy_scurry" exclude-tags="5 6 7 8"></apply-modifier>
+						<apply-modifier>
+							<unit-mod><apply-status status="back_row_ai"></apply-status></unit-mod>
+						</apply-modifier>
+					</result>
+				</choose>
+			</unit-gen>
+
+			<unit-gen name="web_scenery">
+				<unit bp="immobile_construct"></unit>
+				<appearance appearance="🕸️"></appearance>
+				<apply-modifier>
+					<unit-mod><!-- Buff that makes it take reduced damage from shoot/throw --></unit-mod>
+				</apply-modifier>
+			</unit-gen>
+
+			<unit-blueprint name="bug">
+				<appearance appearance="🐛"></appearance>
+				<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>
+			</unit-blueprint>
+
+			<unit-mod-group for="bug">
+				<unit-mods group="bug_buff">
+					<unit-mod mod-tags="buff 1"><slot ordinal="1" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 2"><slot ordinal="2" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 3"><slot ordinal="3" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 4"><slot ordinal="4" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 5"><slot ordinal="5" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 6"><slot ordinal="6" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 7"><slot ordinal="7" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+					<unit-mod mod-tags="buff 8"><slot ordinal="8" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
+				</unit-mods>
+				<unit-mods group="bug_spitweb">
+					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+				</unit-mods>
+			</unit-mod-group>
+
+			<!-- Props and constructs.-->
+			<unit-blueprint name="immobile_construct">
+				<appearance></appearance>
+				<base-stats damage="0" defense="0" cunning="0" move="0" mass="9000" hp="30"></base-stats>
+				<construct></construct>
+			</unit-blueprint>
+
 
 			<concept hash="block">
 				<info-panel>
@@ -1810,6 +2078,24 @@
 			<status-blueprint type="jimmy_blessing" icon="🤴" extra-classes="" apply-fn="JimmyBlessing.onApply" remove-fn="JimmyBlessing.onRemove" >
 			</status-blueprint>
 
+			<status-blueprint type="bug_curl_up" icon="➰">
+				<handler label="AfterHit" handler="BugEnemy.CurlUpAfterHit" event-type="Attack:after"></handler> 
+			</status-blueprint>
+			<status-blueprint type="web_damage_reduction" icon="🕸️">
+				<handler label="BeforeHit" handler="WebObstacle.BeforeAttack" event-type="Attack:before"></handler> 
+			</status-blueprint>
+
+			<!-- Some generic enemy AIs -->
+			<status-blueprint type="front_row_ai" exclusive="ai" icon="" extra-classes="hidden" prefs="F1 F2 F3">
+				<handler label="DecideTargetLocation" handler="BasicPositionAI.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+			<status-blueprint type="mid_row_ai" exclusive="ai" icon="" extra-classes="hidden" prefs="M1 M2 M3">
+				<handler label="DecideTargetLocation" handler="BasicPositionAI.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+			<status-blueprint type="back_row_ai" exclusive="ai" icon="" extra-classes="hidden" prefs="B1 B2 B3">
+				<handler label="DecideTargetLocation" handler="BasicPositionAI.OnAfterVolley" event-types="Volley:after"></handler>
+			</status-blueprint>
+
 		</concept>
 
 		<concept hash="position">
@@ -1874,6 +2160,10 @@
 
 	<!-- Put them all in one place to hide them. -->
 	<div class="templates">
+
+		<template name="event_global_state">
+			<event-state wt="EventState"></event-state>
+		</template>
 
 		<template name="modal_dialog">
 			<div class="modal_screen modal_dialog">
@@ -2004,7 +2294,7 @@
 						<li><span compendium="version/0.0.3">V0.0.3</span></li>
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
 						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span> <span compendium="version/0.0.5.7">V0.0.5.7</span> <span compendium="version/0.0.5.8">V0.0.5.8</span></li>
-						<li><span compendium="version/0.0.6">V0.0.6</span> <span compendium="version/0.0.6.1">V0.0.6.1</span></li>
+						<li><span compendium="version/0.0.6">V0.0.6</span> <span compendium="version/0.0.6.1">V0.0.6.1</span> <span compendium="version/0.0.6.2">V0.0.6.2</span></li>
 					</ul>
 				</div>
 			</div>
@@ -2166,7 +2456,9 @@
 															  Unit.Attr:in-block>Unit.onMoveBlock"
 														wh-b="GhostUnit.click>EncounterRules.OnGhostUnitClick">
 				<!-- Info for battlefield things -->
-				<info class="encounter"></info>
+				<info class="encounter" wt="EncounterBP">
+					
+				</info>
 				<div class="battlefield_widget_container"></div>
 				<div class="preview_panel"></div>
 				<div class="tldr_panel"></div>
@@ -2531,6 +2823,9 @@
 		"woof/woof",
 		"woof/ui",
 		"woof/queue",
+		
+		// Noise counters for RNG.
+		"content/noisecounters",
 
 		// Basic components.
 		"ui/actionbutton",
@@ -2581,7 +2876,6 @@
 
 		// Constants
 		"content/constants",
-		"content/noisecounters",
 		"content/teams",
 
 		// Content

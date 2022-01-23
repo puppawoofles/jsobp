@@ -30,3 +30,22 @@ class Events {
     }
 }
 WoofRootController.register(Events);
+
+
+class LostCity {
+
+    static ProgressMin = new ScopedAttr("progress-min", IntAttr);
+    static progress(elt, progress) {
+        return progress >= LostCity.ProgressMin.get(elt);
+    }
+
+    static ItemAvailable(elt) {
+        // TODO: Figure out how to do this.
+        return false;
+    }
+
+    static MakeProgress(elt, progress) {
+        return progress++;
+    }
+}
+WoofRootController.register(LostCity);

@@ -40,6 +40,7 @@ class RunInfo {
     static getUnits = RunInfo.__getThings("units");
     static addUnit = RunInfo.__addThing("units");
     static getUnitHolder = RunInfo.__getHolder("units");
+    static getWorkspace = RunInfo.__getHolder("workspace");
 
     static setMonth(elt, month) {
         var runInfo = RunInfo.find(elt);        

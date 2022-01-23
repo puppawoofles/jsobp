@@ -1,5 +1,6 @@
 
 class CardRules {
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Encounter, NC.Round);
     static CardTypeAttr = new ScopedAttr('card-type', StringAttr);
     static TargetFn = new ScopedAttr('target-fn', FunctionAttr);
     static InvokeFn = new ScopedAttr('invoke-fn', FunctionAttr);
@@ -39,7 +40,7 @@ class CardRules {
             if (params.card) {
                 CardHud.drawCard(cardHud, params.card);
             } else {
-                if (!CardHud.drawCard(cardHud, from == 'random')) {
+                if (!CardHud.drawCard(cardHud, from == 'random', CardRules._rng)) {
                     // Unable to draw.  That means we need to shuffle and try again.
                     return GameEffect.push(effect, GameEffect.create("ShuffleDiscard", {}, handler)).then(function() {
                         // Then try to draw again.
@@ -159,11 +160,11 @@ class CardRules {
             for (var i = 0; i < CardHud.handSize(cardHud); i++) {
                 cards.push(i);
             }
-            cards.shuffle();
-            cards.splice(params.count, cards.length - params.count);
-            var hand = CardHud.hand(cardHud);
-            cards = cards.map(function(idx) {
-                return WoofType.buildSelectorFor(hand[idx]);
+            var hand = a(CardHud.hand(cardHud));
+            cards = times(params.count).map(function() {
+                return CardRules._rng.randomValueR(hand)
+            }).filter(function(obj) {
+                return !!obj;
             });
         } else {
             cards = params.cards;

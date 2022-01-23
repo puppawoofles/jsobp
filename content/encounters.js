@@ -1,6 +1,6 @@
 class Encounters {
 
-    static _rng = new SRNG(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Encounter);
     static __encounter(innerFn) {
         return function(root) {
             var enc = innerFn(root);
@@ -28,7 +28,7 @@ class Encounters {
         toPutRatsIn.forEach(function(cell) {
             var coord = UberCoord.extract(cell);
             var blockLabel = BigGridLabel.get(CellBlock.findByCoord(encounter, UberCoord.big(coord)));
-            var rat = Units.rat();
+            var rat = Units.rat(encounter);
             BattlefieldHandler.addUnitTo(battlefield, rat,
                     UberCoord.big(coord), 
                     UberCoord.small(coord));
@@ -42,7 +42,7 @@ class Encounters {
         var enemyBlock = Encounters._rng.randomValueR(enemyBlocks);
         var coords = Grid.fromEffectiveToReal(enemyBlock, Activations.back_row);
         coords.forEach(function(coord) {
-            var golem = Units.golem();
+            var golem = Units.golem(encounter);
             
             BattlefieldHandler.addUnitTo(battlefield, golem,
                   BigCoord.extract(enemyBlock), coord);
@@ -64,12 +64,12 @@ class Encounters {
 
         // Populate rats.
         ratsIn.forEach(function(coord) {
-            var rat = Units.rat();
+            var rat = Units.rat(encounter);
             BattlefieldHandler.addUnitTo(battlefield, rat, BigCoord.extract(jimmyBlock), coord);
             RatAI.Apply(rat, 1);
         });
 
-        var jimmy = Units.jimmyTheRatKing();
+        var jimmy = Units.jimmyTheRatKing(encounter);
         BattlefieldHandler.addUnitTo(battlefield, jimmy, BigCoord.extract(jimmyBlock), [1, 0]);
         JimmyAI.Apply(jimmy, 1);
     });

@@ -45,7 +45,7 @@ class CardRules {
                     return GameEffect.push(effect, GameEffect.create("ShuffleDiscard", {}, handler)).then(function() {
                         // Then try to draw again.
                         return GameEffect.createResults(effect, {
-                            drawn: CardHud.drawCard(cardHud, from == 'random')
+                            drawn: CardHud.drawCard(cardHud, from == 'random', CardRules._rng)
                         });                        
                     });
                 }

@@ -489,15 +489,17 @@ class Unit {
     static Cunning = new ScopedAttr("cunning", IntAttr);
     static Move = new ScopedAttr("move", IntAttr);
     static Mass = new ScopedAttr("mass", IntAttr);
+    static HP = new ScopedAttr("hp", IntAttr);
     static applyBlueprint(unit, bp) {
         var elt = bp;
         // Apply the blueprint here.
         bp = bp.cloneNode(true);
         qs(unit, WoofType.buildSelector('UnitBP')).appendChild(bp);
 
-        Unit.Appearance.findGetCopySetAll(bp, unit);
-        Unit.Month.findGetCopySetAll(bp, unit);
-        Unit.Day.findGetCopySetAll(bp, unit);
+        var appearance = qs(bp, 'appearance');
+        if (appearance) {
+            Unit.applyAppearance(unit, appearance);
+        }
 
         var inventory = qs(bp, 'has-inventory');
         if (inventory) {
@@ -507,6 +509,22 @@ class Unit {
         if (combos) {
             Unit.MaxItems.copy(combos, qs(unit, 'combos'))
         }
+
+        var hp = Unit.HP.findGet(bp);
+        Unit.setMaxHP(unit, hp);
+        Unit.setCurrentHP(unit, hp);
+        qsa(bp, 'copy').forEach(function(copyElt) {
+            a(copyElt.attributes).forEach(function(attr) {
+                unit.setAttribute(attr.name, attr.value);
+            });
+        });
+    }
+
+    static applyAppearance(unit, elt) {
+        if (Unit.Appearance.has(elt)) Unit.Appearance.findGetCopySetAll(elt, unit);
+        if (Unit.Month.has(elt)) Unit.Month.findGetCopySetAll(elt, unit);
+        if (Unit.Day.has(elt)) Unit.Day.findGetCopySetAll(elt, unit);
+        if (Unit.Name.has(elt)) Unit.setName(unit, Unit.Name.get(elt));
     }
 
     static Ordinal = new ScopedAttr("ordinal", IntAttr);
@@ -537,6 +555,48 @@ class Unit {
 
     static setName(unit, name) {
         Unit.Name.set(qs(unit, '.name[name]'), name);
+    }
+
+    /** Base stats and shit */
+    static _getBaseStat(unit, stat) {
+        var baseStats = qs(unit, 'base-stats');
+        if (baseStats === null) return null;
+        var base = IntAttr.get(stat, baseStats);
+
+        IntAttr.findAll('add-' + stat, unit).forEach(function(modElt) {
+            base += IntAttr.get('add-' + stat, unit);
+        });
+
+        return base;
+    }
+
+
+    static getMovementSpeed(unit) {
+        var stat = Unit._getBaseStat(unit, 'move');
+        // Fallback pre-standardization.
+        if (stat === null) return 1;
+        return stat;
+    }
+
+    static getDamage(unit) {        
+        var stat = Unit._getBaseStat(unit, 'damage');
+        // Fallback pre-standardization.
+        if (stat === null) return Unit.baseDamage(unit);
+        return stat;
+    }
+    
+    static getDefense(unit) {
+        var stat = Unit._getBaseStat(unit, 'defense');
+        // Fallback pre-standardization.
+        if (stat === null) return Unit.baseDefense(unit);
+        return stat;
+    }
+
+    static getCunning(unit) {
+        var stat = Unit._getBaseStat(unit, 'cunning');
+        // Fallback pre-standardization.
+        if (stat === null) return 2;
+        return stat;
     }
 }
 WoofRootController.register(Unit);
@@ -964,6 +1024,7 @@ class BaseStatus {
         types.forEach(function(type) {
             WoofType.add(status, type);
         });
+        WoofType.findDown(status, 'BP').appendChild(bp.cloneNode(true));
 
         // Handle applying this to our unit.
         var hasMerge = BaseStatus.MergeFn.has(bp);

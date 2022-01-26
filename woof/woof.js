@@ -1830,7 +1830,35 @@ class DefHelper {
 			return true;
 		};
 	}
+}
 
+
+/**
+ * Given a DOM element, processes each element like a line of code in a script using
+ * a set of passed-in string-matcher commands.  If a matcher returns something, that becomes
+ * the next command to run.
+ */
+class DomScript {
+	static execute(rootElt, commands) {
+		// Bail out if empty!
+		if (rootElt.childElementCount == 0) return;
+
+		var toExecute = [rootElt.firstElementChild];
+		while (toExecute.length > 0) {
+			var current = toExecute.shift();
+			if (current.nextElementSibling) {
+				toExecute.push(current.nextElementSibling);
+			}
+			for (var [key, value] of Object.entries(commands)) {
+				if (current.matches(key)) {
+					var newCmd = value(current);
+					if (newCmd) {
+						toExecute.unshift(newCmd);
+					}
+				}
+			}
+		}
+	}
 }
 
 
@@ -1957,6 +1985,24 @@ class SRNG {
 			return forArr.splice(idx, 1)[0];
 		} else {
 			return forArr.splice(this.nextIdx(forArr), 1)[0];
+		}
+	}
+
+	shuffle(forArr) {
+		var current = forArr.length;
+		var temp;
+		var rando;
+	  
+		while (0 != current) {
+	
+			// Pick a remaining element...
+			rando = this.nextInRange(0, current);
+			current -= 1;
+	
+			// And swap it with the current element.
+			temp = forArr[current];
+			forArr[current] = forArr[rando];
+			forArr[rando] = temp;	
 		}
 	}
 }

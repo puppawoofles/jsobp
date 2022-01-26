@@ -785,16 +785,16 @@
 						<place-units location="A2" count="3">
 							<from-unit-gen name="pill_bug"></from-unit-gen>
 						</place-units>
-						<place-units location="A2" count="3" flag="hall_of_bugs_webs">
+						<place-units location="A2" count="2" flag="hall_of_bugs_webs">
 							<from-unit-gen name="web_scenery"></from-unit-gen>
 						</place-units>
 						<place-units location="A3" count="3">
 							<from-unit-gen name="pill_bug"></from-unit-gen>
 						</place-units>
-						<place-units location="A3" count="3" flag="hall_of_bugs_webs">
+						<place-units location="A3" count="2" flag="hall_of_bugs_webs">
 							<from-unit-gen name="web_scenery"></from-unit-gen>
 						</place-units>
-						<info end-condition-fns="EndCondition.AllAlliesIn EncounterRules.DefaultWipe" location="A4" win-label="Get all your units here!" win-label-highlight="[wt~=CellBlock][big-label=A4]" lose-label="Don't let all your units die!"></info>
+						<info end-condition-fns="EndConditions.AllAlliesIn EncounterRules.DefaultWipe" location="A4" win-label="Get all your units here!" win-label-highlight="[wt~=CellBlock][big-label=A4]" lose-label="Don't let all your units die!"></info>
 						<bonus-cards>
 							<tactic bp="march"></tactic>
 						</bonus-cards>
@@ -871,7 +871,6 @@
 					</flavor>
 					<choice result="1" label="Well, that sucks"></choice>
 					<event-result choice="1" victory="false">
-						<add-rumor blueprint="rats"></add-rumor>
 					</event-result>
 				</state>
 
@@ -1064,10 +1063,10 @@
 			</concept>
 
 			<starting-rumors>
+				<!--<assignment bp="lost_city"></assignment>-->
 				<assignment bp="rats"></assignment>
 				<assignment bp="golems"></assignment>
 				<assignment bp="doctor"></assignment>
-				<!-- <assignment bp="lost_city"></assignment> -->
 			</starting-rumors>
 
 			<result-handlers>
@@ -1394,7 +1393,7 @@
 				<!-- Enemy-only skill blueprints -->
 
 				<!-- Anyone who needs to move to a destination -->
-				<skill-blueprint name="scurry" label="Scurry" short-label="🥾" type="🥾" invoke-fn="ScurryAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3">
+				<skill-blueprint name="scurry" label="Scurry" short-label="🥾" type="🥾" invoke-fn="ScurryAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
 				</skill-blueprint>
 
 				<!-- Golems -->
@@ -1677,6 +1676,12 @@
 			<tactic-blueprint name="pivot" card-icon="📕" label="Heel Turn" short-label="⦩" target-fn="Pivot.target" invoke-fn="Pivot.invoke">
 				<div class="description">Changes which way a squad is facing.</div>
 			</tactic-blueprint>
+
+			<!-- Situational -->
+			<tactic-blueprint name="march" card-icon="📕" label="March" short-label="🚶" target-fn="Pivot.target" invoke-fn="Pivot.invoke">
+				<div class="description">Direct all your units in one cell block to move to an adjacent empty cell block.</div>
+			</tactic-blueprint>
+
 		</concept>
 
 		<concept hash="unit">
@@ -1909,20 +1914,24 @@
 				</apply-modifier>
 				<choose choices="melee range">
 					<result value="melee">
+						<appearance name="Ragey Poly"></appearance>
 						<apply-modifier from-group="enemy_strike" exclude-tags="1 2 7 8"></apply-modifier>
 						<apply-modifier from-group="bug_buff" exclude-tags="1 2 3 4"></apply-modifier>
 						<apply-modifier from-group="enemy_scurry" exclude-tags="5 6 7 8"></apply-modifier>
 						<apply-modifier>
-							<unit-mod><apply-status status="front_row_ai"></apply-status></unit-mod>
+							<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
 						</apply-modifier>
+						<copy preferred-locations="F1 F2 F3"></copy>
 					</result>
 					<result value="range">
+						<appearance name="Spitty Poly"></appearance>
 						<apply-modifier from-group="enemy_shoot" exclude-tags="1 2 7 8"></apply-modifier>
-						<apply-modifier from-group="bug_spitweb" exclude_tags="1 2 3 4"></apply-modifier>
+						<apply-modifier from-group="bug_spit_web" exclude_tags="1 2 3 4"></apply-modifier>
 						<apply-modifier from-group="enemy_scurry" exclude-tags="5 6 7 8"></apply-modifier>
 						<apply-modifier>
-							<unit-mod><apply-status status="back_row_ai"></apply-status></unit-mod>
+							<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
 						</apply-modifier>
+						<copy preferred-locations="B1 B2 B3"></copy>
 					</result>
 				</choose>
 			</unit-gen>
@@ -1931,12 +1940,12 @@
 				<unit bp="immobile_construct"></unit>
 				<appearance appearance="🕸️"></appearance>
 				<apply-modifier>
-					<unit-mod><!-- Buff that makes it take reduced damage from shoot/throw --></unit-mod>
+					<unit-mod><apply-status status="web_damage_reduction"></apply-status></unit-mod>
 				</apply-modifier>
 			</unit-gen>
 
 			<unit-blueprint name="bug">
-				<appearance appearance="🐛"></appearance>
+				<appearance appearance="🐛" name="Bug"></appearance>
 				<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>
 			</unit-blueprint>
 
@@ -1951,16 +1960,23 @@
 					<unit-mod mod-tags="buff 7"><slot ordinal="7" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
 					<unit-mod mod-tags="buff 8"><slot ordinal="8" type="⭐"><skill bp="str_gain"></skill></slot></unit-mod>
 				</unit-mods>
-				<unit-mods group="bug_spitweb">
+				<unit-mods group="bug_spit_web">
+					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
 					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+					<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+					<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+					<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
+					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="bug_spit_web"></skill></slot></unit-mod>
 				</unit-mods>
 			</unit-mod-group>
 
 			<!-- Props and constructs.-->
 			<unit-blueprint name="immobile_construct">
-				<appearance></appearance>
+				<appearance appearance="🧱" name="Construct"></appearance>
 				<base-stats damage="0" defense="0" cunning="0" move="0" mass="9000" hp="30"></base-stats>
-				<construct></construct>
+				<copy construct="true"></copy>
 			</unit-blueprint>
 
 
@@ -2079,21 +2095,15 @@
 			</status-blueprint>
 
 			<status-blueprint type="bug_curl_up" icon="➰">
-				<handler label="AfterHit" handler="BugEnemy.CurlUpAfterHit" event-type="Attack:after"></handler> 
+				<handler label="AfterDamage" handler="BugEnemy.CurlUpAfterHit" event-types="TakeDamage:after"></handler> 
 			</status-blueprint>
 			<status-blueprint type="web_damage_reduction" icon="🕸️">
-				<handler label="BeforeHit" handler="WebObstacle.BeforeAttack" event-type="Attack:before"></handler> 
+				<handler label="BeforeDamage" handler="WebObstacle.BeforeDamage" event-types="TakeDamage:before"></handler> 
 			</status-blueprint>
 
 			<!-- Some generic enemy AIs -->
-			<status-blueprint type="front_row_ai" exclusive="ai" icon="" extra-classes="hidden" prefs="F1 F2 F3">
-				<handler label="DecideTargetLocation" handler="BasicPositionAI.OnAfterVolley" event-types="Volley:after"></handler>
-			</status-blueprint>
-			<status-blueprint type="mid_row_ai" exclusive="ai" icon="" extra-classes="hidden" prefs="M1 M2 M3">
-				<handler label="DecideTargetLocation" handler="BasicPositionAI.OnAfterVolley" event-types="Volley:after"></handler>
-			</status-blueprint>
-			<status-blueprint type="back_row_ai" exclusive="ai" icon="" extra-classes="hidden" prefs="B1 B2 B3">
-				<handler label="DecideTargetLocation" handler="BasicPositionAI.OnAfterVolley" event-types="Volley:after"></handler>
+			<status-blueprint type="basic_ai" exclusive="ai" icon="" extra-classes="hidden">
+				<handler label="DecideTargetLocation" handler="BasicAI.OnAfterVolley" event-types="Volley:after"></handler>
 			</status-blueprint>
 
 		</concept>
@@ -2748,6 +2758,7 @@
 					wh-c="Status.Attr:stack_count>BaseStatus.OnStackCountChange">
 				<div class="status_icon" status_icon="STATUS_ICON"></div>
 				<div class="stack_count" stack_count="0"></div>
+				<info wt="BP"></info>
 			</div>
 		</template>
 

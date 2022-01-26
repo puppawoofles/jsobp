@@ -10,6 +10,7 @@ body {
   font-family: verdana;
 }
 
+
 /* Custom tag to hide shit. */
 info {
 	display: none;
@@ -334,6 +335,7 @@ info {
 :root {
 	--black-text-shadow: -1px -1px 0 black, 0 -1px 0 black, 1px -1px 0 black, 1px 0 0 black, 1px 1px 0 black, 0 1px 0 black, -1px 1px 0 black, -1px 0 0 black;
 	--white-text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
+	--white-text-shadow-half: -0.5px -0.5px 0 white, 0 -0.5px 0 white, 0.5px -0.5px 0 white, 1px 0 0 white, 0.5px 0.5px 0 white, 0 0.5px 0 white, -0.5px 0.5px 0 white, -0.5px 0 0 white;
 }
 
 .volley_tracker > .countdown {	
@@ -3237,8 +3239,6 @@ span[compendium] {
 	height: 14px;
 	top: 4px;
 	left: 4px;	
-	background: rgba(255, 255, 255, 0.8);
-	border-radius: 50%;
 }
 
 .appearance .day::after {
@@ -3247,6 +3247,7 @@ span[compendium] {
 	position: absolute;
 	top: -1px;
 	left: 0;
+	text-shadow: var(--white-text-shadow-half);
 }
 
 

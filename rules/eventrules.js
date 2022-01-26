@@ -121,7 +121,8 @@ class EventRules {
                     // TODO: configure this in a sane way. :(
                     container: holder,
                     encounterBp: bp,
-                    deck: qs(screen, "deck")
+                    deck: qs(screen, "deck"),
+                    defs: defs
                 }, handler)).then(function(result) {
                     // Clean up after the encounter.  Sort cards back into inventories and units back into their holder.
                     qsa(screen, '[wt~=Card]').forEach(function(card) {
@@ -162,9 +163,8 @@ class EventRules {
                     pointer = qs(screen, "event-result");
                 }
                 // First, we want to look for any results, like gold or rumors or whatever.
-                Array.from(pointer.children).forEach(function(thingie) {
-                    qs(screen, 'results').appendChild(thingie.cloneNode(true));
-                });
+                EventRules._executeEventResult(screen, pointer, defs);
+                
 
                 // Second, check if we have a next state.
                 if (EventRules.NextState.has(pointer)) {
@@ -181,6 +181,22 @@ class EventRules {
         
         return Promise.resolve().then(nextFn);
     });
+
+
+    static _executeEventResult(screen, resultElt, defs) {
+        var commands = {
+            "result": function(elt) {
+                qs(screen, 'results').appendChild(elt.cloneNode(true));
+            },
+            "def": function(elt) {
+                DefHelper.process(elt, defs);
+            },
+            "remove-item": function(elt) {
+                // TODO: implement lol.
+            }
+        };
+        DomScript.execute(resultElt, commands);
+    }
 
     static Title = new ScopedAttr("title", StringAttr);
     static StandIns = new ScopedAttr('stand-ins', ListAttr);

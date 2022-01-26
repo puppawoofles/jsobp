@@ -16,7 +16,7 @@ class EncounterGenerator {
         Battlefields.Generate(encounter, bfBp);
 
         // Either call our custom function or spawn according to our blueprint.
-        var encounterBpElt = EncounterRules.EncounterFn.find(encounterBp);
+        var encounterBpElt = EncounterRules.EncounterFn.findDown(encounterBp);
         if (encounterBpElt) {
             EncounterRules.EncounterFn.findInvoke(encounterBpElt, encounter, encounterBpElt);
         } else {
@@ -34,7 +34,7 @@ class EncounterGenerator {
                 } else {
                     var count = EncounterGenerator.Count.get(placeUnitsElt);
                     while (toGen.length < count) {
-                        options.push(EncounterGenerator._rng.randomValue(options));
+                        toGen.push(EncounterGenerator._rng.randomValue(options));
                     }
                 }
 
@@ -43,7 +43,9 @@ class EncounterGenerator {
                     return CellBlock.findByLabel(encounter, label);  
                 }).map(function(block) {
                     return Cell.findAllInBlock(block);
-                }).flat().filter(function(coord) {
+                }).flat().map(function(cell) {
+                   return UberCoord.extract(cell); 
+                }).filter(function(coord) {
                     return !BattlefieldHandler.unitAt(encounter, coord);
                 });
 
@@ -187,9 +189,14 @@ class EncounterRules {
     }
 
     static GetEncounterResult(encounter) {
-        var fns = EncounterRules.EndConditions.findGet(encounter);
-        return fns.map(function(controller) {
-            return WoofRootController.invokeController(controller, [encounter]);
+        var endConditionFns = EncounterRules.EndConditions.findAll(encounter);
+        return endConditionFns.map(function(elt) {
+            var fns = EncounterRules.EndConditions.get(elt);
+            return fns.map(function(controller) {
+                return WoofRootController.invokeController(controller, [elt, encounter]);
+            }).findFirst(function(result) {
+                return !!result;
+            });    
         }).findFirst(function(result) {
             return !!result;
         });
@@ -332,7 +339,7 @@ class EncounterRules {
         return result.result.win ? "Victory!" : "Defeat!";
     }
 
-    static DefaultWin(encounter) {
+    static DefaultWin(conditionElt, encounter) {
         if (qsa(encounter, "[team='enemy'][wt~='Unit'").length == 0) {
             return {
                 success: true,
@@ -341,7 +348,7 @@ class EncounterRules {
         }
     }
 
-    static DefaultWipe(encounter) {
+    static DefaultWipe(conditionElt, encounter) {
         var battlefield = BattlefieldHandler.find(encounter);
         var playerUnits = qsa(battlefield, "[team='player'][wt~='Unit']:not([ephemeral='true'])");
         if (playerUnits.length > 0) return;
@@ -712,12 +719,10 @@ class RoundRules {
         cooldowns.forEach(function(elt) {
             var ability = Ability.findUp(elt);
             var current = Ability.CurrentCooldown.get(elt);
-            if (current <= 1) {
-                if (Unit.Used.get(ability) || Unit.Inactive.get(ability)) {
-                    Ability.CurrentCooldown.findSetAll(ability, Ability.CooldownDuration.get(elt));
-                    Unit.Used.set(ability, false);
-                    toCheck.push([ability, elt]);
-                }
+            if (Unit.Used.get(ability) || (Unit.Inactive.get(ability) && current <= 1)) {
+                Ability.CurrentCooldown.findSetAll(ability, Ability.CooldownDuration.get(elt));
+                Unit.Used.set(ability, false);
+                toCheck.push([ability, elt]);
             } else {
                 Ability.CurrentCooldown.set(elt, Ability.CurrentCooldown.get(elt) - 1);
             }

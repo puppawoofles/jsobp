@@ -23,6 +23,7 @@ class Strike {
         return GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
             source: unit,
+            main_type: DamageTypes.MELEE,
             target: target
         }));
     }
@@ -62,6 +63,7 @@ class Strike {
         return GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
             source: unit,
+            main_type: DamageTypes.THROWN,
             target: target
         }));
     }
@@ -101,6 +103,7 @@ class Strike {
         return GameEffect.push(effect, GameEffect.create("Attack", {
             amount: damage,
             source: unit,
+            main_type: DamageTypes.RANGED,
             target: target
         }));
     }
@@ -185,12 +188,28 @@ class ScurryAbility {
 
         var baseDistance = params.distance || 1;
 
+        var unitSpeed = Unit.getMovementSpeed(unit);
+        if (unitSpeed == 0) {
+            // No move.
+            return GameEffect.createResults(effect);
+        }
+
         var distance = baseDistance;
         return GameEffect.push(effect, GameEffect.create("UnitMoveToward", {
             unit: unit,
             destination: targetCell,
-            distance: distance
-        })); 
+            distance: distance * unitSpeed
+        })).then(function(result) {
+            if (result.distanceMoved > baseDistance) {
+                var amount = result.distanceMoved - baseDistance;
+                // Delay their other abilities based on the extra distance covered.
+                Ability.findAll(unit).forEach(function(ability) {
+                    var toEdit = Ability.CurrentCooldown.find(ability);
+                    Ability.CurrentCooldown.set(toEdit, Ability.CurrentCooldown.get(toEdit) + Math.max(1, amount));
+                });
+            }
+            return GameEffect.createResults(effect);
+        });
     }
 }
 WoofRootController.register(ScurryAbility);

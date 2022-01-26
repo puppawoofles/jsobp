@@ -196,7 +196,11 @@ class BaseDamageStatus {
         return true;
     }
 
+    static AddDamage = new ScopedAttr("add-damage", IntAttr);
     static onStackChange(status, unit, oldValue) {
+        BaseDamageStatus.AddDamage.set(status, BaseDamageStatus.StackCount(status));
+
+        // TODO: Remove this after our great unit-gen migration.
         var current = BaseDamageStatus.StackCount(status);
         var delta = current - oldValue;
         Unit.adjustBaseDamage(unit, delta);
@@ -218,7 +222,10 @@ class BaseDefenseStatus {
         return true;
     }
 
+    static AddDefense = new ScopedAttr("add-defense", IntAttr);
     static onStackChange(status, unit, oldValue) {
+        BaseDefenseStatus.AddDefense.set(status, BaseDefenseStatus.StackCount(status));
+
         var current = BaseDefenseStatus.StackCount(status);
         var delta = current - oldValue;
         Unit.adjustBaseDefense(unit, delta);

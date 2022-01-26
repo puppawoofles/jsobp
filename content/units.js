@@ -15,17 +15,27 @@ class UnitGenerator {
         var script = qs(document, 'unit-gen[name="' + name + '"]');
         defs = defs || {}; // Normalize.
         var unit = Templates.inflate('unit', {
-            UNIT_ID: Utils.UUID()
+            UNIT_ID: Utils.UUID(),
+            // Unset all of these things.
+            APPEARANCE: '',
+            NAME: '',
+            MONTH: '',
+            DAY: '',
+            BASE_DAMAGE: 0,
+            BASE_DEFENSE: 0,
+            MASS: 0,
+            HP_AMOUNT: 0,
         });
 
-        var currentNode = [script.firstElementChild];
-
-        // Defined here for easy access to defs, unit, currentNodes
+        // Defined here for easy access to defs, unit
         var operations = {
             'unit': function(elt) {
                 // Apply a unit blueprint.
                 var bp = Blueprint.resolve(elt);
                 Unit.applyBlueprint(unit, bp);
+            },
+            'appearance': function(elt) {
+                Unit.applyAppearance(unit, elt);
             },
             'def': function(elt) {
                 // Set defs so we can reference them with invoke.
@@ -40,6 +50,11 @@ class UnitGenerator {
                 } else if (UnitGenerator.Value.has(elt)) {
                     defs[alias] = UnitGenerator.Value.get(elt);
                 }
+            },
+            'copy': function(elt) {
+                a(elt.attributes).forEach(function(attr) {
+                    unit.setAttribute(attr.name, attr.value);
+                });
             },
             'invoke': function(elt) {
                 // Call a function with the unit + the requested defs.
@@ -67,7 +82,8 @@ class UnitGenerator {
                         return existing.includes(tag);
                     });
                 });
-                // Choose one.
+                if (availableMods.length == 0) return;
+                // Choose one.                
                 var modifier = UnitGenerator._rng.randomValue(availableMods);
 
                 // Extend tags so we don't get duplicate tags.
@@ -95,23 +111,12 @@ class UnitGenerator {
                     result = qs(elt, 'result[default="true"]');
                 }
                 if (result && result.firstElementChild) {
-                    currentNode.push(result.firstElementChild)
+                    return result.firstElementChild;
                 }
             }
         };
 
-        while (currentNode.length > 0) {
-            var idx = currentNode.length - 1;
-            var current = currentNode.splice(idx, 1)[0];
-            if (current.nextElementSibling) {
-                currentNode.push(current.nextElementSibling);
-            }
-            for (var [key, value] of Object.entries(operations)) {
-                if (current.matches(key)) {
-                    value(current);
-                }
-            }
-        }
+        DomScript.execute(script, operations);
 
         // Things that are not correctly set, but it's bedtime:
         // Unit.mana
@@ -120,11 +125,20 @@ class UnitGenerator {
 
         // TODO: Do some cleanup around mana and combo-with stuff.
         // But otherwise this seems to work?
-
         return unit;
     }
 }
 WoofRootController.register(UnitGenerator);
+
+class DamageTypes {
+    static MELEE = '⚔️';
+    static THROWN = '⚾';
+    static RANGED = '🏹';
+    static MAGIC = '☄️';
+    
+    static COLLISION = '💥';
+
+}
 
 class PlayerUnits {
     static _generateNames(elt) {

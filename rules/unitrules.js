@@ -169,6 +169,7 @@ class UnitRules {
      * {
      *    target: Unit ref (who is taking the damage)
      *    source: Unit ref (who is dealing the damage)
+     *    main_type: string (the icon of the ability)
      *    amount: integer (amount of damage)
      * }
      */
@@ -190,6 +191,7 @@ class UnitRules {
         return GameEffect.push(effect, GameEffect.create("TakeDamage", {
             target: params.target,
             source: params.source,
+            main_type: params.main_type,
             amount: newDamage
         }, handler));
     });
@@ -199,6 +201,7 @@ class UnitRules {
      *    target: Unit ref (who is taking the damage)
      *    source: Unit ref (what is dealing the damage)
      *    amount: integer (amount of damage taken)
+     *    main_type: String type.
      *    immediateDeath: bool (if we should do a death check now.)
      * }
      */
@@ -346,6 +349,7 @@ class UnitRules {
 
         return GameEffect.push(effect, GameEffect.create("Attack", {
             target: unit,
+            main_type: DamageTypes.COLLISION,
             amount: !!secondUnit ? Unit.mass(secondUnit) : Math.floor(Unit.mass(unit) / 2)
         }, handler)).then(function(result) {
             if (!secondUnit) {
@@ -354,6 +358,7 @@ class UnitRules {
 
             return GameEffect.push(effect, GameEffect.create("Attack", {
                 target: secondUnit,
+                main_type: DamageTypes.COLLISION,
                 amount: Unit.mass(unit)
             }, handler));
         }).then(function() {

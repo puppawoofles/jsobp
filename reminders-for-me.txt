@@ -1,0 +1,51 @@
+(In rough order they should be done in)
+
+Little things you wanted to do:
+- Update the Agility status to give [add-move], update scurry et.al. to use move stat.
+- Rewrite taunt now that units can move between blocks.
+- Rewrite wind collision logic to reduce the number of bonus collision hits.
+
+Combats you wanted to add:
+- Bandits who steal your gold (with barricades on cross-2) (+ feature: enemy inventories that you can loot, + feature: Reward screen after combat.)
+
+Big Things:
+- Rewrite combat scripts / abilities / skills.  You want:
+  - A "combat script" that is populated from the initial abilities, but are manipulated separately thereafter.
+  - Tiered abilities: AbilityContainer > SkillSet > Skill
+    - AbilityContainer: Has Warmup Time.  Has Current Cooldown.
+    - SkillSet: Has Priority.  Highest priority skillset determines skill.
+    - Skill: Has Priority (based on DOM ordering + filter fn?).  Has New Cooldown on use.
+  - Idea Dump:
+    - You want "Shoot" to become "Punch" when there's an enemy in CC range (so Shoot@B, Punch@CC is in the skillset).
+    - You want a magic ability that is "Charge" when there are few stacks and "Blast" when there are enough stacks (new "weapon" this release?)
+    - This still allows for Reposition to apply a new Skillset with 1 skill in it (step).
+    - The player's out-of-combat script has a SkillSet on it, which will need some wiki updates.
+
+- That thing above is to support Armaments: Every base unit has a 2-damage "punch" ability by default for each slot, which an armament adds a SkilLSet to (priority 1).
+    - Armaments have one of the following modes:
+      - MainHand: Gives an ability for your Main Hand slots.
+      - OffHand: Gives an ability for your Off Hand slots.
+      - BothHands: Gives abilities for both slots.
+      - Finesse: Gives either a MainHand or OffHand ability depending on what else is equipped (it fills whatever gap you have).
+      - Versatile: A MainHand item that also gives you an OffHand ability if you don't have an item equipped.
+    - Probably remove Thrown items at this point and fulfill their purpose with different armaments.
+    - Ideas:
+      - Short Sword	MainHand.  Strike, F+CC.  Normal.
+      - Spear		MainHand.  Strike M+F > Punch CC. Normal.  Can strike past 1 unit (barricade or otherwise).
+      - Flail		MainHand. Strike F > Punch CC.  Slow.
+      - Dagger		Finesse.  Strike F+CC / Bleed F+CC.  Fast.
+      - Axe: 		Versatile. Strike F+CC / Sunder F+CC.  Normal.
+      - Hammer:		Versatile. Strike F+CC / Push F.  Normal.
+      - Pavise:		OffHand.  Protect.  Normal.
+      - Heater Shield:	OffHand.  Defend.  Normal.
+      - Shortbow:	BothHands.  Shoot M > Punch CC / Shoot M.  Normal.
+      - Longbow:	BothHands.  Shoot B > Punch CC / Shoot B.  Normal.
+      - Greatbow:	BothHands.  Shoot B with Knockback / Hesitate.  Slow.  Big Damage.
+
+
+- Combos:
+    - Units have combos in their decks.  You play a combo on a unit which will slow it down, but add the combo to the list (limited use).
+    - After using a combo enough times, the unit learns the combo: When you play the unit, all their learned combos gets played, infinite use (but with cooldown)
+    - Learning Combos is the primary mode of exp, and determines what "classes" you can pursue (e.g. learning X-Strike is a warrior thing).
+
+- 

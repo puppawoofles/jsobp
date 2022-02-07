@@ -74,6 +74,8 @@ class BattlefieldHandler {
 		WoofRootController.dispatchNativeOn(battlefield, 'NewUnit', {
 			unit: unit
 		});
+		var block = CellBlock.findByContent(unit);
+		BattlefieldHandler.updateBlockAllegiance(block);
 	}
 	
 	static OnOverlayItemRemove(evt, handler) {
@@ -125,6 +127,46 @@ class BattlefieldHandler {
 
 	static resetUnit(unitElt) {
 		unitElt.style.cssText = '';
+	}
+
+	static updateBlockAllegiance(block) {
+		var unitCounts = {};
+		unitCounts[Teams.Player] = 0;
+		unitCounts[Teams.Enemy] = 0;
+		Unit.findAllInBlock(block).filter(function(unit) {
+			return TeamAttr.get(unit) != Teams.Neutral;
+		}).groupBy(function(unit) {
+			unitCounts[TeamAttr.get(unit)] += 1;
+		});
+
+		if (unitCounts[Teams.Player] > 0 && unitCounts[Teams.Enemy] > 0) {
+			// This one is still contested.
+			return;				
+		}
+		if (unitCounts[Teams.Player] > 0) {
+			TeamAttr.set(block, Teams.Player);
+		}
+		if (unitCounts[Teams.Enemy] > 0) {
+			TeamAttr.set(block, Teams.Enemy);
+		}
+	}
+
+	static onMoveBlock(event, handler) {
+		var oldLabel = event.detail.oldValue;
+        var newLabel = event.detail.newValue;
+
+		var blocks = [];
+		if (oldLabel) {
+			blocks.push(CellBlock.findByLabel(handler, oldLabel));
+		}
+		if (newLabel) {
+			blocks.push(CellBlock.findByLabel(handler, newLabel));
+		}
+
+		blocks.forEach(function(block) {
+			BattlefieldHandler.updateBlockAllegiance(block)
+		});
+
 	}
 
 }

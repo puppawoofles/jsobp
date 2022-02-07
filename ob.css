@@ -320,6 +320,30 @@ info {
 	left: -4px;
 }
 
+.end_condition_container {
+	position: absolute;
+	top: 0;
+	height: 60px;
+	left: 335px;
+	right: 110px;
+	display: flex;
+	justify-content: space-around;
+	align-content: center;
+	align-items: center;
+	pointer-events: none;
+}
+
+.end_condition_container > end-condition {
+	background: rgba(0,0,0,.8);
+	padding: 8px;
+	pointer-events: all;
+}
+
+end-condition [hover-help] {
+	color: red;
+	text-decoration: underline;
+}
+
 .volley_tracker {	
     position: absolute;
     height: 50px;
@@ -3849,6 +3873,7 @@ span[compendium] {
 .full_size_cards .card[ephemeral=true] {
 	/* Slightly more grey */
 	animation: ephemeralCard cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+	opacity: 0.9;
 }
 
 @keyframes ephemeralCard {

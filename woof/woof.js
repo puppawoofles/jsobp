@@ -120,6 +120,23 @@ Array.prototype["findFirst"] = function(predicateFn) {
 	return null;
 }
 
+Array.prototype["priorityInsert"] = function(item, scoreFn) {
+	var itemScore = scoreFn(item);
+	var inserted = false;
+	// TODO: Consider a binary insertion approach here if perf is a problem.
+	for (var i = 0; i < this.length; i++) {
+		var existing = scoreFn(this[i]);
+		if (existing > itemScore) {
+			inserted = true;
+			this.splice(i, 0, item);
+			break;
+		}
+	}
+	if (!inserted) {
+		this.push(item);
+	}
+}
+
 /* Normalize queryselectorall */
 qsa = function(element, matcher) {
 	return Array.from(element.querySelectorAll(matcher) || []);

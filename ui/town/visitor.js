@@ -11,7 +11,7 @@ class Visitor {
         var appearance = params.appearance || null;
 
         var name = params.name;
-        var nameOptions = qsa(bp, 'name-option');
+        var nameOptions = qsa(bp, 'name-opt');
         if (nameOptions.length > 0) {
             nameOptions = rng.randomValue(nameOptions);
             name = Visitor.ValueStr.get(nameOptions);

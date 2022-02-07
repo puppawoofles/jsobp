@@ -126,9 +126,6 @@ class RetreatAbility {
 }
 WoofRootController.register(RetreatAbility);
 
-
-
-
 class StepAbility {
     
     static combo(mana, params) {
@@ -137,15 +134,11 @@ class StepAbility {
 
     static invoke(units, ability, params, invokedEffects, targets, effect) {
         var unit = units[0]; // Only 1 can happen.
-        var battlefield = BattlefieldHandler.find(unit);
-        var bigCoord = BigCoord.extract(unit);
-        var block = CellBlock.findByCoord(battlefield, bigCoord);
-        var targetLabel = Unit.getTargetLocation(unit);
-        if (!targetLabel) {
+        var targetCell = Unit.getTargetLocation(unit);
+        if (!targetCell) {
             // No move.
             return GameEffect.createResults(effect);
         }
-        var targetCell = Cell.findByLabel(block, targetLabel);
 
         var baseDistance = params.distance || 1;
 
@@ -176,15 +169,11 @@ WoofRootController.register(StepAbility);
 class ScurryAbility {    
     static invoke(units, ability, params, invokedEffects, targets, effect) {
         var unit = units[0]; // Only 1 can happen.
-        var battlefield = BattlefieldHandler.find(unit);
-        var bigCoord = BigCoord.extract(unit);
-        var block = CellBlock.findByCoord(battlefield, bigCoord);
-        var targetLabel = Unit.getTargetLocation(unit);
-        if (!targetLabel) {
+        var targetCell = Unit.getTargetLocation(unit);
+        if (!targetCell) {
             // No move.
             return GameEffect.createResults(effect);
         }
-        var targetCell = Cell.findByLabel(block, targetLabel);
 
         var baseDistance = params.distance || 1;
 

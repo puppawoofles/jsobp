@@ -72,9 +72,18 @@ class Reposition {
         }).then(function(unit) {
             if (!unit) return null;
             var unitPrefs = Unit.getPreferredLocations(unit);
-            var block = CellBlock.findByContent(unit);
+
+            var bigCoord = BigCoord.extract(unit);
+            var allBlockOptions = FacingAttr.allDirections().map(function(dir) {
+                var targetCoord = BigCoord.plus(bigCoord, FacingAttr.unitDelta(dir));
+                return CellBlock.findByCoord(battlefield, targetCoord);
+            }).filter(function(block) {
+                // No block or disabled?  Skip.
+                if (block === null) return false;
+                return !DisabledAttr.get(block);
+            }).extend([CellBlock.findByContent(unit)]);
             return TargetPicker.standardPickTarget(card, IdAttr.generate(card), function() {
-                return Cell.findAllInBlock(block).filter(function(cell) {
+                return allBlockOptions.flatMap(block => Cell.findAllInBlock(block)).filter(function(cell) {
                     var uberCoord = UberCoord.extract(cell);
                     return !BattlefieldHandler.unitAt(battlefield, uberCoord);
                 });            
@@ -104,7 +113,9 @@ WoofRootController.register(Reposition);
 class Pivot {
     static target(card) {
         var battlefield = BattlefieldHandler.find(card);        
-        var allPlayerBlocks = CellBlock.findAllByTeam(battlefield, Teams.Player);
+        var allPlayerBlocks = CellBlock.findAllByTeam(battlefield, Teams.Player).filter(function(block) {
+            return Unit.findTeamInBlock(block, Teams.Player).length > 0;
+        });
         var basePromise;
 
         if (allPlayerBlocks.length == 1) {
@@ -154,6 +165,138 @@ class Pivot {
     }
 }
 WoofRootController.register(Pivot);
+
+
+class March {
+    static target(card) {
+        var battlefield = BattlefieldHandler.find(card);        
+        var allPlayerBlocks = CellBlock.findAllByTeam(battlefield, Teams.Player).filter(function(block) {
+            return Unit.findTeamInBlock(block, Teams.Player).length > 0;
+        });
+        var basePromise;
+        if (allPlayerBlocks.length == 0) {
+            return Promise.reject();
+        } else if (allPlayerBlocks.length == 1) {
+            basePromise = Promise.resolve(allPlayerBlocks[0]);
+        } else {
+            basePromise = TargetPicker.standardPickTarget(card, IdAttr.generate(card),
+                    function() {
+                        return allPlayerBlocks;
+                    },
+                    function(block) {
+                        return false;
+                    });
+        }
+
+        return basePromise.then(function(block) {
+            return TargetPicker.standardPickTarget(card, IdAttr.generate(card),
+                    function() {
+                        var bigCoord = BigCoord.extract(block);
+                        return FacingAttr.allDirections().map(function(dir) {
+                            var targetCoord = BigCoord.plus(bigCoord, FacingAttr.unitDelta(dir));
+                            return CellBlock.findByCoord(battlefield, targetCoord);
+                        }).filter(function(block) {
+                            // No block or disabled?  Skip.
+                            if (block === null) return false;
+                            if (DisabledAttr.get(block)) return false;
+                            if (TeamAttr.get(block) == Teams.Player) return true;
+                            // Only blocks with no enemies in them!
+                            return Teams.opposed(Teams.Player).flatMap(t => Unit.findTeamInBlock(block, t)).length == 0;
+                        });
+                    },
+                    function(elt) {
+                        return false;
+                    }).then(function(result) {
+                        return {
+                            target: block,
+                            marchTo: result
+                        };
+                    });
+        });
+    }
+
+    static invoke(card, target) {
+        var battlefield = BattlefieldHandler.find(card);
+        var availableCells = Cell.findAllInBlock(target.marchTo).filter(function(cell) {
+            // Filter out any cells that have stopped units in them.
+            var unitAt = BattlefieldHandler.unitAt(battlefield, UberCoord.extract(cell));
+            if (!unitAt) return true;
+            return !Unit.getStopped(unitAt);
+        }).toObject(function(cell) {
+            return Grid.contextualLabelFor(cell, false);
+        });
+
+        // First pass: Any units already configured to march should have their claims
+        // respected and not be in the list.
+        var units = Unit.findTeamInBlock(target.target, Teams.Player).filter(function(unit) {
+            var targetDestination = Unit.getTargetLocation(unit);            
+            var currentTargetBlock = CellBlock.findByRef(battlefield, targetDestination);
+            if (currentTargetBlock == target.marchTo) {
+                // Stake the claim before anyone else grabs it.
+                var dest = Grid.contextualLabelFor(targetDestination, false);
+                if (availableCells[dest]) {
+                    delete availableCells[dest];
+                }
+                return false;
+            }
+            return true;
+        });
+
+        // Second pass: Assign them out (by first pick, then backup picks after everyone gets their first pick)
+        var sinceFirstPick = 0;
+        while (units.length > 0) {
+            var unit = units[0];
+
+            var currentCoord = UberCoord.extract(unit);
+            var destBigCoord = BigCoord.extract(target.marchTo);
+            var targetCoord = UberCoord.from(destBigCoord, UberCoord.small(currentCoord));
+            var cell = BattlefieldHandler.cellAt(battlefield, targetCoord);
+            var unitAt = BattlefieldHandler.unitAt(battlefield, targetCoord);
+            var label = Grid.contextualLabelFor(cell, false);
+
+            // In this case, we should just grab our preferred spot.
+            if (availableCells[label]) {
+                sinceFirstPick = 0;
+                Unit.setTargetLocation(unit, cell);
+                delete availableCells[label];
+                units.shift();
+                RepositionOrder.Apply(unit, 0);
+                AgilityStatus.Apply(unit, 0);
+                continue;
+            }
+            // In this case, skip for now until everyone's had a chance for their first pick.
+            if (sinceFirstPick < units.length) {
+                // Skip this one for now.
+                sinceFirstPick++;
+                units.push(units.shift());
+                continue;
+            }
+            // Grab whichever cell is closest to the actual target.
+            var normD = NormCoord.extract(cell);
+            cell = a(Object.values(availableCells)).sort(function(a, b) {
+                var normA = NormCoord.extract(a);
+                var normB = NormCoord.extract(b);
+
+                return NormCoord.distance(normD, normA) - NormCoord.distance(normD, normB);
+            })[0];
+            if (!cell) {
+                // No options left. Nobody else is getting placed. :(
+                units.shift();
+                continue;
+            }
+            Unit.setTargetLocation(unit, cell);
+            label = Grid.contextualLabelFor(cell, false);
+            delete availableCells[label];
+            units.shift();
+            RepositionOrder.Apply(unit, 0);
+            AgilityStatus.Apply(unit, 0);    
+        }
+
+        return true;
+    }
+}
+WoofRootController.register(March);
+
 
 class Hustle {
     static target(card) {

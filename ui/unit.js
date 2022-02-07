@@ -75,7 +75,9 @@ class Unit {
     }
 
     static mass(unit) {
-        return Unit.Mass.findGet(unit);
+        var found = Unit.Mass.findGet(unit);
+        if (found > 0) return found;
+        return Unit._getBaseStat(unit, 'mass');
     }
 
     static cloneAppearance(unit) {
@@ -149,16 +151,14 @@ class Unit {
         Unit.setCurrentHP(unit, Math.min(Unit.currentHP(unit) + amount, Unit.maxHP(unit)));
     }
 
-    static setTargetLocation(unit, cellOrLabel) {
-        if (typeof cellOrLabel !== 'string') {
-            cellOrLabel = SmallGridLabel.get(cellOrLabel);
-        }
-
-        Unit.TargetLocation.set(unit, cellOrLabel);
+    static setTargetLocation(unit, cell) {
+        Unit.TargetLocation.set(unit, Grid.contextualLabelFor(cell, false));
     }
 
     static getTargetLocation(unit) {
-        return Unit.TargetLocation.get(unit);
+        var targetLocation = Unit.TargetLocation.get(unit);
+        if (targetLocation == null || targetLocation.length == 0) return null;
+        return Grid.expandContextualLabel(unit, targetLocation)[0] || null;
     }
 
     static setStopped(unit, bool) {
@@ -368,7 +368,7 @@ class Unit {
 
         for (var [team, unit] of Object.entries(tauntedUnitsByTeam)) {
             var selector = bigCoordSelector + Unit.CurrentTaunt.buildSelector(team);
-            var current = BattlefieldHandler.bFindInner(unit, selector);
+            var current = BattlefieldHandler.bfindInner(unit, selector);
             if (current != unit) {
                 if (current != null) {
                     Unit.setCurrentTaunt(current, team, false);
@@ -564,7 +564,7 @@ class Unit {
         var base = IntAttr.get(stat, baseStats);
 
         IntAttr.findAll('add-' + stat, unit).forEach(function(modElt) {
-            base += IntAttr.get('add-' + stat, unit);
+            base += IntAttr.get('add-' + stat, modElt);
         });
 
         return base;
@@ -728,8 +728,11 @@ class Ability {
                     isBase: true,
                     priority: 0,
                     skillName: "",
-                    activation: []
+                    activeIn: []
                 });
+                if (Ability.CooldownDuration.has(skill)) {
+                    Ability.CooldownDuration.copy(baseMod, skill);
+                }
             }
             AbilityBlueprint.applySkill(baseMod, skill);
             Ability.__refresh(rootElt, abilityElt);
@@ -794,6 +797,10 @@ class Ability {
             Ability.ShortLabel.set(label, '');
             Ability.GivesCombo.set(abilityElt);
             Ability.ReceivesCombo.set(abilityElt);
+        }
+        var cooldown = Ability.CooldownDuration.find(abilityElt);
+        if (Ability.CooldownDuration.has(highestMod)) {
+            Ability.CooldownDuration.copy(cooldown, highestMod);
         }
     }
 
@@ -1042,7 +1049,9 @@ class BaseStatus {
                 var exclusivityType = BaseStatus.Exclusive.get(bp);
                 // Copy over our exclusivity
                 BaseStatus.Exclusive.copy(status, bp);
-                var existing = BaseStatus.Exclusive.findAll(unit, exclusivityType);
+                var existing = BaseStatus.Exclusive.findAll(unit, exclusivityType).filter(function(thing) {
+                    return WoofType.has(thing, 'Status');
+                });
                 // Remove our prior exclusive one.
                 if (existing && existing.length > 0) {
                     existing.forEach(function(existingStatus) {

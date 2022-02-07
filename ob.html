@@ -492,6 +492,27 @@
 			</info-panel>
 		</version>
 
+		<version hash="0.0.7">
+			<info-panel>
+				<h2>V0.0.7</h2>
+				<p>Changes:</p>
+				<ul>					
+					<li>Lots of little rewrites: <ul>
+						<li>Wrote a bunch of unit-gen logic.  Migrated all unit creation to use the proc-gen unit generation code path.</li>
+						<li>Write a bunch of encounter-gen logic. Migrated all encounter creation to use the proc-gen encounter generation code path.</li>
+						<li>Rewrote all pathing / movement logic to factor in the ability to move between blocks.  There's still wonkiness here.</li>
+						<li>Rewrote how unit damage/defense are tracked.</li>
+						<li>Rewrote how combat end conditions are determined.</li>
+					</ul></li>
+					<li>Added a new enemy (Pill Bug) with 2 variations: One that shoots, one that strikes.  Strikes cause it to gain Block when hit.</li>
+					<li>Added a new annoying neutral obstacle: The web.  Takes minimal damage from Throw/Shoot.</li>
+					<li>Added a new assignment/quest area: The Lost City / Ruined City (I forget which I called it)<ul>
+						<li>Added a new combat, the Hall of Bugs.  May migrate golems to this overarching chain as well.</li>
+					</ul></li>
+				</ul>
+			</info-panel>
+		</version>
+
 		<tutorial hash="title">
 			<info-panel>
 				<h2>Thank you for trying this!</h2>
@@ -764,9 +785,9 @@
 					<flavor>
 						<p>This large archway was clearly an important thoroughfare at some point, though now it is collapsed and covered in webs.</p>
 					</flavor>
-					<choice result="fast" label="The faster we go, the sooner it's done [Combat: +2 March]"></choice>
-					<choice result="careful" label="We should tread carefully [Combat: +2 Reposition]"></choice>
-					<choice result="fire" label="Nothing a well-placed firebomb can't fix! [Combat: Lose Fire Bomb]" filter-fn="LostCity.ItemAvailable" item="fireBomb"></choice>
+					<choice result="fast" label="Stick together! [Combat: +2 March]"></choice>
+					<choice result="careful" label="Rush through! [Combat: +4 Reposition]"></choice>
+					<choice result="fire" label="Nothing a well-placed firebomb can't fix! [Combat: Lose Fire Bomb, +1 March, +2 Reposition]" filter-fn="LostCity.ItemAvailable" item="fireBomb"></choice>
 					<event-result choice="fast" next-state="hall_of_bugs_fight">
 						<def name="hall_of_bugs_webs" value="true"></def>
 						<def name="hall_of_bugs_fast" value="true"></def>
@@ -777,6 +798,7 @@
 					</event-result>
 					<event-result choice="fire" next-state="hall_of_bugs_fight">
 						<remove-item item="fireBomb"></remove-item>
+						<def name="hall_of_bugs_medium" value="true"></def>
 					</event-result>
 				</state>
 				<state type="encounter" name="hall_of_bugs_fight" label="Webbed Passage">
@@ -794,21 +816,44 @@
 						<place-units location="A3" count="2" flag="hall_of_bugs_webs">
 							<from-unit-gen name="web_scenery"></from-unit-gen>
 						</place-units>
-						<info end-condition-fns="EndConditions.AllAlliesIn EncounterRules.DefaultWipe" location="A4" win-label="Get all your units here!" win-label-highlight="[wt~=CellBlock][big-label=A4]" lose-label="Don't let all your units die!"></info>
+						<place-units location="A4" count="3">
+							<from-unit-gen name="pill_bug"></from-unit-gen>
+						</place-units>
+						<place-units location="A4" count="2" flag="hall_of_bugs_webs">
+							<from-unit-gen name="web_scenery"></from-unit-gen>
+						</place-units>
+						<end-condition end-fn="EndConditions.AllAlliesIn" location="A4" type="win">
+							Move all your units on the battlefield <span hover-help="[wt~=CellBlock][beeg-label=A4]">here!</span>
+						</end-condition>
+						<end-condition end-fn="EncounterRules.DefaultWipe" type"lose">
+							You lose if all your units die!
+						</end-condition>
 						<bonus-cards>
 							<tactic bp="march"></tactic>
 						</bonus-cards>
 						<bonus-cards flag="hall_of_bugs_careful">
 							<tactic bp="reposition"></tactic>
 							<tactic bp="reposition"></tactic>							
+							<tactic bp="reposition"></tactic>							
+							<tactic bp="reposition"></tactic>							
 						</bonus-cards>
 						<bonus-cards flag="hall_of_bugs_fast">
 							<tactic bp="march"></tactic>
 							<tactic bp="march"></tactic>
 						</bonus-cards>
-						<combat_script>
+						<bonus-cards flag="hall_of_bugs_medium">
+							<tactic bp="march"></tactic>
+							<tactic bp="reposition"></tactic>							
+							<tactic bp="reposition"></tactic>							
+						</bonus-cards>
+						<combat-script>
+							<handler label="SpawnBugs" handler="HallOfBugs.OnAfterVolley" event-types="Volley:after">
+								<place-units location="A2" count="3">
+									<from-unit-gen name="pill_bug"></from-unit-gen>
+								</place-units>		
+							</handler>
 							<!-- Handlers go here! -->
-						</combat_script>		
+						</combat-script>
 					</encounter>
 					<event-result choice="victory" next-state="hall_of_bugs_win">
 						<!-- Set it to true for now until I have enough combats to fill the outer city. -->
@@ -858,7 +903,11 @@
 				</state>
 
 				<state type="encounter" name="encounter">
-					<encounter bp="rats">
+					<encounter>
+						<battlefield bp="basic_cross_minus_2"></battlefield>
+						<place-units location-fn="EncounterGenerator.LocationsByTeam" teams="enemy" count="8">
+							<from-unit-gen name="enemy_rat"></from-unit-gen>
+						</place-units>
 					</encounter>
 					<event-result choice="victory" next-state="win"></event-result>
 					<event-result choice="wipe" next-state="wipe"></event-result>
@@ -915,7 +964,12 @@
 				</state>
 
 				<state type="encounter" name="encounter">
-					<encounter bp="golems"></encounter>
+					<encounter>
+						<battlefield bp="team_duel"></battlefield>
+						<place-units location="L.A2.3" count="3">
+							<from-unit-gen name="enemy_guardian_statue"></from-unit-gen>
+						</place-units>
+					</encounter>
 					<event-result choice="victory" next-state="win"></event-result>
 					<event-result choice="wipe" next-state="wipe"></event-result>
 					<event-result choice="giveUp" next-state="giveUp"></event-result>
@@ -961,7 +1015,15 @@
 				</state>
 
 				<state type="encounter" name="encounter" start="true">
-					<encounter bp="jimmyTheRatKing"></encounter>
+					<encounter>
+						<battlefield bp="basic_cross"></battlefield>
+						<place-units location="L.A2.A2" count="1">
+							<from-unit-gen name="jimmyTheRatKing"></from-unit-gen>
+						</place-units>
+						<place-units location="L.A2." count="8">
+							<from-unit-gen name="enemy_rat"></from-unit-gen>
+						</place-units>
+					</encounter>
 					<event-result choice="victory" victory="true"></event-result>
 					<event-result choice="wipe" victory="false"></event-result>
 					<event-result choice="giveUp" victory="false"></event-result>
@@ -978,31 +1040,23 @@
 			</info-panel>
 
 			<default-encounter >
-				<info end-condition-fns="EncounterRules.DefaultWin EncounterRules.DefaultWipe" win-label="Defeat all enemies!" lose-label="Don't let all your units die!"></info>
 				<info max-player-units="5"></info>
 				<info initiative-order="player enemy"></info>
+				<end-condition end-fn="EncounterRules.DefaultWin" type="win">
+					Defeat all enemies to win!
+				</end-condition>
+				<end-condition end-fn="EncounterRules.DefaultWipe" type"lose">
+					You lose if all your units die!
+				</end-condition>
 			</default-encounter>
-
-			<encounter-blueprint name="rats">
-				<battlefield bp="basic_cross_minus_2"></battlefield>
-				<info encounter-fn="Encounters.rats"></info>
-			</encounter-blueprint>
-
-			<encounter-blueprint name="jimmyTheRatKing">
-				<battlefield bp="basic_cross"></battlefield>
-				<info encounter-fn="Encounters.jimmyTheRatKing"></info>
-			</encounter-blueprint>
-			
-			<encounter-blueprint name="golems">
-				<battlefield bp="team_duel"></battlefield>
-				<info encounter-fn="Encounters.golems"></info>
-			</encounter-blueprint>
 
 			<battlefield-blueprint name="hallway">
 				<info battlefield-fn="Battlefields.Standard"></info>
 				<generate fn="Battlefields.generateRect" width="4" height="1"></generate>
 				<modify labels="A1" property="team" value="player"></modify>
+				<modify labels="A1" property="facing" value="right"></modify>
 				<modify labels="A2 A3 A4" property="team" value="enemy"></modify>
+				<modify labels="A2 A3 A4" property="facing" value="left"></modify>
 			</battlefield-blueprint>
 
 			<battlefield-blueprint name="basic_cross">
@@ -1063,10 +1117,10 @@
 			</concept>
 
 			<starting-rumors>
-				<!--<assignment bp="lost_city"></assignment>-->
+				<assignment bp="lost_city"></assignment>
 				<assignment bp="rats"></assignment>
 				<assignment bp="golems"></assignment>
-				<assignment bp="doctor"></assignment>
+				<assignment bp="doctor"></assignment> 
 			</starting-rumors>
 
 			<result-handlers>
@@ -1080,7 +1134,7 @@
 			<assignment-blueprint name="lost_city">
 				<info label="Explore the Ruined City"></info>
 				<event bp="lost_city"></event>
-				<assign max-units="8" require="false" req-label="Up to 8 units"></assign>
+				<assign max-units="5" require="false" req-label="Up to 5 units"></assign>
 				<info wt="Hint">A quest chain I intend to build out to be many adventures deep.  Be on your toes!"</info>
 				<result>
 					<add-rumor>
@@ -1098,7 +1152,7 @@
 				<config></config>
 				<info label="The Rats"></info>
 				<event bp="rats"></event>
-				<assign max-units="8" require="false" req-label="Up to 8 units"></assign>
+				<assign max-units="5" require="false" req-label="Up to 5 units"></assign>
 				<info wt="Hint">A basic encounter against rats.  Bring damage and get ready to change directions.</info>
 				<result>
 					<!-- Add self back to the list for now. -->
@@ -1116,7 +1170,7 @@
 				<info label="The Golems"></info>
 				<info wt="Hint">A more difficult encounter against some statues that combo together to sttack you and defend themselves.  A Fire Bomb is recommended unless you've got good combos and damage-dealing potential!  Note: Bleed does not work on these guys!  You can thank JakeBreak for that one.</info>
 				<event bp="golems"></event>
-				<assign max-units="8" required="false" req-label="Up to 8 units"></assign>
+				<assign max-units="5" required="false" req-label="Up to 5 units"></assign>
 				<result>
 					<!-- Add self back to the list for now. -->
 					<add-rumor>
@@ -1133,7 +1187,7 @@
 				<info label="Jimmy, the Rat King"></info>
 				<info wt="Hint">Jimmy loves his rats so much, he summons them in your cell block!  Bring melee damage (Strike is a good choice), and bring units that combo effectively, otherwise you might find yourself falling behind to Jimmy's summoning!</info>
 				<event bp="jimmyTheRatKing"></event>
-				<assign max-units="8" required="false" req-label="Up to 8 units"></assign>
+				<assign max-units="5" required="false" req-label="Up to 5 units"></assign>
 				<result>
 					<!-- Add self back to the list for now. -->
 					<add-rumor>
@@ -1217,7 +1271,7 @@
 			<visitor-blueprint name="mysterious_stranger">
 				<info frequency="1" on-join-fn="Visitors.ZeroFrequency" ></info>
 				<info>
-					<name-option value="Mysterious Stranger"></name-option>
+					<name-opt value="Mysterious Stranger"></name-opt>
 				</info>
 				<info appearance-options="😎" extra-classes="mysterious_stranger"></info>
 				<merchant>
@@ -1274,7 +1328,8 @@
 			<concept hash="card">
 				<info-panel>
 					<h2> Card </h2>
-					You play these.   
+					<p>You play these when combat is paused.</p>
+					<p>If the card is blinking and very slightly see-through, it's an ephemeral card: It only exists during this battle, and will be removed from your deck once the battle completes.</p> 
 				</info-panel>
 			</concept>
 			
@@ -1337,8 +1392,17 @@
 				<skill-param-fn type="💫" fn="SkillParams.DebuffParams"></skill-param-fn>
 				<skill-param-fn type="🏳️" fn="SkillParams.RetreatParams"></skill-param-fn>
 
+				<battleskill-blueprint name="strike">
+					<div class="appearance" label="Strike" skill-type="⚔️" skill-icon="⚔️"></div>
+					<div class="activation" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC"></div>
+					<div class="description">Deals damage to an enemy.  That enemy must not be behind another opposed or neutral unit.</div>
+					<div class="combo_info" combo-icon="⚔️" gives-combo="true" receives-combo="true"></div>
+					<div class="cooldown" cooldown="8"></div>
+					<info invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk"></info>
+				</battleskill-blueprint>
+
 				<!-- Actual player skills. -->
-				<skill-blueprint name="strike" label="Strike" short-label="⚔️" type="⚔️" invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+				<skill-blueprint name="strike" label="Strike" short-label="⚔️" type="⚔️" invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true"  active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
 				</skill-blueprint>
 
@@ -1383,7 +1447,7 @@
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="RetreatAbility.combo"></combo-effect>
 				</skill-blueprint>
 
-				<skill-blueprint name="step" label="Step" short-label="🥾" type="🥾" invoke-fn="StepAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+				<skill-blueprint name="step" label="Step" short-label="🥾" type="🥾" invoke-fn="StepAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA CC F1 F2 F3 M1 M2 M3 B1 B2 B3">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="StepAbility.combo"></combo-effect>
 				</skill-blueprint>
 
@@ -1393,7 +1457,7 @@
 				<!-- Enemy-only skill blueprints -->
 
 				<!-- Anyone who needs to move to a destination -->
-				<skill-blueprint name="scurry" label="Scurry" short-label="🥾" type="🥾" invoke-fn="ScurryAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+				<skill-blueprint name="scurry" label="Scurry" short-label="🥾" type="🥾" invoke-fn="ScurryAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA F1 F2 F3 M1 M2 M3 B1 B2 B3">
 				</skill-blueprint>
 
 				<!-- Golems -->
@@ -1404,14 +1468,14 @@
 				<skill-blueprint name="rat-redirect" label="That one's scary!" short-label="🎯" type="🛡️" invoke-fn="JimmyAI.redirectInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
 				</skill-blueprint>
 				
-				<skill-blueprint name="summon-rats" label="Come my pretties!" short-label="🐀" type="🔮" invoke-fn="JimmyAI.summonInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+				<skill-blueprint name="summon-rats" label="Come my pretties!" short-label="🐀" type="🔮" invoke-fn="JimmyAI.summonInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3" cooldown-duration="12">
 				</skill-blueprint>
 
 				<!-- Bug skills. -->
 				<skill-blueprint name="bug_spit_web" label="Spit Web" short-label="🕸️" type="💫" invoke-fn="BugEnemy.SpitWeb" target-fn="Targeting.StandardEnemy" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3"></skill-blueprint>
 
 				<!-- Generic enemy skills. -->
-				<skill-blueprint name="str_gain" label="Buff!" short-label="💪" type="✨" amount="1" status="base_damage" invoke-fn="GenericMoves.AddStatus" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3"></skill-blueprint>
+				<skill-blueprint name="str_gain" label="Buff!" short-label="💪" type="✨" amount="1" status="base_damage" invoke-fn="GenericMoves.AddStatus" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA CC F1 F2 F3 M1 M2 M3 B1 B2 B3"></skill-blueprint>
 
 
 				<combo-blueprint name="x-strike">
@@ -1678,7 +1742,7 @@
 			</tactic-blueprint>
 
 			<!-- Situational -->
-			<tactic-blueprint name="march" card-icon="📕" label="March" short-label="🚶" target-fn="Pivot.target" invoke-fn="Pivot.invoke">
+			<tactic-blueprint name="march" card-icon="📕" label="March" short-label="🚶" target-fn="March.target" invoke-fn="March.invoke">
 				<div class="description">Direct all your units in one cell block to move to an adjacent empty cell block.</div>
 			</tactic-blueprint>
 
@@ -1734,6 +1798,7 @@
 				<def alias="face" fn="PlayerUnits.TakeDemographic" params="rng"></def> <!-- Grabs a face/month/day from our set of available options. -->
 				<!-- Separate function to set the month, day, avatar from the "face" alias -->
 				<invoke fn="PlayerUnits.ApplyDemographic" params="face"></invoke>
+				<invoke fn="PlayerUnits.ApplyLegacyCombo" params=""></invoke>
 				<!-- Apply a base human modifier. -->
 				<apply-modifier from-group="human"></apply-modifier>
 				<!-- Apply our elemental modifier.  -->
@@ -1797,11 +1862,11 @@
 
 			<unit-blueprint name="base_hero">
 				<appearance appearance="🙂" month="❓" day="❓"></appearance>
-				<base-stats damage="4" defense="4" cunning="2" move="1" mass="8" hp="40"></base-stats>
+				<base-stats damage="8" defense="6" cunning="2" move="1" mass="8" hp="40"></base-stats>
 				<has-inventory max-items="2"></has-inventory>>
 				<has-combos max-items="2"></has-combos>
 			</unit-blueprint>
-
+			
 			<unit-mods group="human">
 				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
 				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
@@ -1883,6 +1948,16 @@
 					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
 					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="scurry"></skill></slot></unit-mod>
 				</unit-mods>
+				<unit-mods group="enemy_defend">
+					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
+				</unit-mods>
 				<unit-mods group="enemy_shoot">
 					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
 					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
@@ -1903,6 +1978,16 @@
 					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
 					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
 				</unit-mods>
+				<unit-mods group="enemy_mindlessmarch">
+					<unit-mod mod-tags="1"><slot ordinal="1" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="2"><slot ordinal="2" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="7"><slot ordinal="7" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+					<unit-mod mod-tags="8"><slot ordinal="8" type="⭐"><skill bp="mindlessmarch"></skill></slot></unit-mod>
+				</unit-mods>
 			</unit-mod-group>
 
 			<!-- Pill bug -->
@@ -1912,6 +1997,7 @@
 				<apply-modifier>
 					<unit-mod><apply-status status="bug_curl_up" stacks="12"></apply-status></unit-mod>
 				</apply-modifier>
+				<copy team="enemy"></copy>
 				<choose choices="melee range">
 					<result value="melee">
 						<appearance name="Ragey Poly"></appearance>
@@ -1921,7 +2007,8 @@
 						<apply-modifier>
 							<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
 						</apply-modifier>
-						<copy preferred-locations="F1 F2 F3"></copy>
+						<copy preferred-locations="CC F1 F2 F3"></copy>
+						<copy preferred-spawn="F1 F2 F3"></copy>
 					</result>
 					<result value="range">
 						<appearance name="Spitty Poly"></appearance>
@@ -1932,21 +2019,87 @@
 							<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
 						</apply-modifier>
 						<copy preferred-locations="B1 B2 B3"></copy>
+						<copy preferred-spawn="M1 M2 M3 B1 B2 B3"></copy>
 					</result>
 				</choose>
 			</unit-gen>
+			
+			<unit-gen name="enemy_rat">
+				<unit bp="rat"></unit>
+				<appearance name="Rat"></appearance>
+				<copy team="enemy" unit-label="Rat"></copy>
+				<copy preferred-locations="F1 F2 F3"></copy>
+				<apply-modifier from-group="enemy_scurry" exclude-tags="1 2 7 8"></apply-modifier>
+				<apply-modifier from-group="enemy_strike" exclude-tags="1 2 7 8"></apply-modifier>
+				<apply-modifier>
+					<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
+				</apply-modifier>
+			</unit-gen>
+			
+			<unit-gen name="enemy_guardian_statue">
+				<unit bp="golem"></unit>
+				<appearance month="⛰️" name="Guardian Statue"></appearance>
+				<copy team="enemy" unit-label="golem"></copy>
+				<copy preferred-locations="F1 F2 F3"></copy>
+				<copy combo-self="⛰️" combo-with="⛰️"></copy>
+				<apply-modifier from-group="enemy_defend" exclude-tags="2 3 4 5 6 7 8"></apply-modifier>
+				<apply-modifier from-group="enemy_strike" exclude-tags="1 2 3 4 8"></apply-modifier>
+				<apply-modifier from-group="enemy_mindlessmarch" exclude-tags="1 2 3 4 5 6 7"></apply-modifier>
+				<apply-modifier>
+					<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
+				</apply-modifier>
+			</unit-gen>
 
+			<unit-gen name="jimmyTheRatKing">
+				<unit>
+					<appearance appearance="🤴" name="Jimmy the Rat King"></appearance>
+					<base-stats damage="8" defense="8" cunning="2" move="1" mass="8" hp="80"></base-stats>
+				</unit>
+				<copy team="enemy" unit-label="jimmy"></copy>
+				<copy combo-self="💀" combo-with="💀" mana="💀"></copy>
+				<apply-modifier>					
+					<unit-mod><slot ordinal="1" type="⭐"><skill bp="rat-redirect"></skill></slot></unit-mod>
+				</apply-modifier>
+				<apply-modifier>					
+					<!-- TODO configurable cooldown to make this 12. -->
+					<unit-mod><slot ordinal="3" type="⭐"><skill bp="summon-rats"></skill></slot></unit-mod>
+				</apply-modifier>
+				<apply-modifier from-group="enemy_shoot" exclude-tags="1 2 3 4 8"></apply-modifier>
+				<apply-modifier from-group="enemy_scurry" exclude-tags="1 2 3 4 5 6 7"></apply-modifier>
+				<apply-modifier>
+					<unit-mod><apply-status status="jimmy_ai"></apply-status></unit-mod>
+				</apply-modifier>
+			</unit-gen>
+
+			<!-- Constructs and Scenery -->
 			<unit-gen name="web_scenery">
 				<unit bp="immobile_construct"></unit>
-				<appearance appearance="🕸️"></appearance>
+				<copy team="neutral"></copy>
+				<appearance appearance="🕸️" name="Thick Cobwebs"></appearance>
 				<apply-modifier>
 					<unit-mod><apply-status status="web_damage_reduction"></apply-status></unit-mod>
 				</apply-modifier>
 			</unit-gen>
 
+			<unit-gen name="barricade">
+				<unit bp="immobile_construct"></unit>
+				<copy team="neutral"></copy>
+				<appearance appearance="🧱" name="Barricade"></appearance>
+			</unit-gen>
+
 			<unit-blueprint name="bug">
 				<appearance appearance="🐛" name="Bug"></appearance>
 				<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>
+			</unit-blueprint>
+
+			<unit-blueprint name="rat">
+				<appearance appearance="🐀" name="Rat"></appearance>
+				<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>
+			</unit-blueprint>
+			
+			<unit-blueprint name="golem">
+				<appearance appearance="🗿" name="Golem"></appearance>
+				<base-stats damage="12" defense="12" cunning="1" move="1" mass="2" hp="60"></base-stats>
 			</unit-blueprint>
 
 			<unit-mod-group for="bug">
@@ -2305,6 +2458,7 @@
 						<li><span compendium="version/0.0.4">V0.0.4</span>  <span compendium="version/0.0.4.1">V0.0.4.1</span></li>
 						<li><span compendium="version/0.0.5">V0.0.5</span> <span compendium="version/0.0.5.1">V0.0.5.1</span> <span compendium="version/0.0.5.2">V0.0.5.2</span> <span compendium="version/0.0.5.3">V0.0.5.3</span> <span compendium="version/0.0.5.4">V0.0.5.4</span>  <span compendium="version/0.0.5.5">V0.0.5.5</span> <span compendium="version/0.0.5.6">V0.0.5.6</span> <span compendium="version/0.0.5.7">V0.0.5.7</span> <span compendium="version/0.0.5.8">V0.0.5.8</span></li>
 						<li><span compendium="version/0.0.6">V0.0.6</span> <span compendium="version/0.0.6.1">V0.0.6.1</span> <span compendium="version/0.0.6.2">V0.0.6.2</span></li>
+						<li><span compendium="version/0.0.7">V0.0.7</span></li>
 					</ul>
 				</div>
 			</div>
@@ -2463,7 +2617,7 @@
 															  CellBlock.mouseover>EncounterScreenHandler.OnCellBlockMouseOver,
 															  CellBlock.Attr:taunt-priority>Unit.OnTauntPriorityChange,
 															  DrawPileUi.click>CardRules.OnDrawPileClick,
-															  Unit.Attr:in-block>Unit.onMoveBlock"
+															  Unit.Attr:in-block>Unit.onMoveBlock|BattlefieldHandler.onMoveBlock"
 														wh-b="GhostUnit.click>EncounterRules.OnGhostUnitClick">
 				<!-- Info for battlefield things -->
 				<info class="encounter" wt="EncounterBP">
@@ -2472,6 +2626,7 @@
 				<div class="battlefield_widget_container"></div>
 				<div class="preview_panel"></div>
 				<div class="tldr_panel"></div>
+				<div wt="EndConditions" class="end_condition_container"></div>
 				<div class="action_button" wt="ActionButton" mode="" wh-c=".click>ActionButton.OnClick">
 				</div>
 				<div class="volley_tracker" compendium="concept/round"
@@ -2697,7 +2852,7 @@
 					    Ability.Updated>Unit.OnUnit,
 						Ability.AddChild>Ability.HoverHelpRefresh,
 						Unit.Attr:month|Unit.Attr:day|Unit.Attr:avatar>Unit.RefreshAppearance"
-					month="MONTH" day="DAY" appearance="APPEARANCE" mana="MONTH" mana-fn="Mana.DefaultMana" hover-help="[hover-on-unit='UNIT_ID']">
+					month="MONTH" day="DAY" appearance="APPEARANCE" mana="MONTH" mana-fn="Mana.DefaultMana" hover-help="[hover-on-unit='UNIT_ID']" stopped="true">
 				<div class="appearance no_transition">
 					<div class="month" month="MONTH"></div>
 					<div class="day" day="DAY"><span></span></div>
@@ -2710,6 +2865,7 @@
 					<progress class="hp_bar" wt="HPBar" max="HP_AMOUNT" value="HP_AMOUNT"> </progress>
 					<div class="defend"><div class="decor"></div></div>
 				</div>
+				<div class="battle_script"></div>
 				<div class="unit_script">
 				</div>
 				<div class="unit_status">
@@ -2746,6 +2902,25 @@
 				<span class="label" label="" short-label=""></span>
 				<span class="volley_count" volley_count="VOLLEY" og_volley_count="VOLLEY" warmup-time="VOLLEY" cooldown-duration="8" current-cooldown="VOLLEY"><span class="useful_icon"></span></span>
 				<blueprints wh-b=".AddChild|.RemoveChild|.Attr>Ability.OnChange"></blueprints>
+			</div>
+		</template>
+
+		<!-- Goes in battle_script in units during combat. -->
+		<template name="battle_ability">
+			<div wt="BattleAbility" class="battle_ability" slot-type="⭐" active="false" used="false">
+				<div class="skill_container"></div>
+				<div class="cooldown" current-cooldown="8"></div>
+			</div>
+		</template>
+
+		<!-- Goes inside a battle_ability -->
+		<template name="battle_skill">
+			<div wt="BattleSkill" class="battle_skill">
+				<div class="skill_appearance">
+					<div class="skill_icon" icon="⚔️"></div>
+					<div class="skill_type_icon" icon="⚔️"></div>
+				</div>
+				<info wt="SkillBP"></info>	
 			</div>
 		</template>
 

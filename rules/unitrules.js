@@ -414,56 +414,62 @@ class UnitRules {
         var battlefield = BattlefieldHandler.find(handler);
         var unit = params.unit;
         var destination = params.destination;
-        var block = CellBlock.findUp(destination);
-        var bigCoord = BigCoord.extract(block);
+        var sourceCell = BattlefieldHandler.cellAt(battlefield, UberCoord.extract(unit));
+        var availableDistance = params.distance;
 
-        var targetCoords = SmallCoord.extract(destination);
-        var currentCoords = SmallCoord.extract(unit);
-        var currentDistance = SmallCoord.distance(targetCoords, currentCoords);
-        var moveDistance = params.distance;
+        var start = UberCoord.toNorm(UberCoord.extract(sourceCell));
+        var dest = UberCoord.toNorm(UberCoord.extract(destination));
 
-        var candidates = Array.from(Cell.findAllInBlock(block))
-        .map(function(cell) {
-            // Gather info.
-            var coords = SmallCoord.extract(cell);
-            return {
-                cell: cell,
-                coords: coords,
-                distanceFromTarget: SmallCoord.distance(coords, targetCoords),
-                distanceFromStart: SmallCoord.distance(coords, currentCoords)
-            };
-        })
-        .filter(function(blorb) {
-            // Only count spots that are closer and within our move range.
-            return blorb.distanceFromTarget < currentDistance
-                    && blorb.distanceFromStart <= moveDistance;
-        })
-        .filter(function(blorb) {
-            // Remove locations that have a unit in them.
-            var uberCoord = UberCoord.from(bigCoord, blorb.coords);
-            return !BattlefieldHandler.unitAt(battlefield, uberCoord);
-        })
-        .sort(function(a, b) {
-            var test = a.distanceFromTarget - b.distanceFromTarget;
-            if (test != 0) return test;
-            test = a.distanceFromStart - b.distanceFromStart;
-            return test;
+        var path = Grid.pathTo(start, dest, function(norm) {
+            var uber = UberCoord.fromNorm(norm);
+            // Make sure it's a cell.
+            var cellInSpot = BattlefieldHandler.cellAt(battlefield, uber);
+            if (!cellInSpot) return false;
+            var block = CellBlock.findByRef(battlefield, cellInSpot);
+            if (DisabledAttr.get(block)) return false;
+            // Make sure it's not blocked.
+            var unitInSpot = BattlefieldHandler.unitAt(battlefield, uber);
+            return !unitInSpot || TeamAttr.matches(unit, unitInSpot);
+        }, function (norm) {
+            var uber = UberCoord.fromNorm(norm);
+            var unitInSpot = BattlefieldHandler.unitAt(battlefield, uber);
+            // Moving through units is much harder.
+            return !!unitInSpot ? 10 : 1;
         });
 
-        if (candidates.length == 0) {
-            Logger.info("No candidates!  Uh oh!");
+        if (!path) {
+            Logger.info("No candidate paths!  Uh oh!");
+            return GameEffect.createResults(effect, {
+                distanceMoved: 0
+            });
+        }
+        // Note that the first node in path is the node we're standing on.
+        // We want to find the furthest unblocked path we can take.
+        var distanceMoved = Math.min(availableDistance + 1, path.length);
+        var blocked = true;
+        var cell = null;
+        while (!!blocked && distanceMoved > 0) {
+            distanceMoved -= 1;
+            var destinationCoord = path[distanceMoved];
+            var uber = UberCoord.fromNorm(destinationCoord);
+            cell = BattlefieldHandler.cellAt(battlefield, uber);
+            blocked = !!BattlefieldHandler.unitAt(battlefield, uber);    
+        }
+
+        if (distanceMoved == 0 || cell === null) {
+            // Blocked in. :()
+            Logger.info("Unit is blocked and can't move.");
             return GameEffect.createResults(effect, {
                 distanceMoved: 0
             });
         }
 
-        var location = candidates[0];
         return GameEffect.push(effect, GameEffect.create("ShiftUnit", {
             unit: params.unit,
-            destination: location.cell
+            destination: cell
         }, handler)).then(function() {
             return GameEffect.createResults(effect, {
-                distanceMoved: location.distanceFromStart
+                distanceMoved: distanceMoved
             });
         });       
     })
@@ -479,6 +485,7 @@ class UnitRules {
         var cell = params.destination;
         Unit.affect(unit);
 
+        BigCoord.write(unit, BigCoord.extract(cell));
         SmallCoord.write(unit, SmallCoord.extract(cell));
         return GameEffect.createResults(effect);
     })

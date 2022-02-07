@@ -41,6 +41,20 @@ class FacingAttr {
         return FacingAttr.None;
     }
 
+    static fromToWithEstimate(fromCoords, toCoords) {
+        var delta = BaseCoord.minus({}, toCoords, fromCoords);
+        var xDir = FacingAttr.fromUnit([Math.sign(delta[0]), 0]);
+        var yDir = FacingAttr.fromUnit([0, Math.sign(delta[1])]);
+        // Weird case 1: We are not pointing anywhere (from == to)
+        if (xDir === FacingAttr.None && yDir === FacingAttr.None) return FacingAttr.None;
+        // Weird case 2: Diagonal.  Favor X because computer screens are usually wider.
+        if (Math.abs(delta[0]) === Math.abs(delta[1])) return xDir;
+        if (Math.abs(delta[0]) > Math.abs(delta[1])) {
+            return xDir;
+        }
+        return yDir;        
+    }
+
     static fromTo(fromCoords, toCoords) {
         var x = fromCoords[0] - toCoords[0];
         var y = fromCoords[1] - toCoords[1];
@@ -96,6 +110,8 @@ Utils.classMixin(FacingAttr, StringAttr, "facing");
 
 class Grid {
     static CloseCombat = "CC"; // Special "active-in" value for enemies inside the same block.
+    static SafeDistance = "AA"; // Special "active-in" value for nobody nearby.
+
     static _setup = [
         ["F1", "F2", "F3"],
         ["M1", "M2", "M3"],
@@ -114,9 +130,9 @@ class Grid {
         "B3": [2,2]
     }
 
-    static getEffectiveTile(unit) {
+    static getEffectiveTile(unit, opt_direction) {
         var coord = SmallCoord.extract(unit);
-        var facing = Grid.getFacing(unit);
+        var facing = opt_direction || Grid.getFacing(unit);
         switch (facing) {
             case FacingAttr.Left:
                 return Grid._setup[SmallCoord.x(coord)][2 - SmallCoord.y(coord)];
@@ -136,7 +152,9 @@ class Grid {
 
     static fromEffectiveToReal(block, positions, opt_facing) {
         var facing = opt_facing || Grid.getFacing(block);
-        return positions.map(function(label) {
+        return positions.filter(function(label) {
+            return Grid._effective[label] !== undefined;
+        }).map(function(label) {
             return SmallCoord.rotate(Grid._effective[label], facing);
         });
     }
@@ -190,6 +208,185 @@ class Grid {
             Grid.EffectivePosition.set(cell, Grid.getEffectiveTile(cell));
         });
     }
+
+    static contextualLabelFor(thingElt, effective, opt_directionHint) {
+        var screen = WoofType.findUp(thingElt, "Screen");
+        var uberCoord = UberCoord.extract(thingElt);
+        var block = CellBlock.findByCoord(screen, UberCoord.big(uberCoord));
+        var cell = Cell.findByCoord(block, UberCoord.small(uberCoord));
+
+        var smallCoord = SmallCoord.extract(thingElt);
+        var cell = Cell.findByCoord(screen, smallCoord);
+        var blockLabel = BigGridLabel.get(block);
+        var cellLabel;
+        if (effective) {
+            // Effective position.
+            var direction = opt_directionHint || Grid.getFacing(thingElt);
+            cellLabel = Grid.getEffectiveTile(thingElt, direction);
+        } else {
+            // Literal position.
+            cellLabel = SmallGridLabel.get(cell);
+        }
+
+        return (effective ? "E." : "L.") + blockLabel + "." + cellLabel;
+    }
+
+    static __expandLiteral = {
+        'A': ['A1', 'A2', 'A3'],
+        'B': ['B1', 'B2', 'B3'],
+        'C': ['C1', 'C2', 'C3'],
+        '1': ['A1', 'B1', 'C1'],
+        '2': ['A2', 'B2', 'C2'],
+        '3': ['A3', 'B3', 'C3']
+    };
+
+    static __expandEffective = {
+        'F': ['F1', 'F2', 'F3'],
+        'M': ['M1', 'M2', 'M3'],
+        'B': ['B1', 'B2', 'B3'],
+        '1': ['F1', 'M1', 'B1'],
+        '2': ['F2', 'M2', 'B2'],
+        '3': ['F3', 'M3', 'B3']
+    };
+
+    static expandContextualLabel(relativeTo, label, opt_directionHint) {
+        var screen = WoofType.findUp(relativeTo, "Screen");
+        var parts = label.split('.');
+        if (parts.length != 3) return null; // Not a contextual label.
+        // Parse part 1.
+        var effective = parts[0] === 'E';
+        // Resolve part 2;
+        var blockOptions = parts[1].split(',');
+        if (blockOptions.length == 1 && blockOptions[0] === "") {
+            // No options?  Assume everything is fair game.
+            blockOptions = CellBlock.findAll(screen).filter(block => !DisabledAttr.get(block));
+        } else {
+            blockOptions = blockOptions.map(label => CellBlock.findByLabel(screen, label));
+        }
+
+        var cellOptions = parts[2].split(',')
+        if (cellOptions.length == 1 && cellOptions[0] === "") {
+            // No options?  Assume everything is fair game again!
+            cellOptions = effective ? ['F1', 'F2', 'F3', 'M1', 'M2', 'M3', 'B1', 'B2', 'B3'] : ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+        }
+        cellOptions = cellOptions.flatMap(function(opt) {
+            return (effective ? Grid.__expandEffective : Grid.__expandLiteral)[opt] || [opt];
+        });
+
+        return blockOptions.flatMap(block => {
+            if (effective) {
+                return Grid.fromEffectiveToReal(block, cellOptions, opt_directionHint || Grid.getFacing(block));
+            }
+            return cellOptions.map(label => Cell.findByLabel(block, label));
+        });
+    }
+
+    static uberLabelFor(cell) {
+        var cellLabel = SmallGridLabel.get(cell);
+        var blockLabel = BigGridLabel.get(BigGridLabel.findUp(cell));
+        return blockLabel + '.' + cellLabel;
+    }
+
+    static fromUberLabel(elt, label) {
+        var labelParts = label.split('.');
+        var block = CellBlock.findByLabel(elt, labelParts[0]);
+        var cell = Cell.findByLabel(block, labelParts[1]);
+        return cell;
+    }
+
+    static __memoize(coordFn) {
+        var obj = {};
+        return function(coord) {
+            if (obj[coord[0]] === undefined || obj[coord[0]][coord[1]] === undefined) {
+                var result = coordFn(coord);
+                if (obj[coord[0]] === undefined) {
+                    obj[coord[0]] = {};
+                }
+                obj[coord[0]][coord[1]] = result;
+            }
+            return obj[coord[0]][coord[1]];
+        };
+    }
+
+    static pathTo(start, dest, okayFn, tileMultFn) {
+        // Returns a path from the start to the dest while avoiding any locations in the avoid set.
+        // Note: start and dest must be normUnits.
+        var workQueue = [];
+        var candidates = [];
+        okayFn = Grid.__memoize(okayFn);
+        tileMultFn = Grid.__memoize(tileMultFn);
+        var maxDistance = NormCoord.distance(start, dest) * 2;
+        var scoreFn = function(item) { return item.score; };
+        var scoreCalc = function(previous, current) {
+            var newScore = 0;
+            var distance = NormCoord.minus(dest, current.coord);
+            // Distance is the basis.
+            newScore += Math.sqrt((distance[0] * distance[0]) + (distance[1] * distance[1]));
+            if (previous.direction == current.direction) {
+                // Minimize directional changes.
+                newScore = newScore / 2;
+            }
+            // Add additional score here.
+            newScore = newScore * tileMultFn(current.coord);
+            // Append to previous because the score is the total path.
+            return previous.score + newScore;
+        }
+
+        workQueue.push({
+            score: 0,
+            coord: start,
+            direction: FacingAttr.None,
+            path: [start],
+            distance: 0
+        });
+
+        while (workQueue.length > 0) {
+            var current = workQueue.shift();
+            if (NormCoord.equals(current.coord, dest)) {
+                candidates.priorityInsert(current, scoreFn);
+                // Breakout heuristic: If we find several paths, that's good enough.
+                if (candidates.length >= Math.max(1, Math.floor(maxDistance / 3))) {
+                    break;
+                }
+            }
+            // Early determination: We can't actually get there.
+            var flatDistance = NormCoord.distance(current.coord, dest) + current.distance;
+            if (flatDistance > maxDistance) continue;
+
+            [FacingAttr.Up, FacingAttr.Left, FacingAttr.Down, FacingAttr.Right].map(function(dir) {
+                return {
+                    coord: FacingAttr.unitDelta(dir),
+                    direction: dir 
+                };
+            }).map(function(delta) {
+                return {
+                    coord: NormCoord.plus(delta.coord, current.coord),
+                    direction: delta.direction
+                };
+            }).filter(cand => {
+                // Destination is always allowed.
+                if (NormCoord.equals(cand.coord, dest)) return true;
+                return okayFn(cand.coord);
+            }).filter(function(cand) {
+                // Filter out cycles.
+                return !current.path.findFirst(function(item) {
+                    return NormCoord.equals(cand.coord, item);
+                });
+            }).map(function(cand) {
+                return {
+                    score: scoreCalc(current, cand),
+                    coord: cand.coord,
+                    direction: cand.direction,
+                    path: current.path.concat([cand.coord]),
+                    distance: current.distance + 1
+                }
+            }).forEach(cand => workQueue.priorityInsert(cand, scoreFn));
+        }
+
+        if (candidates.length == 0) return null;
+        // Optimal path (ish)!
+        return candidates[0].path;
+    }
 }
 WoofRootController.register(Grid);
 
@@ -218,6 +415,20 @@ class UberCoord {
         var big = UberCoord.big(uberCoord);
         var small = UberCoord.small(uberCoord);
         return '[' + big[0] + ',' + big[1] + '][' + small[0] + ',' + small[1] + ']';
+    }
+
+    static toNorm(uc) {
+        return [
+            (uc[0][0] * 3) + (uc[1][0] % 3),
+            (uc[0][1] * 3) + (uc[1][1] % 3)
+        ];
+    }
+
+    static fromNorm(norm) {
+        return [
+            [Math.floor(norm[0] / 3), Math.floor(norm[1] / 3)],
+            [norm[0] % 3, norm[1] % 3]
+        ];
     }
 }
 
@@ -306,6 +517,17 @@ class BaseCoord {
         ];
     }
 }
+
+class NormCoord {
+    static extract(cell) {
+        return UberCoord.toNorm(UberCoord.extract(cell));
+    }
+}
+Utils.classMixin(NormCoord, BaseCoord, {
+    x: null,
+    y: null
+})
+
 
 class BigCoord {
     static extract(cell) {

@@ -63,7 +63,6 @@ class Preparations {
                 Preparation.Used.set(use, false);
             });
         }
-
     }
 
     static OnDefaultUse(preparation, use) {
@@ -314,8 +313,8 @@ class Barricade {
     }
 
     static invoke(card, target) {
-        var battlefield = BattlefieldHandler.find(card);        
-        var barricade = Units.barricade();
+        var battlefield = BattlefieldHandler.find(card); 
+        var barricade = UnitGenerator.generate('barricade');       
         BattlefieldHandler.addUnitTo(battlefield, barricade, BigCoord.extract(target), SmallCoord.extract(target));
         return Preparations.payCostAndMaybeIncrementUsage(card);
     }

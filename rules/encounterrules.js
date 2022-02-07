@@ -7,6 +7,8 @@ class EncounterGenerator {
     static Count = new ScopedAttr("count", IntAttr);
     static Name = new ScopedAttr("name", StringAttr);
     static Location = new ScopedAttr("location", ListAttr);
+    static LocationFn = new ScopedAttr("location-fn", FunctionAttr);
+    static PreferredSpawn = new ScopedAttr("preferred-spawn", ListAttr);
     static generate(encounter, encounterBp, defs) {
         // Find our defaults first.
         var defaultEncounter = Utils.bfind(encounter, 'body', 'default-encounter');
@@ -23,49 +25,29 @@ class EncounterGenerator {
 
             // Okay, here's where it gets John Madden.
             // Place all of our units, being sure to filter as needed.
-            qsa(encounterBp, 'place-units').filter(DefHelper.filterFor(defs)).forEach(function(placeUnitsElt) {
-                var options = qsa(placeUnitsElt, 'from-unit-gen').filter(DefHelper.filterFor(defs));
-                if (options.length == 0) return;
-                var toGen = [];
-
-                // Decide which ones.
-                if (!EncounterGenerator.Count.has(placeUnitsElt)) {
-                    toGen = options;
-                } else {
-                    var count = EncounterGenerator.Count.get(placeUnitsElt);
-                    while (toGen.length < count) {
-                        toGen.push(EncounterGenerator._rng.randomValue(options));
-                    }
-                }
-
-                // Actually do unit gen here.
-                var candidateLocations = EncounterGenerator.Location.get(placeUnitsElt).map(function(label) {
-                    return CellBlock.findByLabel(encounter, label);  
-                }).map(function(block) {
-                    return Cell.findAllInBlock(block);
-                }).flat().map(function(cell) {
-                   return UberCoord.extract(cell); 
-                }).filter(function(coord) {
-                    return !BattlefieldHandler.unitAt(encounter, coord);
-                });
-
-                toGen.forEach(function(genMe) {
-                    var spawnLocation = EncounterGenerator._rng.randomValueR(candidateLocations);
-                    if (!spawnLocation) return;
-
-                    var unit = UnitGenerator.generate(EncounterGenerator.Name.get(genMe));
-                    BattlefieldHandler.addUnitTo(encounter, unit, UberCoord.big(spawnLocation), UberCoord.small(spawnLocation));
-                });
+            qsa(encounterBp, ':scope > place-units').filter(DefHelper.filterFor(defs)).forEach(function(placeUnitsElt) {
+                EncounterGenerator.placeUnits(placeUnitsElt, encounter, defs);
             });            
         }
 
+        // First, let's look for end-condition elements.
+        var endConditions = qsa(encounterBp, 'end-condition');
+        if (endConditions.length == 0) {
+            endConditions = qsa(defaultEncounter, 'end-condition');
+        }
+        var container = WoofType.findDown(encounter, 'EndConditions');
+        endConditions.forEach(elt => container.appendChild(elt.cloneNode(true)));
+
+
         // Next up, we look for things in our blueprint, and if they're not there, we copy them over from the default.
         // Add our end conditions.
+        /*
         var endConditionElt = EncounterRules.EndConditions.find(encounterBp);
         if (!endConditionElt) {
             endConditionElt = EncounterRules.EndConditions.find(defaultEncounter);
             encounterBp.appendChild(endConditionElt.cloneNode(true));
         }
+        */
 
         var maxPlayerUnitElt = EncounterRules.MaxPlayerUnits.findDown(encounterBp);
         if (!maxPlayerUnitElt) {
@@ -95,7 +77,77 @@ class EncounterGenerator {
         });
     }
 
+    static placeUnits(placeUnitsElt, encounter, opt_defs) {
+        var defs = opt_defs || {};
+
+        var options = qsa(placeUnitsElt, 'from-unit-gen').filter(DefHelper.filterFor(defs));
+        if (options.length == 0) return;
+        var toGen = [];
+
+        // Decide which ones.
+        if (!EncounterGenerator.Count.has(placeUnitsElt)) {
+            toGen = options;
+        } else {
+            var count = EncounterGenerator.Count.get(placeUnitsElt);
+            while (toGen.length < count) {
+                toGen.push(EncounterGenerator._rng.randomValue(options));
+            }
+        }
+
+        // Actually do unit gen here.
+        var candidateLocations = [];
+        if (EncounterGenerator.LocationFn.has(placeUnitsElt)) {
+            candidateLocations = EncounterGenerator.LocationFn.invoke(placeUnitsElt, encounter, placeUnitsElt);
+        } else {
+            candidateLocations = EncounterGenerator.LocationsByLabel(encounter, placeUnitsElt);
+        }
+        candidateLocations = candidateLocations.filter(function(cell) {
+            return !BattlefieldHandler.unitAt(encounter, UberCoord.extract(cell));
+        });
+
+        toGen.forEach(function(genMe) {
+            if (candidateLocations.length == 0) return;
+            var unit = UnitGenerator.generate(EncounterGenerator.Name.get(genMe));
+            var preferredSpawn = (EncounterGenerator.PreferredSpawn.get(unit) || []);
+            var spawnLocation = null;
+            if (preferredSpawn.length > 0) {
+                var primoSpawn = candidateLocations.filter(function(cell) {
+                    var effective = Grid.getEffectiveTile(cell);
+                    return preferredSpawn.includes(effective);
+                });
+                if (primoSpawn.length > 0) {
+                    spawnLocation = EncounterGenerator._rng.randomValueR(primoSpawn);
+                    candidateLocations.splice(candidateLocations.indexOf(location), 1);
+                }
+            }
+            if (spawnLocation == null) {
+                spawnLocation = EncounterGenerator._rng.randomValueR(candidateLocations);
+            }
+            var uberCoord = UberCoord.extract(spawnLocation);
+            BattlefieldHandler.addUnitTo(encounter, unit, UberCoord.big(uberCoord), UberCoord.small(uberCoord));            
+        });
+    }
+
+    // General Helpers
+    static LocationsByLabel(encounter, placeUnitsElt) {
+        return EncounterGenerator.Location.get(placeUnitsElt).flatMap(function(label) {
+            var byContext = Grid.expandContextualLabel(encounter, label);
+            if (byContext !== null) {
+                return byContext;
+            }
+            return [CellBlock.findByLabel(encounter, label)].flatMap(block => Cell.findAllInBlock(block));  
+        });
+    }
+
+    static Teams = new ScopedAttr("teams", ListAttr);
+    static LocationsByTeam(encounter, placeUnitsElt) {
+        return EncounterGenerator.Teams.get(placeUnitsElt).flatMap(team => CellBlock.findAllByTeam(encounter, team))
+                .filter(block => !DisabledAttr.get(block))
+                .flatMap(block => Cell.findAllInBlock(block));
+
+    }
 }
+WoofRootController.register(EncounterGenerator);
 
 
 
@@ -111,7 +163,7 @@ WoofRootController.addListeners(Utils.constantValues(ActionMode));
 
 class EncounterRules {
 
-    static setDefaultFacingOnBlock(block, opt_allBlocks) {
+    static setDefaultFacingOnBlock(block, opt_allBlocks) {        
         var blocks = opt_allBlocks;
         if (!blocks) {
             blocks = CellBlock.findAll(BattlefieldHandler.find(block)).filter(function(block) {
@@ -121,59 +173,69 @@ class EncounterRules {
         var priorityTargetMap = Teams.allTeams().expandToObject(Teams.opposed);
         var team = TeamAttr.get(block);
         if (!team) throw boom("All non-disabled blocks should have a team.");
+        var opposed = Teams.opposed(team);
         var thisCoord = BigCoord.extract(block);
 
-        // Sort blocks into canadidates by priority.
-        var targetBlock = blocks.filter(function(a) {
-            // Filter out same-team.
-            return TeamAttr.get(a) != team;
-        }).sort(function(a, b) {
-            // Enemy teams are a higher priority than neutral teams.
-            var aTeam = TeamAttr.get(a);
-            var bTeam = TeamAttr.get(b);
-            if (aTeam != bTeam) {
-                var aTeamPriority = priorityTargetMap[team].includes(aTeam);
-                var bTeamPriority = priorityTargetMap[team].includes(bTeam);
-                if (aTeamPriority != bTeamPriority) {
-                    if (aTeamPriority) return -1;
-                    if (bTeamPriority) return 1;
+        // For each block, we prioritize the nearest block that has enemies in it,
+        // unless it's already pointing at an adjacent block with enemies in it.
+        var facing = FacingAttr.get(block);
+        var coord = BigCoord.extract(block);
+        if (!!facing && facing != FacingAttr.None) {
+            // We already have a facing.  Let's make sure we don't need to update it and if we
+            // do, update it.
+            var target = CellBlock.findFacing(block, facing);
+            // Quick check: See if we're pointing at enemies.
+            if (!!target) {
+                // If our target block has enemies in it, we're already pointed in a helpful direction.
+                if (opposed.flatMap(t => Unit.findTeamInBlock(target, t)).length > 0) {
+                    return;
+                }
+
+                // If we don't have any enemies, do any others immediately us have enemies?  If so, prioritise that one.
+                var newTarget = FacingAttr.allDirections().map(dir => CellBlock.findFacing(block, dir)).filter(block => !!block).filter(function(b) {
+                    // Only blocks that have enemies in them.
+                    return opposed.flatMap(t => Unit.findTeamInBlock(b, t)).length > 0;
+                }).sort(function(a, b) {
+                    return opposed.flatMap(t => Unit.findTeamInBlock(a, t)).length - opposed.flatMap(t => Unit.findTeamInBlock(b, t)).length;
+                })[0];
+                if (newTarget) {
+                    var direction = FacingAttr.fromTo(coord, BigCoord.extract(newTarget));
+
+                    // We found our new target.
+                    FacingAttr.set(block, direction);
+                    return;
+                }
+                if (opposed.includes(TeamAttr.get(target))) {
+                    // Already pointing towards a baddie.  Good enough to skip.
+                    return;
                 }
             }
+        }
 
-            // Next up, proximity!!
-            var aCoord = BigCoord.extract(a);
-            var bCoord = BigCoord.extract(b);
-            var aDiag = BigCoord.diagDistance(aCoord, thisCoord);
-            var aDist = BigCoord.distance(aCoord, thisCoord);
-            var bDiag = BigCoord.diagDistance(bCoord, thisCoord);
-            var bDist = BigCoord.distance(bCoord, thisCoord);
-            if (aDist != bDist) {
-                // Ortho distance is the winner!
-                return aDist - bDist;
-            }
-            // However, if they're equal, the LARGEST diag distance wins (straighter line, since equal ortho!)
-            if (aDiag != bDiag) {
-                return bDist - aDist;
-            }
+        // We are not facing a direction, or we need to change direction.
+        // We will basically find the set of closest enemy blocks, then prioritize
+        // them by whichever has the most enemies, and point that way (ish).
+        var newTarget = blocks.filter(b => Teams.opposed(team).includes(TeamAttr.get(b)))
+                .sort(function(a, b) {
+                    var aD = BigCoord.distance(coord, BigCoord.extract(a));
+                    var bD = BigCoord.distance(coord, BigCoord.extract(a));
+                    if (aD != bD) {
+                        // Prioritize closest enemy-aligned block.
+                        return aD - bD;
+                    }
+                    // For equal distances, prioritize the one with the most enemies.
+                    var aC = opposed.flatMap(t => Unit.findTeamInBlock(a, t)).length;
+                    var bC = opposed.flatMap(t => Unit.findTeamInBlock(b, t)).length;
+                    return bC - aC;
+                })[0];
+        if (!newTarget && facing == FacingAttr.None) {
+            // We should definitely pick something, so by default we point to a block.
+            newTarget = FacingAttr.allDirections().map(dir => CellBlock.findFacing(block, dir)).filter(block => !!block)[0];
+        }        
+        // We need to clamp this direction.        
+        var direction = FacingAttr.fromToWithEstimate(coord, BigCoord.extract(newTarget));
+        FacingAttr.set(block, direction);
 
-            // Next up, higher enemy counts.
-            var aCount = priorityTargetMap[team].map(function(sTeam) {
-                return Unit.findTeamInBlock(a, sTeam).length;
-            }).merge(sumMerge);
-            var bCount = priorityTargetMap[team].map(function(sTeam) {
-                return Unit.findTeamInBlock(b, sTeam).length;
-            }).merge(sumMerge);
-
-            // Whichever one has more enemies is higher priority.
-            if (aCount != bCount) {
-                return bCount - aCount;
-            }
-
-            return 0;
-        })[0];
-
-        var delta = BigCoord.minus(BigCoord.extract(targetBlock), thisCoord);
-        FacingAttr.set(block, BigCoord.directionsOf(delta)[0]);
     }
 
     // Sets the default facing direction of a block if it's not already set.
@@ -188,15 +250,12 @@ class EncounterRules {
         });
     }
 
+    static EndFn = new ScopedAttr("end-fn", FunctionAttr);
     static GetEncounterResult(encounter) {
-        var endConditionFns = EncounterRules.EndConditions.findAll(encounter);
-        return endConditionFns.map(function(elt) {
-            var fns = EncounterRules.EndConditions.get(elt);
-            return fns.map(function(controller) {
-                return WoofRootController.invokeController(controller, [elt, encounter]);
-            }).findFirst(function(result) {
-                return !!result;
-            });    
+        var endConditionContainer = WoofType.find(encounter, 'EndConditions');
+        var conditionElts = EncounterRules.EndFn.findAll(endConditionContainer);
+        return conditionElts.map(function(elt) {
+            return EncounterRules.EndFn.invoke(elt, elt, encounter);
         }).findFirst(function(result) {
             return !!result;
         });
@@ -208,6 +267,7 @@ class EncounterRules {
     static EndConditions = new ScopedAttr("end-condition-fns", ListAttr);
     static MaxPlayerUnits = new ScopedAttr("max-player-units", IntAttr);
     static InitiativeOrder = new ScopedAttr('initiative-order', ListAttr);
+    static For = new ScopedAttr('for', StringAttr);
 
     /**
      * Populates the screen.
@@ -241,6 +301,16 @@ class EncounterRules {
 
         // Generate the encounter according to the blueprint.
         EncounterGenerator.generate(encounter, encounterBp, params.defs || {});
+
+        // Install our combat script, if we have one.
+        var combatScript = qs(encounterBp, 'combat-script');
+        if (combatScript) {
+            var handlerSet = Templates.inflate('handler-set');
+            EncounterRules.For.set(handlerSet, WoofType.buildSelectorFor(encounter));
+            Utils.moveChildren(combatScript.cloneNode(true), handlerSet);
+            var container = EffectQueue.getHandlerContainer(encounter);
+            container.appendChild(handlerSet);
+        }
 
         // Update initial facing.
         EncounterRules.setDefaultFacing(encounter);
@@ -297,6 +367,11 @@ class EncounterRules {
         return Promise.resolve(drawFn()).then(checkFn).then(function(winOrLoss) {
             // Disable the action button.
             ActionButton.setMode(handler, ActionMode.Disabled);
+
+            // Get rid of any combat script we might have.
+            var container = EffectQueue.getHandlerContainer(encounter);
+            var script = EncounterRules.For.find(container, WoofType.buildSelectorFor(encounter));
+            if (script) script.remove();
 
             // Cleanup here.  First, retreat all our units.
             var units = Array.from(Unit.findAllByTeam(battlefield, Teams.Player));
@@ -643,70 +718,13 @@ class RoundRules {
     }
 
     static updateBlockFacing(battlefield) {
-            // Adjust overall unit facing.
-            var blocks = CellBlock.findAll(battlefield);
-            var toAdjust = [];
+        // Adjust overall unit facing.
+        var blocks = CellBlock.findAll(battlefield).filter(block => !DisabledAttr.get(block));
+        var toAdjust = [];
 
-            for (var i = 0; i < blocks.length; i++) {
-                var block = blocks[i];
-                var inBlock = Unit.findAllInBlock(block);
-                if (inBlock.length == 0) {
-                    // Nobody in this one?  Leave it alone.
-                    continue;
-                }
-                // Get the current team.
-                var team = TeamAttr.get(block);
-
-                // Get the current facing.
-                var facing = CellBlock.findFacing(block);
-                if (!facing) {
-                    // No facing?  Needs to be adjusted.
-                    toAdjust.push(block);
-                    continue;
-                }
-                if (team == TeamAttr.get(facing)) {
-                    // Currently facing allies.  Needs to be adjusted.
-                    toAdjust.push(block);
-                    continue;
-                }
-                var units = Unit.findAllInBlock(facing);
-                if (units.length == 0) {
-                    // Currently facing nobody.  Needs to be adjusted.
-                    toAdjust.push(block);
-                    continue;
-                }
-            }
-
-            for (var i = 0; i < toAdjust.length; i++) {
-                var block = toAdjust[i];
-                var team = TeamAttr.get(block);
-                var candidates = [FacingAttr.Up, FacingAttr.Down, FacingAttr.Left, FacingAttr.Right].map(function(dir) {
-                    return [dir, CellBlock.findFacing(block, dir)];
-                }).filter(function(b2) {
-                    // Only ones that exist.
-                    if (!b2[1]) {
-                        return false;
-                    }
-                    // Only for ones that have a team.
-                    if (!TeamAttr.has(b2[1])) {
-                        return false;
-                    }
-                    // Only ones not for the same team.                        
-                    if (TeamAttr.get(b2[1]) == team) {
-                        return false;
-                    }
-                    return true;
-                });
-                if (candidates.length == 0) {
-                    // No candidates?  No facing.
-                    FacingAttr.set(block, FacingAttr.None);
-                    continue;
-                }
-                candidates.sort(function(a, b) {
-                    return Unit.findAllInBlock(b[1]).length - Unit.findAllInBlock(a[1]).length;
-                });
-                FacingAttr.set(block, candidates[0][0]);
-            }
+        blocks.forEach(block => {
+            EncounterRules.setDefaultFacingOnBlock(block, blocks);
+        });
     }
 
     /**
@@ -724,7 +742,9 @@ class RoundRules {
                 Unit.Used.set(ability, false);
                 toCheck.push([ability, elt]);
             } else {
-                Ability.CurrentCooldown.set(elt, Ability.CurrentCooldown.get(elt) - 1);
+                if (Ability.CurrentCooldown.get(elt) > 1) {
+                    Ability.CurrentCooldown.set(elt, Ability.CurrentCooldown.get(elt) - 1);
+                }
             }
         });
 

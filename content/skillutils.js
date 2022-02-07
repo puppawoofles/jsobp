@@ -21,9 +21,38 @@ class ActiveIn {
         if (activeIn.includes(Grid.CloseCombat)) {
             active = active || ActiveIn._testCC(bp, ability);
         }
+        if (active) return !!active;
+        if (activeIn.includes(Grid.SafeDistance)) {
+            active = active || ActiveIn._testAA(bp, ability);
+        }
+        if (active) return !!active;
         active = active || ActiveIn._testPosition(ability, activeIn);
 
         return !!active;
+    }
+
+    static _testAA(bp, ability) {
+        var unit = Unit.findUp(ability);
+        var battlefield = BattlefieldHandler.findUp(unit);
+        if (!battlefield) return false;
+
+        var contentBlock = CellBlock.findByContent(unit);
+        var facing = Grid.getFacing(unit);
+
+        // First check: Am I in an opponent block?
+        if (!TeamAttr.matches(contentBlock, unit)) {
+            return false;
+        }
+
+        // Second check: Are there any opposed units in my block?
+        if (Teams.opposed(TeamAttr.get(unit)).flatMap(function(team) {
+            return Unit.findTeamInBlock(contentBlock, team);
+        }).length > 0) {
+            return false;
+        }
+
+        // No units in my block!
+        return true;
     }
 
     static _inOpponentBlock(unit) {

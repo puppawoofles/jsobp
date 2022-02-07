@@ -58,6 +58,7 @@ class AgilityStatus {
         return GameEffect.createResults(effect);
     });
 
+    
     static merge(unit, existing, amount) {
         AgilityStatus.AddStacks(unit, Math.max(1, amount), existing);
         return true;
@@ -202,6 +203,7 @@ class BaseDamageStatus {
 
         // TODO: Remove this after our great unit-gen migration.
         var current = BaseDamageStatus.StackCount(status);
+        
         var delta = current - oldValue;
         Unit.adjustBaseDamage(unit, delta);
 

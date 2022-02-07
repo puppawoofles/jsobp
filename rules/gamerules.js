@@ -29,25 +29,22 @@ class GameRules {
         });
 
         var starterUnits = [
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler),
-            Units.sample_hero(handler)
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit"),
+            UnitGenerator.generate("player_unit")
         ];
         starterUnits.forEach(function(content) {
             var card = Card.inflate(Utils.UUID());
             card.appendChild(content);
             RunInfo.addUnit(runScreen,card);
         });
-
-        // Test: Test the new unit generator.
-        var unit = UnitGenerator.generate("player_unit");
 
         RunInfo.setCurrentGold(handler, params.startingGold);        
 
@@ -119,7 +116,7 @@ class GameRules {
         NoiseCounters.setCounter(NC.Event, 0);
 
         var RNG = GameRules._dayRng;
-        
+
         var runScreen = RunScreen.find(handler);
         var container = qs(runScreen, WoofType.buildSelector("ScreenWrapper"));
 

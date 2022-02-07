@@ -10,20 +10,48 @@ class BasicAI {
             };
         });
         units.forEach(function(blorb) {
+            var team = TeamAttr.get(blorb.unit);
             var position = Grid.getEffectiveTile(blorb.unit);
+            var currentBlock = CellBlock.findByContent(blorb.unit);
             var preferredLocations = BasicAI.PreferredLocations.findGet(blorb.unit) || [];
             if (preferredLocations.length == 0 || preferredLocations.includes(position)) {
                 // This rat is about as happy as can be.
                 return;
             }
-            var block = CellBlock.findByRef(battlefield, blorb.unit);
+            // Alternative: Enemy wants CC and has CC.
+            if (preferredLocations.includes(Grid.CloseCombat)) {
+                if (!!Unit.findAllInBlock(currentBlock).findFirst(function(unit) {
+                    return !TeamAttr.matches(unit, blorb.unit);
+                })) {
+                    // This unit wants melee, got melee.
+                    return;
+                }
+            }
+            var options = [];
+            if (preferredLocations.includes(Grid.CloseCombat)) {
+                // Special case: This enemy wants to get way up in your business.
+                // Find any blocks that have enemy units in them.
+                options.extend(CellBlock.findAll(battlefield).filter(function(block) {
+                    // Has some enemy units in them.
+                    return Teams.opposed(team).flatMap(oTeam => Unit.findTeamInBlock(block, oTeam)).length > 0;
+                }).flatMap(function(block) {
+                    // Find open cells.
+                    return Cell.findAllInBlock(block);
+                }).filter(function(cell) {
+                    return !BattlefieldHandler.unitAt(battlefield, UberCoord.extract(cell));
+                }).map(function(cell) {
+                    return UberCoord.extract(cell);
+                }));            
+            }
             var current = SmallCoord.extract(blorb.unit);
-            var options = Grid.fromEffectiveToReal(block, preferredLocations).map(function(coord) {
+            options.extend(Grid.fromEffectiveToReal(currentBlock, preferredLocations).map(function(coord) {
                 return UberCoord.from(BigCoord.extract(blorb.unit), coord);
             }).filter(function(uber) {
                 // Only return free spots.
                 return !BattlefieldHandler.unitAt(battlefield, uber);
-            });
+            }));
+
+            BasicAI._rng.shuffle(options);
             if (options.length == 0) return;
 
             BasicAI._rng.shuffle(options);
@@ -99,6 +127,7 @@ class GenericMoves {
         return GameEffect.createResults(effect);
     }
 }
+WoofRootController.register(GenericMoves);
 
 /** TODO: Deprecate this in favor of BasicAI above. */
 class RatAI {
@@ -305,13 +334,13 @@ class JimmyAI {
         cells.shuffle();
         var location = UberCoord.extract(cells[0]);
 
-        var rat = Units.rat();
+        var rat = UnitGenerator.generate('enemy_rat');
+
         var battlefield = BattlefieldHandler.findUp(jimmy);
         TeamAttr.set(rat, TeamAttr.get(jimmy));
         BattlefieldHandler.addUnitTo(battlefield, rat, UberCoord.big(location), UberCoord.small(location));
         Unit.setMaxHP(rat, ratHP);
         Unit.setCurrentHP(rat, ratHP);
-        RatAI.Apply(rat, 1);
         return GameEffect.createResults(effect);
     }
    

@@ -33,7 +33,6 @@ WoofRootController.register(Events);
 
 
 class LostCity {
-
     static ProgressMin = new ScopedAttr("progress-min", IntAttr);
     static progress(elt, progress) {
         return progress >= LostCity.ProgressMin.get(elt);
@@ -49,3 +48,31 @@ class LostCity {
     }
 }
 WoofRootController.register(LostCity);
+
+class HallOfBugs {
+    static OnAfterVolley = GameEffect.handle(function(handler, effect, params) {
+        // Logic: See if A2 is empty, but there is at least one player unit in A3.
+        // If so, spawn a bunch of bugs.        
+        var battlefield = BattlefieldHandler.find(handler);
+        var encounter = EncounterScreenHandler.find(battlefield);
+        var a2 = CellBlock.findByLabel(battlefield, "A2");
+        var a3 = CellBlock.findByLabel(battlefield, "A3");
+        var a4 = CellBlock.findByLabel(battlefield, "A4");
+        var unitsCrossedThreshold = [a3, a4].flatMap(function(block) {
+            return Unit.findTeamInBlock(block, Teams.Player);
+        }).length > 0;
+        var a2Available = Unit.findTeamInBlock(a2, Teams.Player).length == 0;
+
+        // Womp womp.
+        if (!unitsCrossedThreshold || !a2Available) return;
+        
+        // Script go off!
+        qsa(handler, ':scope > place-units').forEach(function(placeUnit) {
+            EncounterGenerator.placeUnits(placeUnit, encounter);
+        });
+
+        // Remove our handler.
+        handler.remove();
+    });
+}
+WoofRootController.register(HallOfBugs);

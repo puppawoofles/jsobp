@@ -125,9 +125,9 @@ class Move {
 
         return qsa(move, 'target-mode').map(function(modeElt) {
             // Special case: Self target just returns self.
-            var targetType = Move.TargetType.findGet(move);
-            var targetMode = Move.TargetMode.findGet(move) || null;
-            var effectivePos = Move.EffectiveFrom.findGet(move) || [];
+            var targetType = Move.TargetType.findGet(modeElt);
+            var targetMode = Move.TargetMode.findGet(modeElt) || null;
+            var effectivePos = Move.EffectiveFrom.findGet(modeElt) || [];
 
             if (targetType == 'self') {
                 return [user];
@@ -148,7 +148,7 @@ class Move {
                         // First check if we're active.
                         var withDir = effectivePos.map(ep => `${dir}-${ep}`);
                         return !!withDir.findFirst(function(selector) {
-                            return inCell.matches(`[wt~=CellBlock] ${selector}`);
+                            return inCell.matches(`[wt~=CellBlock] [effective-positions~="${selector}"]`);
                         });
                     }).map(function(dir) {
                         // We can target all units in this direction.

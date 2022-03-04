@@ -137,6 +137,14 @@ Array.prototype["priorityInsert"] = function(item, scoreFn) {
 	}
 }
 
+Object.prototype["toArray"] = function(mapper) {
+	var returnMe = [];
+	for (let [key, value] of Object.entries(this)) {
+		returnMe.push(mapper(key, value));
+	}
+	return returnMe;
+}
+
 /* Normalize queryselectorall */
 qsa = function(element, matcher) {
 	return Array.from(element.querySelectorAll(matcher) || []);
@@ -148,7 +156,7 @@ qs = function(element, matcher) {
 }
 
 /* Simplify boomerang-find */
-bf = function(element, downMatcher, opt_upMatcher) {
+bf = function(element, downMatcher, opt_upMatcher) {	
 	var up = opt_upMatcher ? matchParent(element, opt_upMatcher) : (element.ownerDocument || element);
 	return qs(up, downMatcher);
 }
@@ -222,6 +230,10 @@ randomValue = function(arr) {
 
 times = function(int) {
 	return a(Array(int).keys());
+}
+
+isPromise = function(result) {
+	return !!result && typeof(result["then"]) == "function";
 }
 
 /**
@@ -1264,7 +1276,8 @@ class Utils {
 		};
 	}
 	
-	static classMixin(intoThis, mixThis, opt_config) {
+	static classMixin(intoThis, mixThis, opt_config) {		
+		WoofRootController.register(intoThis);
 		for (var key of Object.getOwnPropertyNames(mixThis)) {
 			if (typeof(mixThis[key]) != 'function') continue;
 			if (!intoThis[key]) {
@@ -1319,6 +1332,13 @@ class BaseAttr {
 		}
 		// This is to allow = vs ~=
 		return '[' + key + config.selectorOperand + newVal + ']';
+	}
+
+	static antiSelector(config, key, value) {
+		if (value === null || value === undefined) {
+			return `:not[${key}]`;
+		}
+		return `:not[${key}=${value}]`;
 	}
 
 	static copy(config, key, to, from) {
@@ -1435,6 +1455,13 @@ class BoolAttr {
 			return '[' + config + ']';
 		}
 		return '[' + config + '="' + value + '"]';
+	}
+
+	static buildAntiSelector(config, value) {
+		if (value === null || value === undefined) {
+			return `:not([${config}])`;
+		}
+		return `:not([${config}=${value}])`;
 	}
 }
 
@@ -1680,6 +1707,16 @@ class IdAttr {
 		}
 		return '[w-id="' + value + '"]';
 	}
+
+	static unique(array) {
+		var found = {};
+		return array.filter(function(item) {
+			var id = IdAttr.generate(item);
+			if (found[id]) return false;
+			found[id] = true;
+			return true;
+		});
+	}
 }
 Utils.classMixin(IdAttr, StringAttr, "w-id");
 
@@ -1850,33 +1887,7 @@ class DefHelper {
 }
 
 
-/**
- * Given a DOM element, processes each element like a line of code in a script using
- * a set of passed-in string-matcher commands.  If a matcher returns something, that becomes
- * the next command to run.
- */
-class DomScript {
-	static execute(rootElt, commands) {
-		// Bail out if empty!
-		if (rootElt.childElementCount == 0) return;
 
-		var toExecute = [rootElt.firstElementChild];
-		while (toExecute.length > 0) {
-			var current = toExecute.shift();
-			if (current.nextElementSibling) {
-				toExecute.push(current.nextElementSibling);
-			}
-			for (var [key, value] of Object.entries(commands)) {
-				if (current.matches(key)) {
-					var newCmd = value(current);
-					if (newCmd) {
-						toExecute.unshift(newCmd);
-					}
-				}
-			}
-		}
-	}
-}
 
 
 /** Used to track noise input parts. */
@@ -2095,6 +2106,12 @@ class AbstractDomController {
 	
 	static findUp(config, elt) {
 		return matchParent(elt, config.matcher);
+	}
+
+	static findAllWith(config, elt, selector) {
+		// A bit  naive, but yolo.
+
+		return qsa(elt, config.matcher + selector);
 	}
 
     static inflate(config, ...args) {

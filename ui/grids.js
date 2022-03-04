@@ -10,6 +10,121 @@ class SmallYAttr {}
 Utils.classMixin(SmallYAttr, IntAttr, "smol-y");
 class SmallGridLabel{}
 Utils.classMixin(SmallGridLabel, StringAttr, 'smol-label');
+
+class Direction {
+    static Left = "left";
+    static Right = "right";
+    static Up = "up";
+    static Down = "down";
+    // Special case only here for making it easy to find all of these.
+    static None = "local";
+    
+    static allDirections() {
+        return [Direction.Left, Direction.Right, Direction.Up, Direction.Down];
+    }
+
+    static coordDelta(direction) {
+        switch (direction) {
+            case Direction.Left:
+                return [-1, 0];
+            case Direction.Right:
+                return [1, 0];
+            case Direction.Up:
+                return [0, -1];
+            case Direction.Down:
+                return [0, 1];
+            case Direction.None:
+                return [0, 0];
+        }
+        throw boom("Unknown direction for delta-ing", direction);
+    }
+}
+
+class EffectivePosition {    
+    // These are facing up.
+    static _coordToEffective = [
+        ["F1", "F2", "F3"],
+        ["M1", "M2", "M3"],
+        ["B1", "B2", "B3"]];
+
+    static _effectiveToCoord = {
+        "F1": { "up": [0,0], "down": [2,2], "left": [0,2], "right": [2,0] },
+        "F2": { "up": [1,0], "down": [1,2], "left": [0,1], "right": [2,1] },
+        "F3": { "up": [2,0], "down": [0,2], "left": [0,0], "right": [2,2] },
+        "M1": { "up": [0,1], "down": [2,1], "left": [1,2], "right": [1,0] },
+        "M2": { "up": [1,1], "down": [1,1], "left": [1,1], "right": [1,1] },
+        "M3": { "up": [2,1], "down": [0,1], "left": [1,0], "right": [1,2] },
+        "B1": { "up": [0,2], "down": [2,0], "left": [2,2], "right": [0,0] },
+        "B2": { "up": [1,2], "down": [1,0], "left": [2,1], "right": [0,1] },
+        "B3": { "up": [2,2], "down": [0,0], "left": [2,0], "right": [0,2] }
+    };
+
+    /** For a given contextual direction ("F1"), expand to all the contextual versions ("left-F1", etc) */
+    static expandToContextual(norm) {
+        if (!Array.isArray(norm)) norm = [norm];
+        return norm.map(function(n) {
+            return Direction.allDirections().map(function(dir) {
+                return EffectivePosition.normToContextual(dir, n)
+            });
+        }).flat();
+    }
+
+    /** For a given normal coordinate [0,0] and a direction, expand to the base contextual version (e.g. if up, "F1" */
+    static normFromCoord(direction, coord) {
+        switch (direction) {
+            case Direction.Left:
+                return EffectivePosition._coordToEffective[SmallCoord.x(coord)][2 - SmallCoord.y(coord)];
+            case Direction.Right:
+                return EffectivePosition._coordToEffective[2 - SmallCoord.x(coord)][SmallCoord.y(coord)];
+            case Direction.Up:
+                return EffectivePosition._coordToEffective[SmallCoord.y(coord)][SmallCoord.x(coord)];
+            case Direction.Down:
+                return EffectivePosition._coordToEffective[2 - SmallCoord.y(coord)][2 - SmallCoord.x(coord)];
+        }
+        throw boom("Unknown direction", direction);
+    }
+
+    /** From a coord [0,0], expand to the contextual coord ("up-F1") */
+    static contextualFromCoord(direction, coord) {
+        return EffectivePosition.normToContextual(direction,
+                EffectivePosition.normFromCoord(direction, coord));
+    }
+    
+    /** From a normal position ("F1"), make it contextual ("up-F1") */
+    static normToContextual(direction, norm) {
+        return direction + "-" + norm;
+    }
+    
+    /**
+     * From a normal position + dir ("F1", "up"), get the coord ([0,0]).
+     * From a context position ("up-F1"), get the coord ([0,0])
+     */
+    static toCoord(effective, opt_direction) {      
+        // If it's a contextual direction, parse it.
+        if (effective.indexOf('-') > 0) {
+            // We need to parse this.
+            effective = effective.split('-');
+            opt_direction = opt_direction || effective[0];
+            effective = effective[1];
+        }
+        var returnMe = EffectivePosition._effectiveToCoord[effective][opt_direction];
+        if (!returnMe) throw boom("Unknown direction", effective, opt_direction);
+        return returnMe;
+    }
+
+    /**
+     * From a coord ([0,0]), get all the effective positions it could be as a { direction: pos } map.
+     */
+    static directionMapFor(coord) {
+        return Direction.allDirections().toObject(function(dir) {
+            return dir;
+        }, function(dir) {
+            return EffectivePosition.normFromCoord(dir, coord)
+        });
+    }
+}
+
+
 class FacingAttr {
     static Left = "left";
     static Right = "right";
@@ -287,11 +402,28 @@ class Grid {
         return blockLabel + '.' + cellLabel;
     }
 
+    static isUberLabel(label) {
+        return label.indexOf('.') > 0;
+    }
+
     static fromUberLabel(elt, label) {
         var labelParts = label.split('.');
         var block = CellBlock.findByLabel(elt, labelParts[0]);
         var cell = Cell.findByLabel(block, labelParts[1]);
         return cell;
+    }
+
+    static adjacentCells(cell) {
+       var norm = NormCoord.extract(cell);
+       var battlefield = matchParent(cell, WoofType.buildSelector("Battlefield"));
+
+       return Direction.allDirections().map(function(dir) {
+           var newCoord = NormCoord.plus(norm, Direction.coordDelta(dir));
+           var uber = UberCoord.fromNorm(newCoord);    
+           var block = CellBlock.findByCoord(battlefield, UberCoord.big(uber));
+           if (!block) return null;
+           return Cell.findByCoord(block, UberCoord.small(uber));
+       }).filter(e => !!e);
     }
 
     static __memoize(coordFn) {
@@ -404,6 +536,7 @@ class UberCoord {
     }
 
     static extract(thing) {
+        if (!isElement(thing)) return thing;
         return UberCoord.from(BigCoord.extract(thing), SmallCoord.extract(thing));
     }
 
@@ -515,6 +648,26 @@ class BaseCoord {
         return [
             coord[0], coord[1]
         ];
+    }
+
+    static sign(config, coord) {
+        return [Math.sign(coord[0]), Math.sign(coord[1])];
+    }
+
+    static x(config, coord) {
+        return coord[0];
+    }
+
+    static y(config, coord) {
+        return coord[1];
+    }
+
+    static onlyX(config, coord) {
+        return [coord[0], 0];
+    }
+
+    static onlyY(config, coord) {
+        return [0, coord[1]];
     }
 }
 
@@ -740,7 +893,8 @@ Utils.classMixin(CellBlock, AbstractDomController, {
         return {
             "X-LU": x,
             "Y-LU": y,
-            "LAY-BOH": label
+            "LAY-BOH": label,
+            "ODDNESS": (x + y) % 2
         }
     },
     decorate: function(fragment, x, y, label) {
@@ -749,7 +903,8 @@ Utils.classMixin(CellBlock, AbstractDomController, {
         for (var k = 0; k < 3; k++) {
             var microRow = Templates.inflateIn("smolrow", fragment);
             for (var l = 0; l < 3; l++) {
-                Cell.inflateIn(microRow, l, k, String.fromCharCode(microRowLabelCode) + (l + 1));        
+                var cell = Cell.inflateIn(microRow, l, k, String.fromCharCode(microRowLabelCode) + (l + 1));        
+                Cell.__populateEffectivePositions(cell);
             }
             microRowLabelCode += 1;
         }
@@ -759,6 +914,16 @@ Utils.classMixin(CellBlock, AbstractDomController, {
 
 
 class Cell {
+    static EffectivePositions = new ScopedAttr("effective-positions", ListAttr);
+
+    static __populateEffectivePositions(cell) {
+        var coord = SmallCoord.extract(cell);
+        var map = EffectivePosition.directionMapFor(coord);
+        Cell.EffectivePositions.set(cell, map.toArray(function(k, v) {
+            return EffectivePosition.normToContextual(k, v);
+        }));
+    }
+
     static findAllInBlock(block) {
         return qsa(block, "[wt~='Cell']");
     }

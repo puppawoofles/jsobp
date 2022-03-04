@@ -30,104 +30,31 @@
 
 		<!-- Main screen here. -->
 		<div class="main_screen" wt="MainScreen ScreenWrapper" woof-queue="info.main_screen > [wt='EffectQueue']">
-			<info class="main_screen" wh-b="Effect.Create|Effect.Destroy|Effect.Attr:pending-operation>GameEffectInvoker.OnNewElement">
+			<info class="main_screen" wh-b="Effect.Create|Effect.Destroy|Effect.Attr:pending-operation>GameEffectInvoker.OnNewElement,
+				                            HandlerOwner.Destroy>HandlerSet.onRemoveOwner">
 				<effects wt="EffectQueue">
 					<handlers default="GameEffectImpls.HandleDefault">
 						<!-- Handlers for round structure -->
-						<handler handler="GameRules.NewRun" event-types="Run"></handler>
-						<handler handler="GameRules.NewDay" event-types="NewDay"></handler>
-						<handler handler="GameRules.ExecuteDay" event-types="ExecuteDay"></handler>
-						<handler handler="EventRules.Event" event-types="Event"></handler>
-						<handler handler="EventRules.Vignette" event-types="Vignette"></handler>
-						
-						<!-- Handlers for combat behavior -->
-						<!-- Encounter Structure -->
-						<handler handler="EncounterRules.Encounter" event-types="Encounter"></handler>
-						<handler handler="EncounterRules.Round" event-types="Round"></handler>
-						<handler handler="RoundRules.PlayRound" event-types="PlayRound"></handler>
-						<handler handler="RoundRules.Volley" event-types="Volley"></handler>
-						<handler handler="RoundRules.TickCooldowns" event-types="Volley:after"></handler>
-						<handler handler="RoundRules.BlockActivation" event-types="BlockActivation"></handler>
-						<handler handler="RoundRules.ActivateGroup" event-types="ActivateGroup"></handler>
-						<handler handler="UnitRules.UseAbility" event-types="UseAbility"></handler>
-
-						<!-- Combat effects -->
-						<handler handler="UnitRules.Attack" event-types="Attack"></handler>
-						<handler handler="UnitRules.TakeDamage" event-types="TakeDamage"></handler>
-						<handler handler="UnitRules.UnitDeath" event-types="UnitDeath"></handler>
-						<handler handler="UnitRules.UnitRetreat" event-types="UnitRetreat"></handler>
-						<handler handler="UnitRules.UnitMoveToward" event-types="UnitMoveToward"></handler>
-						<handler handler="UnitRules.ShiftUnit" event-types="ShiftUnit"></handler>
-						<handler handler="UnitRules.PushUnit" event-types="PushUnit"></handler>
-						<handler handler="UnitRules.UnitCollision" event-types="UnitCollision"></handler>
-						<handler handler="UnitRules.ApplyStatus" event-types="ApplyStatus" TODO></handler>
-						<handler handler="UnitRules.RemoveStatus" event-types="RemoveStatus" TODO></handler>
-						
-						<!-- Handlers for card behavior -->
-						<handler handler="CardRules.DrawCard" event-types="DrawCard"></handler>
-						<handler handler="CardRules.RefillHand" event-types="RefillHand"></handler>
-						<handler handler="CardRules.DiscardCards" event-types="DiscardCards"></handler>
-						<handler handler="CardRules.DiscardSingleCard" event-types="DiscardSingleCard"></handler>
-						<handler handler="CardRules.ShuffleDiscard" event-types="ShuffleDiscard"></handler>
-						<handler handler="CardRules.PlayCard" event-types="PlayCard" TODO></handler>
-
-						<!-- Handlers for structural UI effects-->
-						<handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after" skip-log="true">
-							<ui-effect type="delay" delay="1000"></ui-effect>
-							<ui-effect type="banner" content-fn="EncounterRules.EndOfEncounterBanner"></ui-effect>
-						</handler>
-						<!-- Handlers for UI Effects -->
-						<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after" skip-log="true">
-							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="500 100 0"></ui-effect>
-						</handler> 
-						<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" skip-log="true">
-							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="0 0 NaN"></ui-effect>
-							<ui-effect type="blink" blink-color="red"></ui-effect>
-							<ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
-						</handler>
-						<handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
-							<ui-effect type="wub" icon="☠️"></ui-effect>
-						</handler>
-						<handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
-							<ui-effect type="wub" icon="🏳️"></ui-effect>
-						</handler>
-						<handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after" skip-log="true">
-							<ui-effect type="wub" icon="💥" target-fn="UiTreatments.TargetsFromParams" target-param="firstUnit secondUnit"></ui-effect>
-						</handler>
-						<handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before" skip-log="true">
-							<ui-effect type="wub" icon="💨" target-fn="UiTreatments.TargetsFromParams" target-param="unit" filter-fn="UnitRules.ShiftFromPush"></ui-effect>
-						</handler>
-						<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before" skip-log="true">
-							<ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
-							<ui-effect type="banner" filter-fn="RoundRules.ActivateGroupHasCombo" content-fn="RoundRules.ActivateGroupBanner" extra-classes="slow"></ui-effect>
-							<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delays="1500 1500 200"></ui-effect>
-						</handler>
-						<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before" skip-log="true">
-							<ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
-							<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="50 0 NaN"></ui-effect>
-						</handler>
+						<handler-set label="Overall game structure">
+							<handler handler="GameRules.NewRun" event-types="Run"></handler>
+							<handler handler="GameRules.NewDay" event-types="NewDay"></handler>
+							<handler handler="GameRules.ExecuteDay" event-types="ExecuteDay"></handler>
+							<handler handler="EventRules.Event" event-types="Event"></handler>
+							<handler handler="EventRules.Vignette" event-types="Vignette"></handler>
+							<handler handler="EncounterRules.Encounter" event-types="Encounter"></handler>
+						</handler-set>
 
 						<!-- Handlers for updating functional UI -->
-						<handler label="ActionButtonVolley" handler="EncounterRules.RemoveStopBeforeRound" event-types="Round:before"></handler>
 						<handler label="TargetPicker" handler="TargetPicker.PickTarget" event-types="PickTarget"></handler>
-						<handler label="UnitPreAbility" handler="Unit.BeforeUseAbility" event-types="UseAbility:before"></handler>
-						<handler label="UnitPostAbility" handler="Unit.AfterUseAbility" event-types="UseAbility:after"></handler>
-						<handler label="VolleyTrackerRound" handler="VolleyCounter.AfterPlayRound" event-types="PlayRound:after"></handler>
-						<handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
-						<handler label="VolleyTrackerVolley" handler="VolleyCounter.BeforeVolley" event-types="Volley:before"></handler>
-						<handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>
-						<handler label="ResetRNG" handler="Preparations.resetRng" event-types="PlayRound:after"></handler>
-
-
-
-
 
 						<!-- Common handlers for resetting RNG -->
-						<handler label="ResetRNG-Day" handler="ASRNG.__invalidateHandler" event-types="NewDay:after" counter="day"></handler>
-						<handler label="ResetRNG-Event" handler="ASRNG.__invalidateHandler" event-types="Event:after" counter="event"></handler>
-						<handler label="ResetRNG-Round" handler="ASRNG.__invalidateHandler" event-types="Round:after" counter="round"></handler>
-						<handler label="ResetRNG-Encounter" handler="ASRNG.__invalidateHandler" event-types="Encounter:after" counter="encounter"></handler>
-						<handler label="ResetRNG-EncounterAfterVignette" handler="ASRNG.__invalidateHandler" event-types="Vignette:after" counter="encounter"></handler>
+						<handler-set label="RNG Resetters">
+							<handler label="ResetRNG-Day" handler="ASRNG.__invalidateHandler" event-types="NewDay:after" counter="day"></handler>
+							<handler label="ResetRNG-Event" handler="ASRNG.__invalidateHandler" event-types="Event:after" counter="event"></handler>
+							<handler label="ResetRNG-Round" handler="ASRNG.__invalidateHandler" event-types="Round:after" counter="round"></handler>
+							<handler label="ResetRNG-EncounterAfterEncounter" handler="ASRNG.__invalidateHandler" event-types="Encounter:after" counter="encounter"></handler>
+							<handler label="ResetRNG-EncounterAfterVignette" handler="ASRNG.__invalidateHandler" event-types="Vignette:after" counter="encounter"></handler>
+						</handler-set>
 					</handlers>
 
 					<queue wh-c=".AddChild|.RemoveChild>GameEffect.OnChildChange">
@@ -692,45 +619,9 @@
 			<info-panel>
 				<h2>Idea Log</h2>
 				<ul>
-					<li>Unit Ideas: <ul>
-						<li>Armaments: Some slots are left-hand, some are right-hand.  Armaments determine what skills/activations go in those slots, along with damage, defense.</li>
-					</ul></li>
-					<li>Combo Ideas: <ul>						
-						<li>Lean into Chrono Trigger harder and have specific combos that are a single ability (e.g. instead of 2 Strikes being 2 powered-up strikes, have one X-Strike ability that factors in both participants).</li>
-						<li>Differentiate between combo contribution types: Additive (e.g. you Strike, I bless your weapon with Smite) vs Transformative (see previous bullet point), so you can not only combine 2 strikes, but you can add to it (e.g. Smiting X-Strike is X-Strike (which is Strike + Strike) + Bless or something).  "Basic" skills (like Strike) are the ones that form the special combos, while "Advanced" skills (like Bless) are the ones that augment them)</li>
-						<li>Maybe consider 3 combo vectors? <ul>
-							<li>Named Combination: Sets of basic skills that, when combined, create a sum greater than their parts.  This counts as a single skill for the purposes of activation (e.g. Shoot+Shoot+Shoot+Shoot+Shoot = "Block the Sun" (with arrows)).</li>
-							<li>Self-Modifiers: Advanced Skills augment your Basic Skills when they are used with Mana (e.g. my Wildfire advanced skill will turn my Shoot, when I have fire mana, into a Fireball).</li>
-							<li>Other-Modifiers: Advanced Skills augment an ally's basic skill or one of the Named Combinations above into a more powerful variant.</li>
-						</ul></li>
-					</ul></li>
-					<li>System Ideas: <ul>
-						<li>Build in a matcher system into the Event queue to allow richer / more specific matchers (e.g [handler event-types="Attack:before" matcher="UseAbility > Attack"] would only match Attack events if its immediate parent is a UseAbility)</li>
-						<li>Build a handler-set into a given activation that's cleaned up after.  This will allow for decoupled combo buffs (see additive combo stuff above).</li>
-					</ul></li>
-					<li>Outer Loop Ideas: <ul>
-						<li>Home Base has facilities that get visitors.  Those visitors are how you do things with those facilities: <ul>
-							<li>Dormitory: Allows you to heal units (visitors make it better/easier or provide buffs for their next adventure?)</li>
-							<li>Graveyard: View your fallen soldiers.  Maybe a mysterious visitor can help bring them back to life.</li>
-							<li>Reliquary: A place for your "save file" progression.  What relics you have found in your runs determine what visitors you get, which can include new troops and merchants to sell you cards and unit upgrades (e.g. you unlock the Wizard unit upgrades by recovering the Crystal Orb of Butts or whatever)</li>
-							<li>Armory: A place for you to change your units' weapon/armor (see Unit Ideas)</li>
-						</ul></li>
-						<li>Visitors provide Rumors, which is how you get new quests to go on.  </li>
-						<li>Visitor Ideas: <ul>
-							<li>Recruits: New soldiers for your deck.  This is required!</li>
-							<li>Teachers: Sell you Unit Promotions (e.g. Harvey the Wizard sells you Wizard upgrades), but also thematically appropriate tactics and gear.</li>
-							<li>Merchants: Sell you Preparation cards (e.g. a Potion Seller or a Trapper or whatever)</li>
-							<li>Craftspeople: Sell you Weapons or Armor for changing your units' basic abilities.</li>
-							<li>Mysterious Stranger: Sells you strange cards that suck at first, but once you "unlock" them through some achievement, become good.</li>
-							<li>Gossip: Sells you quests, bounties, etc.</li>
-						</ul></li>
-					</ul></li>
-					<li>Encounter/Event Ideas: <ul>
-						<li>Party Split: An event where half your team needs to do one encounter, whose results impact the second encounter (e.g. team 1 distracts a monster ("Survive 10 rounds!") while team 2 ransacks its cave, but if team 1 fails, team 2 has to deal with the big monster)</li>
-					</ul></li>
+					<li>Starting fresh here!</li>
 				</ul>
 			</info-panel>
-
 		</concept>
 
 
@@ -746,8 +637,47 @@
 				
 			</info-panel>
 
-			<default-event-state name="fail" custom-fn="Events.fail"></default-event-state>
+			<!-- Remaining examples start here. -->
+			<event-blueprint name="hunt_for_food" label="Hunt for Food">
+				<state type="vignette" name="start" start="true">
+					<flavor>
+						<p>You're here to get some food for your group of humans.</p>
+						<p>Kill the antelope as they cross to get some food!</p>
+					</flavor>
+					<choice result="1" label="Can do!"></choice>
+					<event-result choice="1" next-state="fight"></event-result>	
+				</state>
+				<state type="encounter" name="fight">
+					<encounter base="base">
+						<battlefield base="herd_crossing">
+							<!-- TODO: Make this work. -->
+							<forCells labels="B3.A3 B3.B3 B3.C3">
+								<add tag="spawn"></add>
+							</forCells>
+							<forCells labels="A2.A1 A2.A2 A2.A3 C2.C1 C2.C2 C2.C3 B1.A1 B1.B1 B1.C1">
+								<add tag="escape"></add>
+							</forCells>
+						</battlefield>
+						<endCondition end-fn="EncounterRules.Endless" type="win">
+							You're stuck here forever!  Go go dev.
+						</endCondition>
+						<installHandlers>
+							<!-- TODO: Make this work with the spawn tags. -->
+							<handler handler="HuntForFoodEncounter.SpawnDeer" event-types="Volley:before" spawn-count="20" spawn-selector="[tag~='spawn']" location-filter="HuntForFoodEncounter.SpawnLocationFilter">
+								<unit-gen base="deer">
+									<copy team="enemy" preferred-locations="B1.A1 B1.B1 B1.C1"></copy>
+									<add tag="deer"></add>
+								</unit-gen>
+							</handler>
+						</installHandlers>
+					</encounter>
+					<event-result choice="victory" victory="true"></event-result>
+					<event-result choice="wipe" victory="false"></event-result>
+					<event-result choice="giveUp" victory="false"></event-result>
+				</state>
+			</event-blueprint>
 
+			<!-- This is left here as a complex example.  -->
 			<event-blueprint name="lost_city" label="The Lost City">
 				<state type="vignette" name="gates" start="true">
 					<flavor>
@@ -758,6 +688,8 @@
 				</state>
 
 				<!-- Outer City -->
+				<!-- You were going to refactor these defs.  See DefHelper.baseDef.
+				     TL;DR: global.outer_progress instead of what's here. -->
 				<def name="outer_progress" value="0" global="true"></def>
 				<def name="outer_boss_alive" value="true" global="true"></def>
 				<state type="vignette" name="outer_city">
@@ -890,147 +822,6 @@
 				</state>
 
 			</event-blueprint>			
-
-			<event-blueprint name="rats" label="The Rats">
-				<state type="vignette" start="true" name="start">
-					<flavor stand-ins="BLAH1 BLAH2">
-						<p>BLAH1 puts their ear to the door.  The stench of rat feces wafts through, only interrupted by the incessant squeaking.</p>
-						<p>"Good news is it only sounds like rats and nothing more."</p>
-						<p>"I hope you're right." BLAH2 says.</p>
-					</flavor>
-					<choice result="1" label="Fight!"></choice>
-					<event-result choice="1" next-state="encounter"></event-result>
-				</state>
-
-				<state type="encounter" name="encounter">
-					<encounter>
-						<battlefield bp="basic_cross_minus_2"></battlefield>
-						<place-units location-fn="EncounterGenerator.LocationsByTeam" teams="enemy" count="8">
-							<from-unit-gen name="enemy_rat"></from-unit-gen>
-						</place-units>
-					</encounter>
-					<event-result choice="victory" next-state="win"></event-result>
-					<event-result choice="wipe" next-state="wipe"></event-result>
-					<event-result choice="giveUp" next-state="retreat"></event-result>
-				</state>
-
-				<state type="vignette" name="wipe">
-					<flavor>
-						The rats grow fat gorging on their flesh.  This does not bode well for the town.
-					</flavor>
-					<choice result="1" label="Well, that sucks"></choice>
-					<event-result choice="1" victory="false">
-					</event-result>
-				</state>
-
-				<state type="vignette" name="retreat">
-					<flavor stand-ins="BLAH1 BLAH2">
-						<p>"Screw that!" BLAH1 says.  "Rats are disgusting anyway.  We've got better things to do."</p>
-						<p>"I'm sure this won't backfire" BLAH2 adds helpfully.</p>
-					</flavor>
-					<choice result="1" label="Return"></choice>					
-					<event-result choice="1" victory="false"></event-result>
-				</state>
-
-				<state type="vignette" name="win">
-					<flavor stand-ins="BLAH1 BLAH2 BLAH3">
-						<p>"Ha!  Nothing to it!" BLAH1 bellows triumphantly.</p>
-						<p>"But wait," says BLAH2.  "Where did they come from?"</p>
-						<p>"There!" BLAH3 points to a crack in the wall.  "Wasn't there an old acqueduct in that direction?"</p>
-						<p>"Clearly a problem for another day.  For now, let's regroup."</p>
-					</flavor>
-					<choice result="1" label="Return"></choice>
-					<event-result choice="1" victory="true">
-						<result>
-							<add-rumor>
-								<assignment bp="ratking"></assignment>
-							</add-rumor>
-						</result>
-					</event-result>
-				</state>
-			</event-blueprint>
-
-			<event-blueprint name="golems" label="The Golems">
-
-				<state type="vignette" start="true" name="start">
-					<flavor stand-ins="BLAH1 BLAH2">
-						<p>"Did you hear that?" BLAH1 snaps around.</p>
-						<p>BLAH2 snaps back. "You're just being paranoid.  These ruins have been empty for centuries."</p>
-						<p>"And don't any of the stories of how people never return bother you in the least?"</p>
-						<p>As BLAH2 grins confidently, the statues behind him raise their stone shields.</p>
-					</flavor>
-					<choice result="1" label="Fight!"></choice>
-					<event-result choice="1" next-state="encounter"></event-result>
-				</state>
-
-				<state type="encounter" name="encounter">
-					<encounter>
-						<battlefield bp="team_duel"></battlefield>
-						<place-units location="L.A2.3" count="3">
-							<from-unit-gen name="enemy_guardian_statue"></from-unit-gen>
-						</place-units>
-					</encounter>
-					<event-result choice="victory" next-state="win"></event-result>
-					<event-result choice="wipe" next-state="wipe"></event-result>
-					<event-result choice="giveUp" next-state="giveUp"></event-result>
-				</state>
-
-				<state type="vignette" name="win">
-					<flavor stand-ins="BLAH1 BLAH2">
-						<p>"I think I know why people tend to not return from here." BLAH1 breathes a sign of relief.</p>
-						<p>"Let's make like leaves and get the fuck out of here while we can" BLAH2 helpfully offers.</p>
-					</flavor>
-					<choice result="1" label="Get the fuck out of there while you can."></choice>
-					<event-result choice="1" victory="true"></event-result>
-				</state>
-
-				<state type="vignette" name="giveUp">
-					<flavor stand-ins="BLAH1 BLAH2">
-						<p>"What the hell was that?" BLAH1 comes to a rest after sprinting out of the ruins.</p>
-						<p>"Clearly not something we were ready for" BLAH 2 chimes in.</p>
-						<p>"We should come back when we can break through their armor and coordinate our attacks better."</p>
-					</flavor>
-					<choice result="1" label="Head back"></choice>
-					<event-result choice="1" victory="false"></event-result>
-				</state>
-
-				<state type="vignette" name="wipe">
-					<flavor>
-						<p>The statues wipe the blood from their swords, and resume their endless post, still as stone.</p>
-					</flavor>
-					<choice result="1" label="Womp womp."></choice>
-					<event-result choice="1" victory="false"></event-result>
-				</state>
-
-			</event-blueprint>
-
-			<event-blueprint name="jimmyTheRatKing" label="Jimmy, the Rat King">
-				<state type="vignette" name="start" start="true">
-					<flavor stand-ins="BLAH1 BLAH2">
-						<p>"This is where a cutscene would go." BLAH1 looks frustrated with Chris's lack of creativity.</p>
-						<p>BLAH2 offers sympathy.  "He has to go to work tomorrow and it's past midnight.  Give him a break.  Let's go hit Jimmy instead."</p>
-					</flavor>
-					<choice result="1" label="Go hit Jimmy"></choice>
-					<event-result choice="1" next-state="encounter"></event-result>
-				</state>
-
-				<state type="encounter" name="encounter" start="true">
-					<encounter>
-						<battlefield bp="basic_cross"></battlefield>
-						<place-units location="L.A2.A2" count="1">
-							<from-unit-gen name="jimmyTheRatKing"></from-unit-gen>
-						</place-units>
-						<place-units location="L.A2." count="8">
-							<from-unit-gen name="enemy_rat"></from-unit-gen>
-						</place-units>
-					</encounter>
-					<event-result choice="victory" victory="true"></event-result>
-					<event-result choice="wipe" victory="false"></event-result>
-					<event-result choice="giveUp" victory="false"></event-result>
-				</state>
-			</event-blueprint>
-
-
 		</concept>
 
 		<concept hash="encounter">
@@ -1039,51 +830,128 @@
 				<p>Encounters are combat.  I don't want to rename them all though.</p>
 			</info-panel>
 
-			<default-encounter >
-				<info max-player-units="5"></info>
-				<info initiative-order="player enemy"></info>
-				<end-condition end-fn="EncounterRules.DefaultWin" type="win">
+			<!-- Default encounter setup scripts. -->
+			<encounter-gen name="base">
+				<!-- Update initiative order if needed. -->
+				<ifAllDef keys="playersSurprised">
+					<copyDest initiative-order="enemy player neutral"></copyDest>
+				</ifAllDef>
+
+				<!-- Set up retreat options. -->
+				<ifAllDef keys="retreatPossible">
+					<bonusCards>
+						<!-- Retreat card goes here. -->
+					</bonusCards>
+				</ifAllDef>
+
+				<!-- Set up handlers -->
+				<installHandlers>
+					<!-- Encounter Structure -->
+					<handler handler="EncounterRules.Round" event-types="Round"></handler>
+					<handler handler="RoundRules.PlayRound" event-types="PlayRound"></handler>
+					<handler handler="RoundRules.Volley" event-types="Volley"></handler>
+					<handler handler="RoundRules.TickCooldowns" event-types="Volley:after"></handler>
+					<handler handler="RoundRules.UseMove" event-types="UseMove"></handler>
+					<handler handler="RoundRules.BlockActivation" event-types="BlockActivation"></handler>
+					<handler handler="RoundRules.ActivateGroup" event-types="ActivateGroup"></handler>
+					<handler handler="UnitRules.UseAbility" event-types="UseAbility"></handler>
+
+					<!-- Combat effects -->
+					<handler handler="UnitRules.Attack" event-types="Attack"></handler>
+					<handler handler="UnitRules.TakeDamage" event-types="TakeDamage"></handler>
+					<handler handler="UnitRules.UnitDeath" event-types="UnitDeath"></handler>
+					<handler handler="UnitRules.UnitRetreat" event-types="UnitRetreat"></handler>
+					<handler handler="UnitRules.UnitMoveToward" event-types="UnitMoveToward"></handler>
+					<handler handler="UnitRules.ShiftUnit" event-types="ShiftUnit"></handler>
+					<handler handler="UnitRules.PushUnit" event-types="PushUnit"></handler>
+					<handler handler="UnitRules.UnitCollision" event-types="UnitCollision"></handler>
+					<handler handler="UnitRules.ApplyStatus" event-types="ApplyStatus" TODO></handler>
+					<handler handler="UnitRules.RemoveStatus" event-types="RemoveStatus" TODO></handler>
+
+					<!-- Handlers for card behavior -->
+					<handler handler="CardRules.DrawCard" event-types="DrawCard"></handler>
+					<handler handler="CardRules.RefillHand" event-types="RefillHand"></handler>
+					<handler handler="CardRules.DiscardCards" event-types="DiscardCards"></handler>
+					<handler handler="CardRules.DiscardSingleCard" event-types="DiscardSingleCard"></handler>
+					<handler handler="CardRules.ShuffleDiscard" event-types="ShuffleDiscard"></handler>
+					<handler handler="CardRules.PlayCard" event-types="PlayCard" TODO></handler>
+				
+					<!-- Handlers for structural UI effects-->
+					<handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after" skip-log="true">
+						<ui-effect type="delay" delay="1000"></ui-effect>
+						<ui-effect type="banner" content-fn="EncounterRules.EndOfEncounterBanner"></ui-effect>
+					</handler>
+
+					<!-- Handlers for UI Effects -->
+					<handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after" skip-log="true">
+						<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="500 100 0"></ui-effect>
+					</handler> 
+					<handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" skip-log="true">
+						<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="0 0 NaN"></ui-effect>
+						<ui-effect type="blink" blink-color="red"></ui-effect>
+						<ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
+					</handler>
+					<handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
+						<ui-effect type="wub" icon="☠️"></ui-effect>
+					</handler>
+					<handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
+						<ui-effect type="wub" icon="🏳️"></ui-effect>
+					</handler>
+					<handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after" skip-log="true">
+						<ui-effect type="wub" icon="💥" target-fn="UiTreatments.TargetsFromParams" target-param="firstUnit secondUnit"></ui-effect>
+					</handler>
+					<handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before" skip-log="true">
+						<ui-effect type="wub" icon="💨" target-fn="UiTreatments.TargetsFromParams" target-param="unit" filter-fn="UnitRules.ShiftFromPush"></ui-effect>
+					</handler>
+					<handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before" skip-log="true">
+						<ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
+						<ui-effect type="banner" filter-fn="RoundRules.ActivateGroupHasCombo" content-fn="RoundRules.ActivateGroupBanner" extra-classes="slow"></ui-effect>
+						<ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delays="1500 1500 200"></ui-effect>
+					</handler>
+					<handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before" skip-log="true">
+						<ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
+						<ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="50 0 NaN"></ui-effect>
+					</handler>
+
+					<!-- Handlers for updating functional UI -->
+					<handler label="ActionButtonVolley" handler="EncounterRules.RemoveStopBeforeRound" event-types="Round:before"></handler>
+					<handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>	
+					<handler label="UnitPreAbility" handler="Unit.BeforeUseAbility" event-types="UseAbility:before"></handler>
+					<handler label="UnitPostAbility" handler="Unit.AfterUseAbility" event-types="UseAbility:after"></handler>
+					<handler label="VolleyTrackerRound" handler="VolleyCounter.AfterPlayRound" event-types="PlayRound:after"></handler>
+					<handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
+					<handler label="VolleyTrackerVolley" handler="VolleyCounter.BeforeVolley" event-types="Volley:before"></handler>
+
+				</installHandlers>
+			</encounter-gen>
+
+			<encounter-gen name="default" base="base">
+				<!-- Default encounter-end conditions. -->
+				<endCondition end-fn="EncounterRules.DefaultWin" type="win">
 					Defeat all enemies to win!
-				</end-condition>
-				<end-condition end-fn="EncounterRules.DefaultWipe" type"lose">
+				</endCondition>
+
+				<endCondition end-fn="EncounterRules.DefaultWipe" type"lose">
 					You lose if all your units die!
-				</end-condition>
-			</default-encounter>
+				</endCondition>
+			</encounter-gen>
 
-			<battlefield-blueprint name="hallway">
-				<info battlefield-fn="Battlefields.Standard"></info>
-				<generate fn="Battlefields.generateRect" width="4" height="1"></generate>
-				<modify labels="A1" property="team" value="player"></modify>
-				<modify labels="A1" property="facing" value="right"></modify>
-				<modify labels="A2 A3 A4" property="team" value="enemy"></modify>
-				<modify labels="A2 A3 A4" property="facing" value="left"></modify>
-			</battlefield-blueprint>
+			<!-- Battlefield generation -->
+			<battlefield-gen name="basic_cross">
+				<geo battlefield-fn="BattlefieldGen.generateRect" width="3" height="3"></geo>
+				<forBlocks labels="A1 A3 C1 C3">
+					<copy disabled="true"></copy>
+				</forBlocks>
+			</battlefield-gen>
 
-			<battlefield-blueprint name="basic_cross">
-				<info battlefield-fn="Battlefields.Standard"></info>
-				<generate fn="Battlefields.generateRect" width="3" height="3"></generate>
-				<modify labels="A2 B1 B3 C2" property="team" value="enemy"></modify>
-				<modify labels="B2" property="team" value="player"></modify>
-				<modify labels="A1 A3 C1 C3" property="disabled" value="true"></modify>
-			</battlefield-blueprint>
-			
-			<battlefield-blueprint name="basic_cross_minus_2">
-				<info battlefield-fn="Battlefields.Standard"></info>
-				<generate fn="Battlefields.generateRect" width="3" height="3"></generate>
-				<modify labels="A2 B1 B3 C2" property="team" value="enemy"></modify>
-				<modify labels="B2" property="team" value="player"></modify>
-				<modify labels="A1 A3 C1 C3" property="disabled" value="true"></modify>
-				<modify labels="A2 B1 B3 C2" label-set-modifier="Battlefields.labelSetModifierRandomSubset" subset-size="2" property="disabled" value="true"></modify>
-			</battlefield-blueprint>
-			
-			<battlefield-blueprint name="team_duel">
-				<info battlefield-fn="Battlefields.Standard"></info>
-				<generate fn="Battlefields.generateRect" width="2" height="1"></generate>
-				<modify labels="A2" property="team" value="enemy"></modify>
-				<modify labels="A2" property="facing" value="left"></modify>
-				<modify labels="A1" property="team" value="player"></modify>
-				<modify labels="A1" property="facing" value="right"></modify>
-			</battlefield-blueprint>		
+			<battlefield-gen name="herd_crossing" base="basic_cross">
+				<forBlocks labels="A2 C2">
+					<copy team="player"></copy>
+				</forBlocks>
+				<forBlocks labels="B1 B2 B3">
+					<copy team="enemy"></copy>
+				</forBlocks>
+			</battlefield-gen>
 		</concept>
 		
 		<concept hash="assignments">
@@ -1116,11 +984,10 @@
 				</info-panel>
 			</concept>
 
+			<!-- Left as an example.  Ideally this would be propulated based on your save state. -->
 			<starting-rumors>
-				<assignment bp="lost_city"></assignment>
-				<assignment bp="rats"></assignment>
-				<assignment bp="golems"></assignment>
-				<assignment bp="doctor"></assignment> 
+				<!-- <assignment bp="lost_city"></assignment> -->
+				<assignment bp="hunt_for_food"></assignment>
 			</starting-rumors>
 
 			<result-handlers>
@@ -1131,6 +998,14 @@
 			</result-handlers>
 
 			<default-assignment assignment-invoke-fn="GameRules.LaunchEvent"></default-assignment>
+
+			<!-- This is the one you're working on.  -->
+			<assignment-blueprint name="hunt_for_food">
+				<info label="Hunt for food"></info>
+				<event bp="hunt_for_food"></event>
+				<assign max-units="5" require="false" req-label="Up to 5 units"></assign>
+			</assignment-blueprint>
+
 			<assignment-blueprint name="lost_city">
 				<info label="Explore the Ruined City"></info>
 				<event bp="lost_city"></event>
@@ -1143,59 +1018,6 @@
 				</result>
 				<result victory="true">
 					<add-gold amount="50"></add-gold>
-				</result>
-			</assignment-blueprint>
-
-
-
-			<assignment-blueprint name="rats">
-				<config></config>
-				<info label="The Rats"></info>
-				<event bp="rats"></event>
-				<assign max-units="5" require="false" req-label="Up to 5 units"></assign>
-				<info wt="Hint">A basic encounter against rats.  Bring damage and get ready to change directions.</info>
-				<result>
-					<!-- Add self back to the list for now. -->
-					<add-rumor>
-						<assignment bp="rats"></assignment>
-					</add-rumor>
-				</result>
-				<result victory="true">
-					<add-gold amount="50"></add-gold>
-				</result>
-			</assignment-blueprint>
-			
-			<assignment-blueprint name="golems">
-				<config></config>
-				<info label="The Golems"></info>
-				<info wt="Hint">A more difficult encounter against some statues that combo together to sttack you and defend themselves.  A Fire Bomb is recommended unless you've got good combos and damage-dealing potential!  Note: Bleed does not work on these guys!  You can thank JakeBreak for that one.</info>
-				<event bp="golems"></event>
-				<assign max-units="5" required="false" req-label="Up to 5 units"></assign>
-				<result>
-					<!-- Add self back to the list for now. -->
-					<add-rumor>
-						<assignment bp="golems"></assignment>
-					</add-rumor>
-				</result>
-				<result victory="true">
-					<add-gold amount="50"></add-gold>
-				</result>
-			</assignment-blueprint>
-			
-			<assignment-blueprint name="ratking">
-				<config></config>
-				<info label="Jimmy, the Rat King"></info>
-				<info wt="Hint">Jimmy loves his rats so much, he summons them in your cell block!  Bring melee damage (Strike is a good choice), and bring units that combo effectively, otherwise you might find yourself falling behind to Jimmy's summoning!</info>
-				<event bp="jimmyTheRatKing"></event>
-				<assign max-units="5" required="false" req-label="Up to 5 units"></assign>
-				<result>
-					<!-- Add self back to the list for now. -->
-					<add-rumor>
-						<assignment bp="ratking"></assignment>
-					</add-rumor>
-				</result>
-				<result victory="true">
-					<add-gold amount="100"></add-gold>
 				</result>
 			</assignment-blueprint>
 
@@ -1216,23 +1038,7 @@
 				</result>
 			</assignment-blueprint>
 
-			<assignment-blueprint name="doctor">
-				<config></config>
-				<info assignment-invoke-fn="GameRules.LaunchEffect"></info>
-				<info encounter-fn="Events.success"></info>
-				<info label="Get Medical Help"></info>
-				<info wt="Hint">Useful if you need some healing super badly!</info>
-				<assign required="false" max-units="5" unit-filter="Events.DamagedUnits" cost-fn="Events.CostPerUnit" cost-per-unit="20" req-label="Costs 20 🟡 per unit"></assign>
-				<result>
-					<heal-units amount="100"></heal-units>
-				</result>
-				<result>
-					<!-- The good doctor continues to be available. -->
-					<add-rumor>
-						<assignment bp="doctor"></assignment>
-					</add-rumor>
-				</result>
-			</assignment-blueprint>
+
 		</concept>
 
 		<concept hash="visitor">
@@ -1241,12 +1047,13 @@
 				<p>These people sell you stuff and tell you about interesting rumors!</p>				
 			</info-panel>
 			
-
+			<!-- TODO: Rethink this. -->
 			<starting-visitors>
+				<!-- 
 				<visitor bp="mysterious_stranger"></visitor>
 				<visitor bp="soldier"></visitor>
 				<visitor bp="artificer"></visitor>
-				<visitor bp="apothecary"></visitor>
+				<visitor bp="apothecary"></visitor> -->
 			</starting-visitors>
 
 			<!-- Visitors -->
@@ -1275,9 +1082,11 @@
 				</info>
 				<info appearance-options="😎" extra-classes="mysterious_stranger"></info>
 				<merchant>
-					<inventory-bp items-for-sale="1">
-						<preparation bp="sp_mysteryBox"></preparation>
-					</inventory-bp>
+					<bp>
+						<inventory-bp items-for-sale="1">
+							<preparation bp="sp_mysteryBox"></preparation>
+						</inventory-bp>
+					</bp>
 				</merchant>
 			</visitor-blueprint>
 
@@ -1313,10 +1122,6 @@
 					<preparation bp="cheetahPot"></preparation>
 				</inventory-bp>
 			</merchant-blueprint>
-
-
-
-
 		</concept>
 
 		<concept hash="cards">
@@ -1378,6 +1183,96 @@
 					</ul>
 				</p>
 
+
+				<!-- Skill Refactor Starts Here -->
+				<move-blueprint name="punch">
+					<appearance move_icon="✊"></appearance>
+					<target-mode target-type="hostile" target-mode="AT"></target-mode>
+					<info invoke-fn="AttackMove.invoke"></info>
+				</move-blueprint>
+
+				<move-blueprint name="strike">
+					<appearance move_icon="⚔️"></appearance>
+					<target-mode target-type="hostile" target-mode="AT"></target-mode>
+					<target-mode target-type="hostile" target-mode="SZ"></target-mode>
+					<target-mode target-type="hostile" target-mode="AZ" effective-from="F1 F2 F3"></target-mode>
+					<info invoke-fn="AttackMove.invoke" resolve-target-fn="MoveUtils.MeleeTarget"></info>	
+				</move-blueprint>
+
+				<move-blueprint name="shoot">
+					<bp>
+						<appearance move_icon="🏹"></appearance>
+						<!-- TODO: Figure out how to configure being able to bypass a barricade. -->
+						<target-mode target-type="hostile" target-mode="AZ" effective-from="M1 M2 M3"></target-mode>
+						<info invoke-fn="AttackMove.invoke"></info>	
+					</bp>
+				</move-blueprint>
+
+				<move-blueprint name="step">
+					<appearance move_icon="🥾"></appearance>
+					<!-- Not active if the destination has been reached.  -->
+					<active-mode active-fn="MoveUtils.UserNotInTargetLocation"></active-mode>
+					<target-mode target-type="self"></target-mode>
+					<info invoke-fn="StepMove.invoke"></info>
+				</move-blueprint>
+
+				<move-blueprint name="flee">
+					<appearance move_icon="🏳️"></appearance>
+					<!-- Not active if the unit isn't on an escapable square  -->
+					<active-mode active-fn="MoveUtils.UserInMatchingTeamCell" cell-selector="[tag~=escape]"></active-mode>
+					<target-mode target-type="self"></target-mode>
+					<info invoke-fn="RetreatMove.invoke"></info>
+				</move-blueprint>
+
+				<!-- Movesets (temporary: these should be on weapons!) -->
+				<move-slot-gen name="sharp_stick">
+					<bp>
+						<appearance moveset_name="Sharp Stick"></appearance>
+					</bp>
+					<gen>
+						<copyDest moveset_name="Sharp Stick"></copyDest>
+						<setMoves>
+							<move-gen bp="strike">
+								<priority value="0"></priority>
+							</move-gen>
+						</setMoves>
+					</gen>
+				</move-slot-gen>
+
+				<move-slot-gen name="rocks">
+					<bp>
+						<description>Bash an adjacent enemy with a rock, otherwise throw one at a further enemy.</description>
+					</bp>
+					<gen>
+						<copyDest moveset_name="Rocks"></copyDest>
+						<setMoves>
+							<move-gen bp="punch">
+								<priority value="0"></priority>
+							</move-gen>
+							<move-gen bp="shoot">
+								<priority value="-1"></priority>
+							</move-gen>
+						</setMoves>
+					</gen>
+				</move-slot-gen>
+
+				<!-- Moveset: This is what humans start with. -->
+				<move-slot-gen name="base_human">
+					<bp>
+						<appearance moveset_name="Fists"></appearance>
+					</bp>
+					<gen>
+						<copyDest moveset_name="Fists"></copyDest>
+						<setMoves>
+							<move-gen bp="punch">
+								<priority value="0"></priority>
+							</move-gen>
+						</setMoves>
+					</gen>
+				</move-slot-gen>
+
+				<!-- Legacy Skill Data, Delete When Replaced -->
+
 				<!-- Standard param functions.  -->
 				<skill-param-fn type="⚔️" fn="SkillParams.MeleeParams"></skill-param-fn>
 				<skill-param-fn type="⚾" fn="SkillParams.ThrownParams"></skill-param-fn>
@@ -1392,16 +1287,6 @@
 				<skill-param-fn type="💫" fn="SkillParams.DebuffParams"></skill-param-fn>
 				<skill-param-fn type="🏳️" fn="SkillParams.RetreatParams"></skill-param-fn>
 
-				<battleskill-blueprint name="strike">
-					<div class="appearance" label="Strike" skill-type="⚔️" skill-icon="⚔️"></div>
-					<div class="activation" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC"></div>
-					<div class="description">Deals damage to an enemy.  That enemy must not be behind another opposed or neutral unit.</div>
-					<div class="combo_info" combo-icon="⚔️" gives-combo="true" receives-combo="true"></div>
-					<div class="cooldown" cooldown="8"></div>
-					<info invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk"></info>
-				</battleskill-blueprint>
-
-				<!-- Actual player skills. -->
 				<skill-blueprint name="strike" label="Strike" short-label="⚔️" type="⚔️" invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true"  active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
 					<combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
 				</skill-blueprint>
@@ -1477,88 +1362,6 @@
 				<!-- Generic enemy skills. -->
 				<skill-blueprint name="str_gain" label="Buff!" short-label="💪" type="✨" amount="1" status="base_damage" invoke-fn="GenericMoves.AddStatus" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA CC F1 F2 F3 M1 M2 M3 B1 B2 B3"></skill-blueprint>
 
-
-				<combo-blueprint name="x-strike">
-					<info label="X-Strike"></info>
-					<info cooldown="10"></info>
-					<info invoke-fn="ComboMoves.XStrike"></info>
-					<decor icon="⚔️"></decor>
-					<recipe>
-						<required skill="⚔️"></required>
-						<required skill="⚔️"></required>
-						<optional skill="⚔️"></optional>
-						<optional skill="⚔️"></optional>
-						<optional skill="⚔️"></optional>
-					</recipe>
-					<description>Hit an enemy extra-hard.  More ⚔️ means more damage</description>
-				</combo-blueprint>
-				
-				<combo-blueprint name="arrow-rain">
-					<info label="Arrow Rain"></info>
-					<info cooldown="10"></info>
-					<info invoke-fn="ComboMoves.ArrowRain"></info>
-					<decor icon="🏹"></decor>
-					<recipe>
-						<required skill="🏹"></required>
-						<required skill="🏹"></required>
-						<optional skill="🏹"></optional>
-						<optional skill="🏹"></optional>
-						<optional skill="🏹"></optional>
-					</recipe>
-					<description>Hit all enemies.  More 🏹 means more damage</description>
-				</combo-blueprint>
-				
-				<combo-blueprint name="line-drive">
-					<info label="Line Drive"></info>
-					<info cooldown="10"></info>
-					<info invoke-fn="ComboMoves.LineDrive"></info>
-					<decor icon="⚾"></decor>
-					<recipe>
-						<required skill="⚾"></required>
-						<required skill="⚾"></required>
-						<optional skill="⚾"></optional>
-						<optional skill="⚾"></optional>
-						<optional skill="⚾"></optional>
-					</recipe>
-					<description>Damage all enemies in a line ahead.  More ⚾ means more damage</description>
-				</combo-blueprint>
-
-				<combo-blueprint name="blade-boomerang">
-					<info label="Blade Boomerang"></info>
-					<info cooldown="10"></info>
-					<info invoke-fn="ComboMoves.BladeBoomerang"></info>
-					<decor icon="🔄"></decor>
-					<recipe>
-						<required skill="⚾"></required>
-						<required skill="⚔️"></required>
-					</recipe>
-					<description>Up to 2 enemies in a line get hit twice each</description>
-				</combo-blueprint>
-
-				<combo-blueprint name="setup-shot">
-					<info label="Setup Shot"></info>
-					<info cooldown="10"></info>
-					<info invoke-fn="ComboMoves.SetupShot"></info>
-					<decor icon="⚙️"></decor>
-					<recipe>
-						<required skill="⚾"></required>
-						<required skill="🏹"></required>
-					</recipe>
-					<description>Make an enemy vulnerable, then hit that same enemy</description>
-				</combo-blueprint>
-
-				<combo-blueprint name="potato">
-					<info label="Unnamed Potato Move"></info>
-					<info cooldown="10"></info>
-					<info invoke-fn="ComboMoves.PotatoMove"></info>
-					<decor icon="🥔"></decor>
-					<recipe>
-						<required skill="⚔️"></required>
-						<required skill="🏹"></required>
-					</recipe>
-					<description>Reduce an enemy's block to 0, then hit them</description>
-				</combo-blueprint>
-
 			</info-panel>
 		</concept>
 
@@ -1584,7 +1387,9 @@
 				</template>
 			</info-panel>
 
-			<starting-preparation count="10">
+			<!-- Left here for reference. -->
+			<starting-preparation count="0">
+				<!--
 				<preparation bp="barricade"></preparation>
 				<preparation bp="minorDamagePot"></preparation>
 				<preparation bp="throwingknife"></preparation>
@@ -1593,7 +1398,7 @@
 				<preparation bp="minorDefensePot"></preparation>
 				<preparation bp="blinkCrystal"></preparation>
 				<preparation bp="fireBomb"></preparation>
-				<preparation bp="retreatCloak"></preparation>
+				<preparation bp="retreatCloak"></preparation> -->
 			</starting-preparation>
 			
 			<starting-preparation count="0"> <!-- Debug item test. -->
@@ -1791,150 +1596,145 @@
 				</template>				
 			</info-panel>
 
-			<!-- Unit gen comes in 3 parts: A gen pseudo-script (<unit-gen>), a blueprint (<unit-blueprint>), and mods (<unit-mod>) -->
-			<unit-gen name="player_unit">
-				<unit bp="base_hero"></unit>
-				<def alias="rng" fn="UnitGenerator.getRng"></def>
-				<def alias="face" fn="PlayerUnits.TakeDemographic" params="rng"></def> <!-- Grabs a face/month/day from our set of available options. -->
-				<!-- Separate function to set the month, day, avatar from the "face" alias -->
-				<invoke fn="PlayerUnits.ApplyDemographic" params="face"></invoke>
-				<invoke fn="PlayerUnits.ApplyLegacyCombo" params=""></invoke>
-				<!-- Apply a base human modifier. -->
-				<apply-modifier from-group="human"></apply-modifier>
-				<!-- Apply our elemental modifier.  -->
-				<choose fn="PlayerUnits.MonthFromDemographic" params="face">
-					<result value="🔥">
-						<apply-modifier from-group="human🔥"></apply-modifier>
-					</result>
-					<result value="🌪️">
-						<apply-modifier from-group="human🌪️"></apply-modifier>
-					</result>
-					<result value="⛰️">
-						<apply-modifier from-group="human⛰️"></apply-modifier>
-					</result>
-					<result value="💧">
-						<apply-modifier from-group="human💧"></apply-modifier>
-					</result>
-				</choose>
-				<!-- Easter Egg Units! -->
-				<choose fn="PlayerUnits.DemographicString" params="face">
-					<result value="🙃🔥🌓">						
-						<def alias="name" value="Hammad"></def>
-					</result>
-					<result value="😵🔥🌓">
-						<def alias="name" value="Nikki"></def>
-					</result>
-					<result value="😴⛰️🌓"">
-						<def alias="name" value="Chris"></def>
-					</result>
-					<result value="🙃🌪️🌖">
-						<def alias="name" value="Jill"></def>
-					</result>
-					<result value="😬⛰️🌒">
-						<def alias="name" value="Jake"></def>
-					</result>
-					<result value="🤠🌪️🌒">
-						<!-- Mountains'n'Climbin Ryan -->
-						<def alias="name" value="Ryan"></def>
-					</result>
-					<result value="🤠🔥🌔">
-						<!-- Graphics'n'Work Ryan -->
-						<def alias="name" value="Ryan"></def>
-					</result>
-					<result value="😱💧🌓">
-						<def alias="name" value="Fiona"></def>
-					</result>
-					<result value="🧐💧🌘">
-						<def alias="name" value="Drewes"></def>
-					</result>
-					<result value="😬🔥🌑">
-						<def alias="name" value="Kellie"></def>
-					</result>
-					<result value="🐱💧🌑">
-						<def alias="name" value="Robin"></def>
-					</result>
-					<result default="true">
-						<def alias="name" fn="PlayerUnits.TakeName" params="rng"></def>
-					</result>
-				</choose>
-				<invoke fn="Units.SetName" params="name"></invoke>
-			</unit-gen>
-
-			<unit-blueprint name="base_hero">
+			<!-- Hero Units for V2 -->
+			<unit-blueprint name="base_human">
 				<appearance appearance="🙂" month="❓" day="❓"></appearance>
 				<base-stats damage="8" defense="6" cunning="2" move="1" mass="8" hp="40"></base-stats>
 				<has-inventory max-items="2"></has-inventory>>
 				<has-combos max-items="2"></has-combos>
 			</unit-blueprint>
-			
-			<unit-mods group="human">
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="strike"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="throw"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="shoot"></skill></slot></unit-mod>	
-			</unit-mods>
 
-			<unit-mods group="human🔥">
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="sunder"></skill></slot></unit-mod>
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="bleed"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="sunder"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="bleed"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="sunder"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="bleed"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="sunder"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="bleed"></skill></slot></unit-mod>
-			</unit-mods>
-			
-			<unit-mods group="human🌪️">
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="push"></skill></slot></unit-mod>
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="wind-gust"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="push"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="wind-gust"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="push"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="wind-gust"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="push"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="wind-gust"></skill></slot></unit-mod>
-			</unit-mods>
-			
-			<unit-mods group="human⛰️">
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="protect"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="protect"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="protect"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="defend"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="protect"></skill></slot></unit-mod>
-			</unit-mods>
-			
-			<unit-mods group="human💧">
-				<unit-mod mod-tags="3"><slot ordinal="3" type="⭐"><skill bp="distract"></skill></slot></unit-mod>
-				<unit-mod mod-tags="4"><slot ordinal="4" type="⭐"><skill bp="distract"></skill></slot></unit-mod>
-				<unit-mod mod-tags="5"><slot ordinal="5" type="⭐"><skill bp="distract"></skill></slot></unit-mod>
-				<unit-mod mod-tags="6"><slot ordinal="6" type="⭐"><skill bp="distract"></skill></slot></unit-mod>
-			</unit-mods>
+			<unit-gen name="protagonist_unit" base="base_human">
+				<def key="name" value="Protagonist"></def>
+				<setName def="name"></setName>
+				<copy protagonist="true" team="player"></copy>
+				<!-- TODO: Other things to make the protagonist special. -->	
+			</unit-gen>
+
+			<unit-gen name="random_human" base="base_human">
+				<sub name="name" selector="unit-gen[name='name_human']"></sub>
+			</unit-gen>
+
+			<unit-gen name="random_teammate" base="random_human">
+				<copy team="player"></copy>
+			</unit-gen>
+
+			<unit-gen name="base_human" bp="base_human">
+				<def key="rng" fn="UnitGen.getRng"></def>
+				<def key="face" fn="PlayerUnits.TakeDemographic" params="rng"></def> <!-- Grabs a face/month/day from our set of available options. -->
+				<!-- Separate function to set the month, day, avatar from the "face" alias -->
+				<invoke fn="PlayerUnits.ApplyDemographic" params="face"></invoke>
+
+				<!-- Pick a move slot. Humans favor 4/5 over 3/6.-->
+				<choose choices="3 4 4 4 5 5 5 6">
+					<result value="3"><def key="moveslot" value="3"></def></result>
+					<result value="4"><def key="moveslot" value="4"></def></result>
+					<result value="5"><def key="moveslot" value="5"></def></result>
+					<result value="6"><def key="moveslot" value="6"></def></result>
+				</choose>
+
+				<copyDef mod-tags="moveslot"></copyDef>
+				<addMoveSlot>
+					<bp>
+						<appearance moveset_name="Fists"></appearance>
+					</bp>
+					<gen>
+						<copy default="sharp_stick"></copy>
+						<copyDest moveset_name="Fists"></copyDest>
+						<copy slot-type="☝️"></copy>
+						<copyDest cooldown-duration="8"></copyDest>
+						<copyDestDef warmup-time="moveslot" current-cooldown="moveslot"></copyDestDef>
+					</gen>
+				</addMoveSlot>
+			</unit-gen>
+
+			<unit-gen name="name_human">
+				<!-- Select a name, which might be from our easter eggs.-->
+				<choose fn="PlayerUnits.DemographicString">
+					<result value="🙃🔥🌓">						
+						<def key="name" value="Hammad"></def>
+					</result>
+					<result value="😵🔥🌓">
+						<def key="name" value="Nikki"></def>
+					</result>
+					<result value="😴⛰️🌓"">
+						<def key="name" value="Chris"></def>
+					</result>
+					<result value="🙃🌪️🌖">
+						<def key="name" value="Jill"></def>
+					</result>
+					<result value="😬⛰️🌒">
+						<def key="name" value="Jake"></def>
+					</result>
+					<result value="🤠🌪️🌒">
+						<!-- Mountains'n'Climbin Ryan -->
+						<def key="name" value="Ryan"></def>
+					</result>
+					<result value="🤠🔥🌔">
+						<!-- Graphics'n'Work Ryan -->
+						<def key="name" value="Ryan"></def>
+					</result>
+					<result value="😱💧🌓">
+						<def key="name" value="Fiona"></def>
+					</result>
+					<result value="🧐💧🌘">
+						<def key="name" value="Drewes"></def>
+					</result>
+					<result value="😬🔥🌑">
+						<def key="name" value="Kellie"></def>
+					</result>
+					<result value="🐱💧🌑">
+						<def key="name" value="Robin"></def>
+					</result>
+					<result default="true">
+						<def key="name" fn="PlayerUnits.TakeName" params="rng"></def>
+					</result>
+				</choose>
+				<setName def="name"></setName>
+			</unit-gen>
+
 
 			<!-- ENEMY GEN GOES HERE -->
+			<unit-gen name="deer">
+				<bp>
+					<appearance appearance="🦌"></appearance>
+					<base-stats damage="6" defense="4" cunning="1" move="1" mass="12" hp="30"></base-stats>	
+				</bp>
+				<gen>
+					<choose choices="1 2 3 4">
+						<result value="1"><def key="moveslot" value="1"></def></result>
+						<result value="2"><def key="moveslot" value="2"></def></result>
+						<result value="3"><def key="moveslot" value="3"></def></result>
+						<result value="4"><def key="moveslot" value="4"></def></result>
+					</choose>
+	
+					<copyDef mod-tags="moveslot"></copyDef>
+					<addMoveSlot>
+						<bp>
+							<appearance moveset_name="Travel"></appearance>
+						</bp>
+						<gen>
+							<copyDest cooldown-duration="8"></copyDest>
+							<copyDestDef warmup-time="moveslot" current-cooldown="moveslot"></copyDestDef>
+							<setMoves>
+								<move-gen bp="step">
+									<priority value="0"></priority>
+								</move-gen>
+								<move-gen bp="flee">
+									<priority value="-1"></priority>
+								</move-gen>
+							</setMoves>
+						</gen>
+					</addMoveSlot>
+				</gen>
+			</unit-gen>
+
+
+	
+
+
+
+
 
 			<!-- Basic for all enemies as options.  -->
 			<unit-mod-group for="generic_enemies">
@@ -1991,9 +1791,15 @@
 			</unit-mod-group>
 
 			<!-- Pill bug -->
+			<!-- Left as a complex example -->
 			<unit-gen name="pill_bug">
-				<unit bp="bug"></unit>
-				<def alias="rng" fn="UnitGenerator.getRng"></def>				
+				<unit>
+					<bp>
+						<appearance appearance="🐛" name="Bug"></appearance>
+						<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>	
+					</bp>
+				</unit>
+				<def alias="rng" fn="UnitGen.getRng"></def>				
 				<apply-modifier>
 					<unit-mod><apply-status status="bug_curl_up" stacks="12"></apply-status></unit-mod>
 				</apply-modifier>
@@ -2024,83 +1830,12 @@
 				</choose>
 			</unit-gen>
 			
-			<unit-gen name="enemy_rat">
-				<unit bp="rat"></unit>
-				<appearance name="Rat"></appearance>
-				<copy team="enemy" unit-label="Rat"></copy>
-				<copy preferred-locations="F1 F2 F3"></copy>
-				<apply-modifier from-group="enemy_scurry" exclude-tags="1 2 7 8"></apply-modifier>
-				<apply-modifier from-group="enemy_strike" exclude-tags="1 2 7 8"></apply-modifier>
-				<apply-modifier>
-					<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
-				</apply-modifier>
-			</unit-gen>
-			
-			<unit-gen name="enemy_guardian_statue">
-				<unit bp="golem"></unit>
-				<appearance month="⛰️" name="Guardian Statue"></appearance>
-				<copy team="enemy" unit-label="golem"></copy>
-				<copy preferred-locations="F1 F2 F3"></copy>
-				<copy combo-self="⛰️" combo-with="⛰️"></copy>
-				<apply-modifier from-group="enemy_defend" exclude-tags="2 3 4 5 6 7 8"></apply-modifier>
-				<apply-modifier from-group="enemy_strike" exclude-tags="1 2 3 4 8"></apply-modifier>
-				<apply-modifier from-group="enemy_mindlessmarch" exclude-tags="1 2 3 4 5 6 7"></apply-modifier>
-				<apply-modifier>
-					<unit-mod><apply-status status="basic_ai"></apply-status></unit-mod>
-				</apply-modifier>
-			</unit-gen>
-
-			<unit-gen name="jimmyTheRatKing">
-				<unit>
-					<appearance appearance="🤴" name="Jimmy the Rat King"></appearance>
-					<base-stats damage="8" defense="8" cunning="2" move="1" mass="8" hp="80"></base-stats>
-				</unit>
-				<copy team="enemy" unit-label="jimmy"></copy>
-				<copy combo-self="💀" combo-with="💀" mana="💀"></copy>
-				<apply-modifier>					
-					<unit-mod><slot ordinal="1" type="⭐"><skill bp="rat-redirect"></skill></slot></unit-mod>
-				</apply-modifier>
-				<apply-modifier>					
-					<!-- TODO configurable cooldown to make this 12. -->
-					<unit-mod><slot ordinal="3" type="⭐"><skill bp="summon-rats"></skill></slot></unit-mod>
-				</apply-modifier>
-				<apply-modifier from-group="enemy_shoot" exclude-tags="1 2 3 4 8"></apply-modifier>
-				<apply-modifier from-group="enemy_scurry" exclude-tags="1 2 3 4 5 6 7"></apply-modifier>
-				<apply-modifier>
-					<unit-mod><apply-status status="jimmy_ai"></apply-status></unit-mod>
-				</apply-modifier>
-			</unit-gen>
-
 			<!-- Constructs and Scenery -->
-			<unit-gen name="web_scenery">
-				<unit bp="immobile_construct"></unit>
-				<copy team="neutral"></copy>
-				<appearance appearance="🕸️" name="Thick Cobwebs"></appearance>
-				<apply-modifier>
-					<unit-mod><apply-status status="web_damage_reduction"></apply-status></unit-mod>
-				</apply-modifier>
-			</unit-gen>
-
 			<unit-gen name="barricade">
 				<unit bp="immobile_construct"></unit>
 				<copy team="neutral"></copy>
 				<appearance appearance="🧱" name="Barricade"></appearance>
 			</unit-gen>
-
-			<unit-blueprint name="bug">
-				<appearance appearance="🐛" name="Bug"></appearance>
-				<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>
-			</unit-blueprint>
-
-			<unit-blueprint name="rat">
-				<appearance appearance="🐀" name="Rat"></appearance>
-				<base-stats damage="2" defense="2" cunning="1" move="1" mass="2" hp="30"></base-stats>
-			</unit-blueprint>
-			
-			<unit-blueprint name="golem">
-				<appearance appearance="🗿" name="Golem"></appearance>
-				<base-stats damage="12" defense="12" cunning="1" move="1" mass="2" hp="60"></base-stats>
-			</unit-blueprint>
 
 			<unit-mod-group for="bug">
 				<unit-mods group="bug_buff">
@@ -2329,9 +2064,7 @@
 		</template>
 
 		<template name="modal_dialog">
-			<div class="modal_screen modal_dialog">
-
-			</div>
+			<div class="modal_screen modal_dialog"></div>
 		</template>
 
 		<template name="unit_select_screen">
@@ -2463,9 +2196,11 @@
 				</div>
 			</div>
 		</template>
+
 		
 		<template name="run_screen">
 			<div class="run_screen modal_screen" wt="Screen RunScreen" screen-label="New Run"
+					ds-scope-name="run" ds-scope-data="{}"
 					wh-c="RunInfo.Attr>RunScreen.OnRunInfoChange">
 				<info>
 					<noise-counters>
@@ -2568,7 +2303,9 @@
 
 		<!-- Structure of an Event wrapper -->
 		<template name="event_screen">
-			<div wt="Screen EventScreen" screen-label="LABEL" class="event_screen">
+			<div wt="Screen EventScreen" screen-label="LABEL"
+					ds-scope-name="event" ds-scope-data="{}"
+					class="event_screen">
 				<!-- Place to dump a copy of the event blueprint. -->
 				<blueprint></blueprint>
 				<!-- Place to dump additional results. -->
@@ -2618,7 +2355,9 @@
 															  CellBlock.Attr:taunt-priority>Unit.OnTauntPriorityChange,
 															  DrawPileUi.click>CardRules.OnDrawPileClick,
 															  Unit.Attr:in-block>Unit.onMoveBlock|BattlefieldHandler.onMoveBlock"
-														wh-b="GhostUnit.click>EncounterRules.OnGhostUnitClick">
+														wh-b="GhostUnit.click>EncounterRules.OnGhostUnitClick"														
+														max-player-units="5"
+														initiative-order="player enemy neutral"
 				<!-- Info for battlefield things -->
 				<info class="encounter" wt="EncounterBP">
 					
@@ -2650,7 +2389,8 @@
 					wh-b=".Attr:smol-x|.Attr:smol-y|.Attr:beeg-x|.Attr:beeg-y>BattlefieldHandler.OnOverlayItemMove,
 						  BattleOverlay.AddChild>BattlefieldHandler.OnOverlayItemAdd,
 						  BattleOverlay.RemoveChild>BattlefieldHandler.OnOverlayItemRemove,
-						  BattleOverlay.MoveTo>BattlefieldHandler.OnOverlayItemMoveTo">
+						  BattleOverlay.MoveTo>BattlefieldHandler.OnOverlayItemMoveTo,
+						  CellBlock.Attr:team|BattleOverlay.RemoveChild|.Attr:beeg-x|.Attr:beeg-y>BattlefieldHandler.refreshThreat">
 				<div wt="Grid" class="battlefield_widget_inner"></div>
 				<div wt="BattleOverlay" class="battlefield_widget_overlay"></div>
 				<div class="ui_effect_overlay"></div>
@@ -2829,7 +2569,7 @@
 		</template>
 
 		<template name="beegcell">
-			<div class="beeg_grid_cell" wt="CellBlock" beeg-x="X-LU" beeg-y="Y-LU", beeg-label="LAY-BOH">
+			<div class="beeg_grid_cell" wt="CellBlock" beeg-x="X-LU" beeg-y="Y-LU" beeg-label="LAY-BOH" odd="ODDNESS">
 				<div class="underlay">
 					<div class="direction_arrow"></div>
 				</div>
@@ -2841,7 +2581,13 @@
 		</template>
 
 		<template name="smolcell">
-			<div class="smol_grid_cell" wt="Cell" smol-x="X-LU" smol-y="Y-LU", smol-label="LAY-BOH"></div>
+			<div class="smol_grid_cell" wt="Cell" smol-x="X-LU" smol-y="Y-LU", smol-label="LAY-BOH">
+				<div class="icon_hint" direction="left"></div>
+				<div class="icon_hint" direction="right"></div>
+				<div class="icon_hint" direction="up"></div>
+				<div class="icon_hint" direction="down"></div>
+				<div class="icon_hint" direction="local"></div>
+			</div>
 		</template>
 		
 		<!-- Unit -->
@@ -2852,80 +2598,61 @@
 					    Ability.Updated>Unit.OnUnit,
 						Ability.AddChild>Ability.HoverHelpRefresh,
 						Unit.Attr:month|Unit.Attr:day|Unit.Attr:avatar>Unit.RefreshAppearance"
-					month="MONTH" day="DAY" appearance="APPEARANCE" mana="MONTH" mana-fn="Mana.DefaultMana" hover-help="[hover-on-unit='UNIT_ID']" stopped="true">
+					month="" day="" appearance="" mana="" mana-fn="Mana.DefaultMana" hover-help="[hover-on-unit='UNIT_ID']" stopped="true">
 				<div class="appearance no_transition">
-					<div class="month" month="MONTH"></div>
-					<div class="day" day="DAY"><span></span></div>
-					<div class="avatar" appearance="APPEARANCE"></div>
+					<div class="month" month=""></div>
+					<div class="day" day=""><span></span></div>
+					<div class="avatar" appearance=""></div>
 				</div>
-				<div class="name" name="NAME"></div>
+				<div class="name" name=""></div>
 				<div class="help_taunt"><div class="decor"></div></div>
 				<div class="hurt_taunt"><div class="decor"></div></div>
 				<div class="hp_tracker">
-					<progress class="hp_bar" wt="HPBar" max="HP_AMOUNT" value="HP_AMOUNT"> </progress>
+					<progress class="hp_bar" wt="HPBar" max="0" value="0"> </progress>
 					<div class="defend"><div class="decor"></div></div>
 				</div>
-				<div class="battle_script"></div>
-				<div class="unit_script">
+
+				<!-- Base is copied into non-base during combat. -->
+				<div class="battle_script_base"></div>
+				<div class="battle_script">
+					<div class="cooldown_view"></div>
+					<div class="next_icon_view"></div>
 				</div>
-				<div class="unit_status">
-				</div>
-				<info class="unit" base-damage="BASE_DAMAGE" base-defense="BASE_DEFENSE" mass="MASS">
-				</info>				
-				<inventory max-items="2">
-				</inventory>
-				<combos max-items="2">
-				</combos>
+
+				<div class="unit_status"></div>
+
+				<inventory max-items="2"></inventory>
+				<combos max-items="2"></combos>
 				<info wt="UnitBP"></info>
 				<info wt="ModBP"></info>
 		</div>
 		</template>
 
-		<!-- Ability to go in a unit script -->
-		<template name="ability">
-			<div class="ability" wt="Ability" compendium="concept/skills"
-					wh-b=".Attr:volley_count>Ability.OnChange,
-						  .Attr:current-cooldown>Ability.OnCooldownChange,
-    					  .Attr:active-in>Ability.OnChange" slot-type="SLOT_TYPE">
-				<div class="activation_info" active-in="" compendium="concept/unit/concept/activation">
-					<div class="dir"></div>
-					<div class="box f1 front left"></div>
-					<div class="box f2 front center"></div>
-					<div class="box f3 front right"></div>
-					<div class="box m1 middle left"></div>
-					<div class="box m2 middle center"></div>
-					<div class="box m3 middle right"></div>
-					<div class="box b1 back left"></div>
-					<div class="box b2 back center"></div>
-					<div class="box b3 back right"></div>
+		<template name="move_slot">
+			<div class="move_slot" wt="MoveSlot"
+					wh-c="Move.Attr:inactive>MoveSlot.OnMoveActiveChange" inactive="true">
+				<div class="appearance">
+					<div class="name" moveset_name="Unarmed"></div>
+					<div class="description"></div>
 				</div>
-				<span class="label" label="" short-label=""></span>
-				<span class="volley_count" volley_count="VOLLEY" og_volley_count="VOLLEY" warmup-time="VOLLEY" cooldown-duration="8" current-cooldown="VOLLEY"><span class="useful_icon"></span></span>
-				<blueprints wh-b=".AddChild|.RemoveChild|.Attr>Ability.OnChange"></blueprints>
+
+				<!-- The moves go here. -->
+				<div class="move_container"></div>
+
+				<!-- Timing Info -->
+				<div class="current_cooldown" current-cooldown="8"></div>
+				<div class="cooldown_duration" cooldown-duration="8"></div>
+				<div class="warmup" warmup-time="8"></div>
 			</div>
+
 		</template>
 
-		<!-- Goes in battle_script in units during combat. -->
-		<template name="battle_ability">
-			<div wt="BattleAbility" class="battle_ability" slot-type="⭐" active="false" used="false">
-				<div class="skill_container"></div>
-				<div class="cooldown" current-cooldown="8"></div>
+		<template name="move">
+			<!-- These hang out in move slots. -->
+			<div class="move" wt="Move" compendium="concept/skills" priority="0" inactive="false">
+				<div class="appearance_holder" move_icon="❓"></div>
+				<info wt="MoveBP"><!-- Blueprint goes here!--></info>
 			</div>
-		</template>
-
-		<!-- Goes inside a battle_ability -->
-		<template name="battle_skill">
-			<div wt="BattleSkill" class="battle_skill">
-				<div class="skill_appearance">
-					<div class="skill_icon" icon="⚔️"></div>
-					<div class="skill_type_icon" icon="⚔️"></div>
-				</div>
-				<info wt="SkillBP"></info>	
-			</div>
-		</template>
-
-		<template name="ability_blueprint">
-			<blueprint base="BASE" priority="PRIORITY" skill_name="SKILL_NAME" active-in="ACTIVATION"></blueprint>
 		</template>
 
 		<template name="unit_status">
@@ -2938,7 +2665,7 @@
 		</template>
 
 		<template name="handler-set">
-			<handler-set></handler-set>
+			<handler-set wt="HandlerSet"></handler-set>
 		</template>
 
 		<template name="target_context">
@@ -2953,7 +2680,6 @@
 				</div>
 			</div>
 		</template>
-
 
 		<template name="run_info">
 			<run-info seed="seeds_not_supported_yet">
@@ -3009,6 +2735,8 @@
 		"woof/woof",
 		"woof/ui",
 		"woof/queue",
+		"woof/domscript",
+		"controllers/savemanager",
 		
 		// Noise counters for RNG.
 		"content/noisecounters",
@@ -3017,12 +2745,12 @@
 		"ui/actionbutton",
 		"ui/attrs",
 		"ui/battlefield",
+		"ui/encounterscreen",
 		"ui/card",
 		"ui/cardhud",
 		"ui/compendiums",
 		"ui/dialogscreen",
 		"ui/effects",
-		"ui/encounterscreen",
 		"ui/eventscreen",
 		"ui/grids",
 		"ui/hoverhelper",
@@ -3036,6 +2764,7 @@
 		"ui/townscreen",
 		"ui/tutorialhelper",
 		"ui/unit",
+		"ui/move", // Uses UnitGen._rng in static initializer
 		"ui/volleycounter",
 
 		"ui/shared/unitselect",
@@ -3065,10 +2794,10 @@
 		"content/teams",
 
 		// Content
-		"content/battlefields",
 		"content/encounters",
 		"content/enemies",
 		"content/events",
+		"content/moves",
 		"content/orders",
 		"content/preparations",
 		"content/skillutils",

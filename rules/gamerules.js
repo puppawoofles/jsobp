@@ -16,6 +16,7 @@ class GameRules {
 
         // Next up, generate the starter deck.
         var starterDeck = [
+            /**
             Tactic.inflate(Tactic.findBlueprint(handler, "retreat")),
             Tactic.inflate(Tactic.findBlueprint(handler, "reposition")),
             Tactic.inflate(Tactic.findBlueprint(handler, "pivot")),
@@ -23,22 +24,21 @@ class GameRules {
             Tactic.inflate(Tactic.findBlueprint(handler, "taunt-ally")),
             Tactic.inflate(Tactic.findBlueprint(handler, "go-faster")),
             Tactic.inflate(Tactic.findBlueprint(handler, "go-slower"))
+            */
         ];
         starterDeck.forEach(function(content) {
             RunInfo.addToDeck(runScreen, content);
         });
 
         var starterUnits = [
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit"),
-            UnitGenerator.generate("player_unit")
+            UnitGen.gen(runScreen, 'protagonist_unit'),
+            UnitGen.gen(runScreen, 'random_teammate'),
+            UnitGen.gen(runScreen, 'random_teammate'),
+            UnitGen.gen(runScreen, 'random_teammate'),
+            UnitGen.gen(runScreen, 'random_teammate'),
+            UnitGen.gen(runScreen, 'random_teammate'),
+            UnitGen.gen(runScreen, 'random_teammate'),
+            UnitGen.gen(runScreen, 'random_teammate')
         ];
         starterUnits.forEach(function(content) {
             var card = Card.inflate(Utils.UUID());
@@ -54,8 +54,10 @@ class GameRules {
         });
 
         // Generate our visitors.
+        // TODO: Visitors should, at their base, be based on a Unit.
+        // That way you can fight them and shit.  TODO: Rewrite this whole thing.
         Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-visitors'), 'visitor').forEach(function(bp) {
-            RunInfo.addVisitor(runScreen, Visitor.FromBlueprintWithParams(bp, Units.randomVisitor(effect), Units._rng));
+            RunInfo.addVisitor(runScreen, Visitor.FromBlueprintWithParams(bp, Units.randomVisitor(effect), UnitGen._rng));
         });
 
         // Give ourselves some starting items.

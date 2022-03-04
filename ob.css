@@ -333,13 +333,13 @@ info {
 	pointer-events: none;
 }
 
-.end_condition_container > end-condition {
+.end_condition_container > endCondition {
 	background: rgba(0,0,0,.8);
 	padding: 8px;
 	pointer-events: all;
 }
 
-end-condition [hover-help] {
+endCondition [hover-help] {
 	color: red;
 	text-decoration: underline;
 }
@@ -780,12 +780,12 @@ end-condition [hover-help] {
 }
 
 .town_assignment[selected="true"] .add_unit_button {
-	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
+	animation: targetGlowey var(--animation-wub) 0.5s infinite;
 }
 
 
 .town_assignment[selected="true"] .add_unit_button.remote_hover {
-	animation: targetGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite, activeGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;;
+	animation: targetGlowey var(--animation-wub) 0.5s infinite, activeGlowey var(--animation-wub) 0.5s infinite;;
 }
 
 
@@ -1181,11 +1181,80 @@ input {
 
 .smol_grid_cell {
 	display: table-cell;
+	position: relative;
 	width: 100px;
 	height: 100px;
 	min-width: 100px;
 	min-height: 100px;
 	border: 1px solid black;
+}
+
+.smol_grid_cell > .icon_hint {
+	position: absolute;
+	font-size: 24px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.smol_grid_cell > .icon_hint.remote_hover {
+	animation: opacityWubble var(--animation-wub) 0.5s infinite;
+}
+
+@keyframes opacityWubble {
+	0% {
+		opacity: 0.2;
+	}
+	50% {
+		opacity: 0.4;
+	}
+	100% {
+		opacity: 0.2;
+	}
+}
+
+.smol_grid_cell > .icon_hint[direction=left] {
+	top: 34px;
+	left: 0;
+}
+
+.smol_grid_cell > .icon_hint[direction=right] {
+	top: 34px;
+	right: 0;
+}
+
+.smol_grid_cell > .icon_hint[direction=up] {
+	top: 0;
+	left: 34px;
+}
+
+.smol_grid_cell > .icon_hint[direction=down] {
+	bottom: 0;
+	left: 34px;
+}
+
+.smol_grid_cell > .icon_hint[direction=local] {
+	top: 34px;
+	left: 41px;
+}
+
+.smol_grid_cell > .icon_hint[direction=left]::after {
+	content: '⬅️';
+}
+
+.smol_grid_cell > .icon_hint[direction=right]::after {
+	content: '➡️';
+}
+
+.smol_grid_cell > .icon_hint[direction=up]::after {
+	content: '⬆️';
+}
+
+.smol_grid_cell > .icon_hint[direction=down]::after {
+	content: '⬇️';
+}
+
+.smol_grid_cell > .icon_hint[direction=local]::after {
+	content: '📍';
 }
 
 .beeg_grid_cell[team=player] {
@@ -1194,6 +1263,38 @@ input {
 
 .beeg_grid_cell[team=enemy] {
 	background: #776655;
+}
+
+.beeg_grid_cell[odd="0"][team="player"] {
+	background: repeating-linear-gradient(45deg,
+	#26804a,
+	#26804a 30px,
+		#227744 30px,
+		#227744 60px);
+}
+
+.beeg_grid_cell[odd="0"][team="enemy"] {
+	background: repeating-linear-gradient(45deg,
+	#866862,
+	#866862 30px,
+		#776655 30px,
+		#776655 60px);
+}
+
+.beeg_grid_cell[odd="1"][team="player"] {
+	background: repeating-linear-gradient(-45deg,
+	#26804a,
+	#26804a 30px,
+		#227744 30px,
+		#227744 60px);
+}
+
+.beeg_grid_cell[odd="1"][team="enemy"] {
+	background: repeating-linear-gradient(-45deg,
+	#866862,
+	#866862 30px,
+		#776655 30px,
+		#776655 60px);
 }
 
 .initiative_tracker > .initiative_tracker_contents {
@@ -1360,12 +1461,16 @@ input {
 	top: 10px;
 }
 
-.unit_script {
+.battle_script_base {
+	display: none;
+}
+
+.battle_script {
 	display: none;
 }
 
 
-[wt~='Battlefield'] .unit_script {
+[wt~='Battlefield'] .battle_script {
 	position: absolute;
 	display: block;
 	left: -22px;
@@ -1375,8 +1480,12 @@ input {
 	text-overflow: ellipsis;
 }
 
+[wt~='Battlefield'] .battle_script > .cooldown_view {
+	position: absolute;
+	top: 0;  bottom: 0; left: 0; right: 0;
+}
 
-[wt~='Battlefield'] .unit_script .ability {
+[wt~='Battlefield'] .battle_script .move_slot {
 	display: inline-block;
 	position: relative;
 	height: 16px;
@@ -1384,49 +1493,65 @@ input {
 	border-radius: 50%;
 }
 
-[wt~='Battlefield'] .unit_script .ability[active="true"] {
+[wt~='Battlefield'] .battle_script .move_slot[active="true"] {
 	animation: activeGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
 }
 
 
-[wt~='Battlefield'] .unit_script .ability[used="true"] {
+[wt~='Battlefield'] .battle_script .move_slot[used="true"] {
 	opacity: 50%;
 }
 
-[wt~='Battlefield'] .unit_script .activation_info {
-	display: none;
-}
-
-[wt~='Battlefield'] .unit_script blueprints {
-	display: none;
-}
-
-
-[wt~='Battlefield'] .unit_script .label:before {
-	font-size: 8px;
-	content: attr(short-label);
+[wt~='Battlefield'] .battle_script [wt~='MoveSlot'][inactive=true]::before {
+	font-size: 12px;
+	content: '🚫';
 	position: absolute;
-	bottom: -10px;
+	bottom: 0;
 	left: 0;
 	text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
 }
 
-[wt~='Battlefield'] .unit_script .ability[inactive="true"] {
+[wt~='Battlefield'] .battle_script .move_slot .move:not([inactive=true]) .appearance_holder::before {
+	font-size: 12px;
+	content: attr(move_icon);
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
+}
+
+
+[wt~='Battlefield'] .battle_script .move_slot .current_cooldown::before {
+	content: attr(current-cooldown);
+	font-size: 8px;
+	color: black;
+	font-weight: bold;
+	text-shadow: var(--white-text-shadow);
+	text-align: center;
+}
+
+[wt~='Battlefield'] .battle_script .move_slot .current_cooldown {
+	position: absolute;
+	width: 16px;
+	height: 10px;
+	bottom: -3px;
+	left: 0;
+}
+
+
+[wt~='Battlefield'] .battle_script .move_slot[inactive="true"] {
 	opacity: 0.5;
 }
 
-[wt~='Battlefield'] .unit_script .ability[inactive="true"][current-cooldown="1"]:before {
+[wt~='Battlefield'] .battle_script .move_slot[inactive="true"][current-cooldown="1"]:before {
 	animation: none;
-}
-
-[wt~='Battlefield'] .unit_script .ability[current-cooldown="1"]:before {
-	animation: icon-intent-glowing linear 0.5s infinite;
 }
 
 :root {
 	--icon-intent-glowing-color: rgba(255, 255, 0);
 	--icon-intent-start-spread: 1px;
 	--icon-intent-end-spread: 4px;
+	--animation-wub: cubic-bezier(0.57, 0.14, 1, 0.65);
 }
 
 @keyframes icon-intent-glowing {
@@ -1439,7 +1564,7 @@ input {
 	
 }
 
-[wt~='Battlefield'] .unit_script .volley_count:after {
+[wt~='Battlefield'] .battle_script .volley_count:after {
 	color: black;
 	content: attr(current-cooldown);
 	position: absolute;
@@ -1450,7 +1575,7 @@ input {
 	text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
 }
 
-[wt~='Battlefield'] .unit_script .ability::before {
+[wt~='Battlefield'] .battle_script .ability::before {
 	content: attr(type);
 	position: absolute;
 	bottom: -3px;
@@ -1461,7 +1586,7 @@ input {
 
 
 
-.full_size_cards .card > .battlefield_unit .unit_script {
+.full_size_cards .card > .battlefield_unit .battle_script_base {
 	display: block;
 	position: absolute;
 	left: 15px;
@@ -1623,7 +1748,7 @@ input {
 	background: rgba(0,0,0,0.7);
 }
 
-.full_size_cards .card .unit_script > .ability {
+.full_size_cards .card .battle_script_base > .ability {
 	white-space: nowrap;
 	font-size: 12px;
 }
@@ -2266,7 +2391,7 @@ span[compendium] {
 	display: none;
 }
 
-.manage_items .unit_preview.exploded_cards .card .battlefield_unit .unit_script {
+.manage_items .unit_preview.exploded_cards .card .battlefield_unit .battle_script_base {
 	display: none;
 }
 
@@ -2609,7 +2734,7 @@ span[compendium] {
 	width: 90px;
 }
 
-.stumpy_cards .card .unit_script {
+.stumpy_cards .card .battle_script_base {
 	position: absolute;
 	display: block;
 	left: 0;
@@ -2621,7 +2746,7 @@ span[compendium] {
 	width: 128px;
 }
 
-.stumpy_cards .card .unit_script .ability::before {
+.stumpy_cards .card .battle_script_base .ability::before {
 	content: attr(type);
 	position: absolute;
 	bottom: -3px;
@@ -2629,12 +2754,12 @@ span[compendium] {
 	font-size: 14px;
 }
 
-.stumpy_cards .card .unit_script .ability::after {
+.stumpy_cards .card .battle_script_base .ability::after {
 	content: none;
 }
 
 
-.stumpy_cards .card .unit_script .ability .label::after {
+.stumpy_cards .card .battle_script_base .ability .label::after {
     font-size: 8px;
     content: attr(short-label);
     position: absolute;
@@ -2655,14 +2780,14 @@ span[compendium] {
     text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
 }
 
-.stumpy_cards .card .unit_script .ability {
+.stumpy_cards .card .battle_script_base .ability {
 	display: inline-block;
 	position: relative;
 	height: 20px;
 	width: 20px;
 }
 
-.stumpy_cards .card .unit_script .ability.remote_hover {
+.stumpy_cards .card .battle_script_base .ability.remote_hover {
 }	animation: stumpyAbilityGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
 
 
@@ -2676,7 +2801,7 @@ span[compendium] {
 }
 
 
-.stumpy_cards .card .unit_script .activation_info {
+.stumpy_cards .card .battle_script_base .activation_info {
 	display: none;
 }
 
@@ -2803,12 +2928,12 @@ span[compendium] {
 	top: 0;
 }
 
-.exploded_cards .card .battlefield_unit .unit_script {
+.exploded_cards .card .battlefield_unit .battle_script_base {
 	margin-top: 8px;
 	display: block;
 }
 
-.exploded_cards .card .battlefield_unit .unit_script .ability {
+.exploded_cards .card .battlefield_unit .battle_script_base .ability {
 	background: rgba(255, 255, 255, 0.2);
 	top: 0; left: 0; width: auto; height: auto;
 	display: block;
@@ -2819,12 +2944,12 @@ span[compendium] {
 	position: relative;
 }
 
-.exploded_cards .card .battlefield_unit .unit_script .ability::before {
+.exploded_cards .card .battlefield_unit .battle_script_base .ability::before {
 	content: attr(slot-type);
 	font-size: 20px;
 }
 
-.exploded_cards .card .battlefield_unit .unit_script .ability::after {
+.exploded_cards .card .battlefield_unit .battle_script_base .ability::after {
 	content: attr(type);
 	font-size: 20px;
 	position: absolute;
@@ -2950,7 +3075,7 @@ span[compendium] {
 }
 
 
-.battlefield_unit .appearance.remote_hover {
+.battlefield_unit > .appearance.remote_hover {
 	animation: battlefieldActiveGlowey cubic-bezier(0.57, 0.14, 1, 0.65) 0.5s infinite;
 }
 
@@ -3157,13 +3282,16 @@ span[compendium] {
 	display: none;
 }
 
-.battlefield_unit .appearance {	
+.battlefield_unit > .appearance {	
 	position: absolute;
 	left: -2px;
 	right: -2px;
 	top: -2px;
 	bottom: -2px;
 	border-radius: inherit;
+	/* TODO: Figure out why this is misbehaving. */
+	height: 100%;
+	width: 100%;
 	overflow: hidden;
 	border: 2px solid gray;
 }
@@ -3210,11 +3338,11 @@ span[compendium] {
 	text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
 }
 
-[team="enemy"] .appearance {
+[team="enemy"] > .appearance {
 	border: 2px solid orange;
 }
 
-[team="player"] .appearance {
+[team="player"] > .appearance {
 	border: 2px solid skyblue;
 }
 
@@ -3224,14 +3352,14 @@ span[compendium] {
 	filter: contrast(2.50) grayscale(1) invert(1) ;
 }
 
-.appearance {
+.battlefield_unit > .appearance {
 	position: relative;
 	border-radius: 50%;
 	overflow: hidden;
 	border: 2px solid gray;
 }
 
-.appearance .avatar::after {
+.battlefield_unit > .appearance .avatar::after {
 	content: attr(appearance);
 	position: absolute;
 	display: inline-block;
@@ -3242,7 +3370,7 @@ span[compendium] {
 	font-size: 20px;
 }
 
-.appearance .month::after {
+.battlefield_unit > .appearance .month::after {
 	content: attr(month);
 	position: absolute;
 	display: inline-block;
@@ -3255,7 +3383,7 @@ span[compendium] {
 	opacity: 0.5;	
 }
 
-.appearance .day {
+.battlefield_unit > .appearance .day {
 	content: attr(day);
 	position: absolute;
 	display: inline-block;
@@ -3265,7 +3393,7 @@ span[compendium] {
 	left: 4px;	
 }
 
-.appearance .day::after {
+.battlefield_unit > .appearance .day::after {
 	content: attr(day);
 	font-size: 11px;
 	position: absolute;
@@ -3275,11 +3403,11 @@ span[compendium] {
 }
 
 
-.appearance .day[day=''] {
+.battlefield_unit > .appearance .day[day=''] {
 	display: none;
 }
 
-.appearance .day > span {
+.battlefield_unit > .appearance .day > span {
 	position: relative;
 	top: -1px;
 	left: -0.5px;

@@ -1,3 +1,45 @@
+/**
+ * This whole file represents the Effect Queue.
+ * TODO: Write about it and usage patterns for future you.
+ */
+
+class HandlerSet {
+
+	static For = new ScopedAttr("for", StringAttr);
+	static OwnsHandlers = new ScopedAttr("owns-handlers", StringAttr);
+	static installFor(elt, context) {
+		// See if we already have something installed.
+		var container = EffectQueue.getHandlerContainer(elt);
+
+		var handlerSet;
+		if (HandlerSet.OwnsHandlers.has(context)) {
+			// We do!
+			var selector = WoofType.buildSelectorFrom("HandlerSet", HandlerSet.OwnsHandlers.get(context))
+			handlerSet = qs(container, selector);
+		} else {
+			// We don't!
+			handlerSet = Templates.inflate('handler-set');
+			HandlerSet.For.set(handlerSet, WoofType.buildSelectorFor(context));
+			WoofType.add(context, "HandlerOwner");
+			HandlerSet.OwnsHandlers.set(context, IdAttr.generate(handlerSet));
+			container.appendChild(handlerSet);
+		}
+
+		return handlerSet;
+	}
+
+	static onRemoveOwner(event, handler) {
+		var container = EffectQueue.getHandlerContainer(elt);
+		HandlerSet.OwnsHandlers.findAll(event.target).map(HandlerSet.OwnsHandlers.get).forEach(function(id) {
+			var selector = WoofType.buildSelectorFrom("HandlerSet", id);
+			var found = qs(container, selector);
+			if (found) {
+				// Remove our handlers.
+				found.remove();
+			}
+		});
+	}
+}
 
 class PromiseIdAttr {
 	static generate(elt) {
@@ -93,7 +135,7 @@ class EffectQueue {
 	static Handler = new ScopedAttr("handler", FunctionAttr);
 	static invokeHandler(handler, current, args) {
 		var result = EffectQueue.Handler.findAInvoke(handler, args);
-		if (!!result && typeof(result["then"]) == "function") {
+		if (isPromise(result)) {
 			// This is a promise.  We should do our ticketing BS.
 			var ticket = PendingOpAttr.takeTicket(current, "auto");
 			result = result.then(function(result) {

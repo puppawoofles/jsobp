@@ -1,5 +1,5 @@
-
 class BattlefieldHandler {
+	static rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Round, NC.Encounter, NC.Event);
 
     static findGridContainer(elt) {
         return qs(BattlefieldHandler.find(elt), ".battlefield_widget_inner");
@@ -12,6 +12,7 @@ class BattlefieldHandler {
     }
 
 	static CellBlock = new ScopedAttr("in-block", StringAttr);
+	// Deprecate this one eventually!
     static addUnitTo(parentElt, unit, bigCoord, smallCord) {
 		var overlay = BattlefieldHandler.findOverlay(parentElt);
         var block = CellBlock.findByCoord(parentElt, bigCoord);
@@ -24,12 +25,28 @@ class BattlefieldHandler {
 		Unit.join(unit);
 	}
 
+	static placeUnitAt(parentElt, unit, uberCoord) {
+		var bigCoord = UberCoord.big(uberCoord);
+		var smallCoord = UberCoord.small(uberCoord);
+		var overlay = BattlefieldHandler.findOverlay(parentElt);
+        var block = CellBlock.findByCoord(parentElt, bigCoord);
+		Unit.CellBlock.set(unit, BigGridLabel.get(block));
+        BigCoord.write(unit, bigCoord);
+        SmallCoord.write(unit, smallCoord);
+		if (!TeamAttr.get(unit)) TeamAttr.copy(unit, block);
+		IdAttr.generate(unit);
+		overlay.appendChild(unit);
+		Unit.join(unit);
+	}
+
     static unitAt(battlefield, uberCoord) {
+		uberCoord = UberCoord.extract(uberCoord);
 		var overlay = BattlefieldHandler.findOverlay(battlefield);
         return qs(overlay, UberCoord.selector(uberCoord));
     }
 
-	static cellAt(battlefield, uberCoord) {		
+	static cellAt(battlefield, uberCoord) {	
+		uberCoord = UberCoord.extract(uberCoord);	
 		return Utils.bfind(battlefield, '.encounter_screen', BigCoord.selector(UberCoord.big(uberCoord)) + " " +
 			WoofType.buildSelector("Cell") + SmallCoord.selector(UberCoord.small(uberCoord)));
 	}
@@ -166,9 +183,18 @@ class BattlefieldHandler {
 		blocks.forEach(function(block) {
 			BattlefieldHandler.updateBlockAllegiance(block)
 		});
-
 	}
 
+	static findEnemyInBlock(block, team) {
+		return Teams.opposed(team).map(function(t) {
+			return Unit.findTeamInBlock(block, t);
+		}).flat();
+	}
+
+	static refreshThreat(event, handler) {
+		// We got a signal to recalculate threats.
+		BlockThreats.refreshAll(handler);
+	}
 }
 Utils.classMixin(BattlefieldHandler, AbstractDomController, {
     matcher: '.battlefield_widget',
@@ -176,3 +202,130 @@ Utils.classMixin(BattlefieldHandler, AbstractDomController, {
     params: emptyObjectFn
 })
 WoofRootController.register(BattlefieldHandler);
+
+
+/**
+ * You know how we do "direction-effectivePos" as a shortcut?  Yeah,
+ * this is basically direction-team as a similar shortcut.  Hooray for
+ * storing tuples 'n shit.
+ * 
+ * Basically the way this works, though, is that we store threats to other
+ * teams.  In other words, "player-left" means one block to the left, there
+ * is something that is threatening the player team.
+ * 
+ * This combines to mean if:
+ *  - Move X is active in F1, F2, F3
+ *  - The Unit is on Team Y
+ *  - The Block has "Y-up" in its threats list.
+ *  then the move can be used in positions up-F1, up-F2, and up-F3.
+ */
+class BlockThreats {
+	static Threats = new ScopedAttr("threats", ListAttr);
+	static buildSelector(team, direction) {
+		return "[threats~='" + team + "-" + direction + "']"
+	}
+
+	static buildValue(team, direction) {
+		return team + "-" + direction;
+	}
+
+	static threatsAt(block, team) {
+		// Grab the property and split the strings.
+		return (BlockThreats.Threats.findGet(block) || []).map(function(threat) {
+			return threat.split("-");
+		}).filter(function(tuple) {
+			// Compare the teams to make sure this is a threat for that team.
+			return tuple[0] == team;
+		}).map(function(tuple) {
+			// But then only return the direction.
+			return tuple[1];
+		});
+	}
+
+	static refreshAll(baseElt) {
+		var unitLookups = {};
+
+		CellBlock.findAll(baseElt).forEach(function(bBlock) {
+			var toSet = {};
+			var directions = [Direction.None].concat(Direction.allDirections());
+			var baseCoord = BigCoord.extract(bBlock);
+
+			directions.forEach(function(direction) {
+				var delta = Direction.coordDelta(direction);
+				var block = CellBlock.findByCoord(baseElt, BigCoord.plus(baseCoord, delta));
+				if (!block) return;
+				if (DisabledAttr.get(block)) return;
+
+				// Set up / use our memoized thing to reduce lookups.
+				var bid = IdAttr.generate(block);
+				if (!unitLookups[bid]) unitLookups[bid] = Unit.findAllInBlock(block);
+
+				unitLookups[bid].forEach(function(unit) {
+					Teams.opposed(TeamAttr.get(unit)).forEach(function(oTeam) {
+						toSet[oTeam + "-" + direction] = true;
+					});
+				});
+			});
+			
+			BlockThreats.Threats.set(bBlock, a(Object.keys(toSet)));
+		});
+	}
+}
+
+
+
+
+
+
+/* Battlefield Generator */
+class BattlefieldScriptCommands {
+    static BattlefieldFn = new ScopedAttr('battlefield-fn', FunctionAttr);
+
+	/** Generate geometry. */
+	static geo(elt, battlefield, defs) {
+		BattlefieldScriptCommands.BattlefieldFn.invoke(elt, elt, battlefield, defs);
+	}
+
+    static Fn = new ScopedAttr('fn', FunctionAttr);
+    static Labels = new ScopedAttr('labels', ListAttr);
+    
+	/** Invoke a sub-script on respective blocks. */
+	static forBlocks(elt, battlefield, defs) {
+		var labels = BattlefieldScriptCommands.Labels.get(elt);
+		labels.forEach(function(label) {
+			var block = CellBlock.findByLabel(battlefield, label);
+			ScriptShortcuts.runScriptFor(elt, [BasicScriptCommands], block, defs);
+		});
+	}
+
+	static forCells(elt, battlefield, defs) {
+		var labels = BattlefieldScriptCommands.Labels.get(elt);
+		labels.forEach(function(label) {
+			var cell = Grid.fromUberLabel(battlefield, label);
+			ScriptShortcuts.runScriptFor(elt, [BasicScriptCommands], cell, defs);
+		});
+	}
+
+}
+
+class BattlefieldGen {
+	static Width = new ScopedAttr('width', IntAttr);
+    static Height = new ScopedAttr('height', IntAttr);
+	static generateRect(elt, battlefield, defs) {
+        var width = BattlefieldGen.Width.get(elt);
+        var height = BattlefieldGen.Height.get(elt);
+        // And go.
+        GridGenerator.generate(BattlefieldHandler.findGridContainer(battlefield), width, height);
+	}
+
+	// Util Functions.
+}
+Utils.classMixin(BattlefieldGen, BPScriptBasedGenerator, GenUtils.decorateFindFor({
+	// No normalizeObject: Shouldn't be called!
+	commands: [
+		BasicScriptCommands,
+		MetaScriptCommands.for(BattlefieldGen, BattlefieldHandler.rng),
+		BattlefieldScriptCommands
+	]
+}, 'battlefield'));
+WoofRootController.register(BattlefieldGen);

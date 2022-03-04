@@ -1,3 +1,57 @@
+/* Experimental base class for using a DOM script to generate things. */
+
+class UnitScriptCommands {
+    static appearance(cmdElt, unit, defs) {
+        Unit.applyAppearance(unit, cmdElt);
+    }
+
+    static stats(cmdElt, unit, defs) {
+        // TODO apply stats.
+    }
+
+    static applyModifier(cmdElt, unit, defs) {
+        // TODO: Apply modifier if it still makes sense?
+        // Maybe modifiers are just scripts at this point?
+    }
+
+    static Def = new ScopedAttr("def", StringAttr);
+    static setName(cmdElt, unit, defs) {
+        Unit.setName(unit, defs.get(UnitScriptCommands.Def.get(cmdElt)));
+    }
+
+    static addMoveSlot(cmdElt, unit, defs) {
+        var slot = MoveSlotGen.gen(null, cmdElt, defs);
+        qs(unit, '.battle_script_base').appendChild(slot);
+    }
+}
+
+
+class UnitGen {
+    static _rng = ASRNG.newRng(NC.Seed, true, NC.Day, NC.Event, NC.Unit);
+    static getRng = function() { return UnitGen._rng; }
+}
+Utils.classMixin(UnitGen, BPScriptBasedGenerator, GenUtils.decorateFindFor({
+    normalizeObject: function(blueprint) {
+        var unit = Templates.inflate('unit', {
+            UNIT_ID: Utils.UUID(),
+        });
+        if (blueprint) {
+            Unit.applyBlueprint(unit, blueprint);
+        }
+        return unit;
+    },
+    finalize: function(contextElt, unit) {
+        // Do things like ensure that equipped weapons are equipped, etc.
+        Unit.__refreshMoveSets(unit, contextElt);        
+    },
+    commands: [
+        BasicScriptCommands,
+        MetaScriptCommands.for(UnitGen, UnitGen._rng),
+        UnitScriptCommands
+    ]
+}, 'unit'));
+WoofRootController.register(UnitGen);
+
 
 class CurrentHPAttr {}
 Utils.classMixin(CurrentHPAttr, IntAttr, "value");
@@ -6,6 +60,8 @@ class MaxHPAttr {}
 Utils.classMixin(MaxHPAttr, IntAttr, "max");
 
 class Unit {
+    static Acted = new ScopedAttr("acted", BoolAttr);
+
     static TargetLocation = new ScopedAttr('target-location', StringAttr);
     static Stopped = new ScopedAttr('stopped', BoolAttr);
     static ComboWith = new ScopedAttr('combo-with', ListAttr);
@@ -44,39 +100,7 @@ class Unit {
         return qsa(parent, "[wt~='Unit'][team='" + team + "']");
     }
 
-    static _findScript(base) {
-        return qs(base, ".unit_script");
-    }
-
-    static baseDamage(unit) {
-        return Unit.BaseDamage.findGet(unit);
-    }
-
-    static setBaseDamage(unit, value) {
-        var elt = Unit.BaseDamage.find(unit);
-        Unit.BaseDamage.set(elt, value);
-    }
-
-    static adjustBaseDamage(unit, delta) {
-        Unit.setBaseDamage(unit, Unit.baseDamage(unit) + delta);
-    }
-
-    static baseDefense(unit) {
-        return Unit.BaseDefense.findGet(unit);
-    }
-
-    static setBaseDefense(unit, value) {
-        var elt = Unit.BaseDefense.find(unit);
-        Unit.BaseDefense.set(elt, value);
-    }
-
-    static adjustBaseDefense(unit, delta) {
-        Unit.setBaseDefense(unit, Unit.baseDefense(unit) + delta);
-    }
-
     static mass(unit) {
-        var found = Unit.Mass.findGet(unit);
-        if (found > 0) return found;
         return Unit._getBaseStat(unit, 'mass');
     }
 
@@ -191,14 +215,24 @@ class Unit {
     static Stacks = new ScopedAttr("stacks", IntAttr);
     static join(unit) {
         // Look for statuses the unit should get for free and apply them.
+        // TODO: replace this with a gen script of some kind.
         qsa(unit, 'apply-status').forEach(function(statusElt) {
             var stacks = Unit.Stacks.get(statusElt) || 1;
             var status = Unit.Status.get(statusElt);
             BaseStatus.Apply(status, unit, stacks);
         });
+
+        // Copy over our battle script.
+        Utils.moveChildren(qs(unit, '.battle_script_base').cloneNode(true), qs(unit, '.battle_script > .cooldown_view'));
+
+        // Refresh.
+        Move.refreshActive(unit);
     }
 
     static retreat(unit) {
+        // Clear the current battle script.
+        Utils.clearChildren(qs(unit, '.battle_script > .cooldown_view'));
+
         // Remove statuses.
         var status = UnitStatus.findAll(unit);
         status.forEach(function(s) {
@@ -529,30 +563,6 @@ class Unit {
 
     static Ordinal = new ScopedAttr("ordinal", IntAttr);
 
-    static applyModifier(unit, modifier) {
-        // Apply the modifier here.
-        qsa(modifier, 'slot').forEach(function(slotElt) {
-            var ability = Ability.inflate({
-                volley: Unit.Ordinal.findGet(slotElt)
-            });
-            // Generate an ID.
-            IdAttr.generate(ability);
-            Ability.Type.findGetCopySetAll(slotElt, ability);
-
-            // TODO: When you rewrite ability/skill stuff to use the same
-            // blueprint system everyone else does, remember this spot.
-            var skill = Blueprint.find(slotElt, 'skill');
-            if (skill) {
-                Ability.applySkill(modifier, ability, skill.getAttribute('name'));
-            }
-
-            Unit._findScript(unit).appendChild(ability);
-        });
-
-        // Add our modifier to our list of mod blueprints.
-        qs(unit, WoofType.buildSelector('ModBP')).appendChild(modifier.cloneNode(true));
-    }
-
     static setName(unit, name) {
         Unit.Name.set(qs(unit, '.name[name]'), name);
     }
@@ -572,31 +582,50 @@ class Unit {
 
 
     static getMovementSpeed(unit) {
-        var stat = Unit._getBaseStat(unit, 'move');
-        // Fallback pre-standardization.
-        if (stat === null) return 1;
-        return stat;
+        return Unit._getBaseStat(unit, 'move');
     }
 
     static getDamage(unit) {        
-        var stat = Unit._getBaseStat(unit, 'damage');
-        // Fallback pre-standardization.
-        if (stat === null) return Unit.baseDamage(unit);
-        return stat;
+        return Unit._getBaseStat(unit, 'damage');
     }
     
     static getDefense(unit) {
-        var stat = Unit._getBaseStat(unit, 'defense');
-        // Fallback pre-standardization.
-        if (stat === null) return Unit.baseDefense(unit);
-        return stat;
+        return Unit._getBaseStat(unit, 'defense');
     }
 
     static getCunning(unit) {
-        var stat = Unit._getBaseStat(unit, 'cunning');
-        // Fallback pre-standardization.
-        if (stat === null) return 2;
-        return stat;
+        return Unit._getBaseStat(unit, 'cunning');
+    }
+
+    static __refreshMoveSets(unit, opt_context) {
+        // TODO: This is where you'd check for equipped weapons.
+        MoveSlot.findAll(unit).forEach(function(moveSlot) {
+            var defaultValue = MoveSlot.Default.findGet(moveSlot);
+            // Run our generation script.
+            if (defaultValue) MoveSlotGen.gen(opt_context || unit, defaultValue, {}, moveSlot);
+        });
+    }
+
+    static sortBattleScript(unit) {
+        var script = qs(unit, '.battle_script > .cooldown_view');
+        var elts = a(script.children);
+        elts.forEach(function(slot) {
+            var current = MoveSlot.currentCooldown(slot);
+            // Find out how far left we should go.
+            var next = slot.nextElementSibling;
+            while (!!next) {
+                if (MoveSlot.currentCooldown(next) > current) {
+                    // Save some DOM operations.
+                    if (slot.nextElementSibling != next) next.insertBefore(slot);
+                    return;
+                }
+                next = next.nextElementSibling;
+            }
+            // If we make it this far, stick it at the end.
+            slot.parentNode.appendChild(slot);
+        });
+
+        // TODO: Refresh our icon-view at this point.
     }
 }
 WoofRootController.register(Unit);
@@ -625,6 +654,24 @@ Utils.classMixin(Unit, AbstractDomController, {
         }
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** Only left here for reference. */
 
 class VolleyCountAttr {
     static lowestAtLeast(handler, value) {
@@ -761,9 +808,17 @@ class Ability {
             firstSelector = TeamAttr.buildSelector(team);
         }
 
-        var hoverHelpValue = activationInfo.map(function(pos) {
-            return "[wt~=CellBlock]" + firstSelector + " " + Grid.EffectivePosition.buildSelector(pos);
-        }).join(',');
+        var unit = Unit.findUp(abilityElt);
+        if (!unit) return;
+        var team = TeamAttr.get(unit);
+
+        var hoverHelpValue = [Direction.None].concat(Direction.allDirections()).map(function(dir) {
+            var threat = BlockThreats.buildSelector(team, dir);
+            return activationInfo.map(function(pos) {
+                var withDir = Cell.EffectivePositions.buildSelector(EffectivePosition.normToContextual(dir, pos));
+                return threat + "[wt~=CellBlock]" + firstSelector + " " + withDir + " > " + "[direction='" + dir + "']";
+            });
+        }).flat().join(',');
 
         // Next up, we want to highlight any possible targets.
         Unit.HoverHelp.set(abilityElt, hoverHelpValue);

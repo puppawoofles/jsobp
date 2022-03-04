@@ -1,7 +1,6 @@
 
 class Preparations {
     static rng = ASRNG.newRng(NC.Seed, true, NC.Encounter, NC.Round, NC.Day);
-    static resetRng = Preparations.rng.invalidate;
 
     static InitDefaultMode(elt, useTypes) {
         var usesParent = Preparation.Uses.find(elt);
@@ -314,7 +313,7 @@ class Barricade {
 
     static invoke(card, target) {
         var battlefield = BattlefieldHandler.find(card); 
-        var barricade = UnitGenerator.generate('barricade');       
+        var barricade = UnitGen.gen(card, 'barricade');       
         BattlefieldHandler.addUnitTo(battlefield, barricade, BigCoord.extract(target), SmallCoord.extract(target));
         return Preparations.payCostAndMaybeIncrementUsage(card);
     }

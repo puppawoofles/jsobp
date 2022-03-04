@@ -1,3 +1,70 @@
+class EncounterScriptCommands {
+
+    static battlefield(elt, encounter, defs) {
+        BattlefieldGen.gen(encounter, elt, defs, encounter);
+    }
+
+    static Locations = new ScopedAttr("locations", ListAttr);
+    static Count = new ScopedAttr("count", IntAttr);
+    static spawnUnits(elt, encounter, defs) {
+        var unitCount = EncounterScriptCommands.Count.get(elt) || 1;
+        var validLocations = (EncounterScriptCommands.Locations.get(elt) || []).map(function(coord) {
+            if (Grid.isUberLabel(coord)) {
+                return Grid.fromUberLabel(encounter, coord);
+            }
+            return Cell.findAllInBlock(CellBlock.findByLabel(encounter, coord));
+        }).flat().filter(function(cell) {
+            return !BattlefieldHandler.unitAt(encounter, UberCoord.extract(cell));
+        });
+
+        times(unitCount).forEach(function(ignore) {
+            if (validLocations.length == 0) {
+                return;
+            }
+
+            // TODO: Include preferred spawn locations.
+            var unit = UnitGen.gen(encounter, elt, defs);
+            var spawnLocation = EncounterGen._rng.randomValueR(validLocations);
+            BattlefieldHandler.placeUnitAt(encounter, unit, UberCoord.extract(spawnLocation));
+        });
+    }
+
+    static endCondition(elt, encounter, defs) {
+        // TODO: Implement!
+        var container = WoofType.findDown(encounter, 'EndConditions');
+        container.appendChild(elt.cloneNode(true));
+    }
+
+    static bonusCards(elt, encounter, defs) {
+        // TODO: Implement!
+    }
+
+    static For = new ScopedAttr('for', StringAttr);
+    static installHandlers(elt, encounter, defs) {
+        
+        var handlerSet = HandlerSet.installFor(encounter, encounter);
+        Utils.moveChildren(elt.cloneNode(true), handlerSet);
+    }
+}
+
+
+class EncounterGen {
+}
+Utils.classMixin(EncounterGen, BPScriptBasedGenerator, GenUtils.decorateFindFor({
+    finalize: function(encounter) {
+        // Run some validation to help me debug.
+        if (qsa(encounter, 'endCondition').length == 0) {
+            throw boom("No end conditions configured for this combat.");
+        }
+
+    },
+	commands: [
+		BasicScriptCommands,
+		MetaScriptCommands.for(EncounterGen, BattlefieldHandler.rng),
+		EncounterScriptCommands
+	]
+}, 'encounter'));
+
 class EncounterScreenHandler {
     static BlockHintAttr = new ScopedAttr("block-hover-hint", StringAttr);
 

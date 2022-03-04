@@ -164,7 +164,7 @@ class EventRules {
                 }
                 // First, we want to look for any results, like gold or rumors or whatever.
                 EventRules._executeEventResult(screen, pointer, defs);
-                
+
 
                 // Second, check if we have a next state.
                 if (EventRules.NextState.has(pointer)) {

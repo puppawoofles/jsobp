@@ -3,18 +3,18 @@ class Teams {
     static Enemy = "enemy";
     static Neutral = "neutral";
 
+    static __opposedMap = {
+        "player": ["enemy"],
+        "enemy": ["player"],
+        "neutral": []
+    };
+
     static allTeams() {
         return [Teams.Player, Teams.Enemy, Teams.Neutral];
     }
 
     static opposed(to) {
-        switch (to) {
-            case Teams.Player:
-                return [Teams.Enemy];
-            case Teams.Enemy:
-                return [Teams.Player];
-        }
-        return [];
+        return (Teams.__opposedMap[to] || []).clone();
     }
 
     // In order of of hostility.

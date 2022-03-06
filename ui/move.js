@@ -145,7 +145,13 @@ class Move {
                     break;
                 case "AZ":
                     found = Direction.allDirections().filter(function(dir) {
-                        // First check if we're active.
+                        // First, check that the block even exists.
+                        var thatBlock = CellBlock.findByCoord(battlefield, BigCoord.plus(BigCoord.extract(inZone), Direction.coordDelta(dir)));
+                        if (!thatBlock || !CellBlock.isActive(thatBlock)) {
+                            return false;
+                        }
+                        
+                        // Then check if we're active.
                         var withDir = effectivePos.map(ep => `${dir}-${ep}`);
                         return !!withDir.findFirst(function(selector) {
                             return inCell.matches(`[wt~=CellBlock] [effective-positions~="${selector}"]`);

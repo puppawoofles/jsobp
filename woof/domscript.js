@@ -60,20 +60,23 @@
 
 class GenUtils {
     static buildBlueprintFor(type) {
-        return function(context, name) {
-            return bf(context, `${type}-blueprint[name="${name}"]`);
+        return function(name) {
+            var resource = rr(name);
+            return qs(resource[0], `${type}-blueprint[name="${resource[1]}`)
         }
     }
 
     static genBlueprintFor(type) {
-        return function(context, name) {
-            return bf(context, `${type}-gen[name="${name}"]`);
+        return function(name) {
+            var resource = rr(name);
+            return qs(resource[0], `${type}-gen[name="${resource[1]}`)
         }
     }
 
     static scriptBlueprintFor(type) {
-        return function(context, name) {
-            return bf(context, `${type}-script[name="${name}]`);
+        return function(name) {
+            var resource = rr(name);
+            return qs(resource[0], `${type}-script[name="${resource[1]}`)
         }
     }
 
@@ -289,7 +292,7 @@ class BasicScriptCommands {
  */
 class MetaScriptCommands {
     static Name = new ScopedAttr("name", StringAttr);
-    static Selector = new ScopedAttr("selector", StringAttr);
+    static Type = new ScopedAttr("type", StringAttr);
     static Fn = new ScopedAttr("fn", FunctionAttr);
     static Choices = new ScopedAttr("choices", ListAttr);
     static Params = new ScopedAttr("params", ListAttr);
@@ -315,12 +318,20 @@ class MetaScriptCommands {
             },
             'sub': function(elt, obj, defs) {
                 var scriptName = MetaScriptCommands.Name.get(elt);
-                var scriptSelector = MetaScriptCommands.Selector.get(elt);
-                var key = `__${scriptName}__inpath`;
+                var scriptType = MetaScriptCommands.Type.get(elt);
+                var nameForKey = scriptName.split('.').join('+');
+                var key = `__${scriptType}+${nameForKey}__inpath`;
                 var existing = defs.get(key);
                 if (existing) throw boom("Detected sub script cycle.");
                 defs.set(key, true);
-                return qs(document.body, scriptSelector).firstElementChild;
+                // Find our script.
+                var resource = rr(scriptName);
+                var doc = resource[0];
+                var key = resource[1];
+
+                var root = qs(doc, `${scriptType}[name="${key}"]`);
+
+                return BPScriptBasedGenerator.findScript(doc, root).firstElementChild;
             },
             'choose': function(elt, obj, defs) {
                 var choice;
@@ -369,13 +380,18 @@ class BPScriptBasedGenerator {
         contextElt = defs.__contextElt();
         var finalize = config.finalize || (e => e);
 
-        if (!isElement(bpEltOrName)) {
-            bpEltOrName = config.findGenBlueprint(contextElt, bpEltOrName);
+        var bpElt = bpEltOrName;
+
+        if (!isElement(bpElt)) {
+            bpElt = config.findGenBlueprint(bpElt);
+        }
+        if (!bpElt) {
+            throw boom("Can't find template ", bpEltOrName);
         }
 
         // This should run the blueprint if that's a thing.
-        var baseObj = BPScriptBasedGenerator.normalizeObj(config, bpEltOrName, contextElt, defs, opt_baseObj);
-        var script = BPScriptBasedGenerator.findScript(contextElt, bpEltOrName);
+        var baseObj = BPScriptBasedGenerator.normalizeObj(config, bpElt, contextElt, defs, opt_baseObj);
+        var script = BPScriptBasedGenerator.findScript(contextElt, bpElt);
 
         if (script) {
             ScriptShortcuts.runScriptFor(script, config.commands, baseObj, defs);
@@ -385,19 +401,8 @@ class BPScriptBasedGenerator {
     }
 
 
-    static Script = new ScopedAttr("script", StringAttr);
     static findScript(contextElt, elt) {
-        var script = null;
-        if (BPScriptBasedGenerator.Script.has(elt)) {
-            script = config.findScriptBlueprint(contextElt, BPScriptBasedGenerator.Gen.get(elt));
-        }
-        if (!script) {
-            script = qs(elt, ':scope > gen');
-        }
-        if (!script) {
-            script = elt;
-        }
-        return script;
+        return qs(elt, ':scope > gen') || elt;
     }
 
 
@@ -413,7 +418,7 @@ class BPScriptBasedGenerator {
             var blueprint = null;
             if (BPScriptBasedGenerator.Bp.has(elt)) {
                 // Cool, we can look this up.
-                blueprint = config.findBuildBlueprint(contextElt, BPScriptBasedGenerator.Bp.get(elt));
+                blueprint = config.findBuildBlueprint(BPScriptBasedGenerator.Bp.get(elt));
             }
             if (!blueprint) {
                 blueprint = qs(elt, ':scope > bp');

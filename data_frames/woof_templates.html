@@ -14,9 +14,19 @@
 			<game-effect-result type="TYPE" value=""></game-effect-result>
 		</template>
 
+        <!-- Used to install new event handlers for the queue. -->
+		<template name="handler-set">
+			<handler-set wt="HandlerSet"></handler-set>
+		</template>
+
         <!-- Used for RNG counter tracking -->
 		<template name="noise_counter">
 			<info name="NAME" value="VALUE"></info>
+		</template>
+
+        <!-- Used to help with target selection. -->
+		<template name="target_context">
+			<target-context context="CONTEXT" ticket="TICKET" effect="EFFECT"></target-context>
 		</template>
 
         <!-- Structure of our message log -->

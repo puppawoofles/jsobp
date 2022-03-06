@@ -410,7 +410,6 @@ class RoundRules {
         var encounter = EncounterScreenHandler.find(handler);
 
         var battlefield = BattlefieldHandler.find(effect);
-        var roundPanel = RoundPanel.find(handler);
         var results = [];
 
         var baseFn = function() {
@@ -752,19 +751,6 @@ class RoundRules {
             return blorb.unit;
         })
     }
-
-    static ActivateGroupBanner(handler, effect, params) {
-        // Normalize our blorbs back to elements.
-        var banner = Templates.inflate('combo_banner');
-        params.blorbs.forEach(function(b) {
-            if (!!b.unit) {
-                banner.appendChild(Unit.cloneAppearance(b.unit));
-                banner.appendChild(effect.ownerDocument.createTextNode(Ability.Label.findGet(b.ability)));
-            }
-        });
-        return banner;
-    } 
-
 }
 WoofRootController.register(RoundRules);
 

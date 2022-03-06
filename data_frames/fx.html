@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+
+        <!-- Template for an icon that grows, then disappears. -->
+		<template name="icon_wub_ui_effect">
+			<div wt="UiEffect" class="wub_ui_effect" wh-b="UiEffect.Create>UiTreatments.OnTempIconCreate">
+			  CONTENT
+			</div>
+		</template>
+		
+		<template name="banner_contents">
+			<div wt="UiEffect" wh-b="UiEffect.Create>UiTreatments.OnBannerContentCreate" class="EXTRA_CLASSES"></div>
+		</template>
+
+		<template name="text_banner_wrapper">
+			<span>CONTENT</span>
+		</template>
+
+
+		<!-- Template for an icon that grows, then disappears. -->
+		<template name="text_ui_effect">
+			<div wt="UiEffect" class="text_ui_effect" wh-b="UiEffect.Create>UiTreatments.OnTempTextCreate"
+				style="color: COLOR; text-shadow: -1px -1px 0 SHADOW, 0 -1px 0 SHADOW, 1px -1px 0 SHADOW, 1px 0 0 SHADOW, 1px 1px 0 SHADOW, 0 1px 0 SHADOW, -1px 1px 0 SHADOW, -1px 0 0 SHADOW;">
+			  CONTENT
+			</div>
+		</template>
+
+    </body>
+</html>

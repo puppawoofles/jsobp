@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Legacy stuff from our V1 attempt.</title></head>
+    <body>
+
+
+        <compendium>
+
+            <concept hash="events">
+                <info-panel>
+                    <h2>Events</h2>
+                    <p>Events are the implementation of assignments.  Basically:<ul>
+                        <li>A rumor becomes an assignment</li>
+                        <li>An assignment in progress is an event</li>
+                    </ul></p>
+                    <p>Events are basically like state machines.</p>
+    
+                    
+                </info-panel>
+    
+                <!-- This is left here as a complex example.  -->
+                <event-blueprint name="lost_city" label="The Lost City">
+                    <state type="vignette" name="gates" start="true">
+                        <flavor>
+                            <p>You stand outside the gates of the ruined city.  What treasures and wonders lie within?</p>
+                        </flavor>
+                        <choice result="1" label="Step through the gate [Outer City]"></choice>
+                        <event-result choice="1" next-state="outer_city"></event-result>
+                    </state>
+    
+                    <!-- Outer City -->
+                    <!-- You were going to refactor these defs.  See DefHelper.baseDef.
+                         TL;DR: global.outer_progress instead of what's here. -->
+                    <def name="outer_progress" value="0" global="true"></def>
+                    <def name="outer_boss_alive" value="true" global="true"></def>
+                    <state type="vignette" name="outer_city">
+                        <flavor>
+                            <p>You walk through the outer ring of the lost city.</p>
+                        </flavor>
+                        <!-- TODO: Make this somewhat dynamic so you can only win each encounter once. -->
+                        <choice-group choose="3">
+                            <choice result="outer_boss" label="Hey, who is that big guy over there?" filter-fn="LostCity.progress" progress-min="6" params="outer_progress" flag="outer_boss_alive" priority="true"></choice>
+    
+                            <choice result="hall_of_bugs" label="I wonder where that passage leads?" flag="hall_of_bugs"></choice>
+    
+                            <choice result="leave" label="Let's head home. [END]" fallback="true"></choice>
+                            <choice result="gates" label="Maybe we should go back to the gates and regroup?" fallback="true"></choice>
+                        </choice-group>
+                        <event-result choice="leave" victory="false"></event-result>
+                        <event-result choice="gates" next-state="gates"></event-result>
+                        <event-result choice="outer_boss" next-state="outer_boss"></event-result>
+                        <event-result choice="hall_of_bugs" next-state="hall_of_bugs"></event-result>
+                    </state>
+    
+                    <!-- Bug Hallway -->
+                    <def name="hall_of_bugs" value="true" global="true"></def>
+                    <state type="vignette" name="hall_of_bugs" label="Webbed Passage">
+                        <flavor>
+                            <p>This large archway was clearly an important thoroughfare at some point, though now it is collapsed and covered in webs.</p>
+                        </flavor>
+                        <choice result="fast" label="Stick together! [Combat: +2 March]"></choice>
+                        <choice result="careful" label="Rush through! [Combat: +4 Reposition]"></choice>
+                        <choice result="fire" label="Nothing a well-placed firebomb can't fix! [Combat: Lose Fire Bomb, +1 March, +2 Reposition]" filter-fn="LostCity.ItemAvailable" item="fireBomb"></choice>
+                        <event-result choice="fast" next-state="hall_of_bugs_fight">
+                            <def name="hall_of_bugs_webs" value="true"></def>
+                            <def name="hall_of_bugs_fast" value="true"></def>
+                        </event-result>
+                        <event-result choice="careful" next-state="hall_of_bugs_fight">
+                            <def name="hall_of_bugs_webs" value="true"></def>
+                            <def name="hall_of_bugs_careful" value="true"></def>
+                        </event-result>
+                        <event-result choice="fire" next-state="hall_of_bugs_fight">
+                            <remove-item item="fireBomb"></remove-item>
+                            <def name="hall_of_bugs_medium" value="true"></def>
+                        </event-result>
+                    </state>
+                    <state type="encounter" name="hall_of_bugs_fight" label="Webbed Passage">
+                        <encounter>
+                            <battlefield bp="hallway"></battlefield>
+                            <place-units location="A2" count="3">
+                                <from-unit-gen name="pill_bug"></from-unit-gen>
+                            </place-units>
+                            <place-units location="A2" count="2" flag="hall_of_bugs_webs">
+                                <from-unit-gen name="web_scenery"></from-unit-gen>
+                            </place-units>
+                            <place-units location="A3" count="3">
+                                <from-unit-gen name="pill_bug"></from-unit-gen>
+                            </place-units>
+                            <place-units location="A3" count="2" flag="hall_of_bugs_webs">
+                                <from-unit-gen name="web_scenery"></from-unit-gen>
+                            </place-units>
+                            <place-units location="A4" count="3">
+                                <from-unit-gen name="pill_bug"></from-unit-gen>
+                            </place-units>
+                            <place-units location="A4" count="2" flag="hall_of_bugs_webs">
+                                <from-unit-gen name="web_scenery"></from-unit-gen>
+                            </place-units>
+                            <end-condition end-fn="EndConditions.AllAlliesIn" location="A4" type="win">
+                                Move all your units on the battlefield <span hover-help="[wt~=CellBlock][beeg-label=A4]">here!</span>
+                            </end-condition>
+                            <end-condition end-fn="EncounterRules.DefaultWipe" type"lose">
+                                You lose if all your units die!
+                            </end-condition>
+                            <bonus-cards>
+                                <tactic bp="march"></tactic>
+                            </bonus-cards>
+                            <bonus-cards flag="hall_of_bugs_careful">
+                                <tactic bp="reposition"></tactic>
+                                <tactic bp="reposition"></tactic>							
+                                <tactic bp="reposition"></tactic>							
+                                <tactic bp="reposition"></tactic>							
+                            </bonus-cards>
+                            <bonus-cards flag="hall_of_bugs_fast">
+                                <tactic bp="march"></tactic>
+                                <tactic bp="march"></tactic>
+                            </bonus-cards>
+                            <bonus-cards flag="hall_of_bugs_medium">
+                                <tactic bp="march"></tactic>
+                                <tactic bp="reposition"></tactic>							
+                                <tactic bp="reposition"></tactic>							
+                            </bonus-cards>
+                            <combat-script>
+                                <handler label="SpawnBugs" handler="HallOfBugs.OnAfterVolley" event-types="Volley:after">
+                                    <place-units location="A2" count="3">
+                                        <from-unit-gen name="pill_bug"></from-unit-gen>
+                                    </place-units>		
+                                </handler>
+                                <!-- Handlers go here! -->
+                            </combat-script>
+                        </encounter>
+                        <event-result choice="victory" next-state="hall_of_bugs_win">
+                            <!-- Set it to true for now until I have enough combats to fill the outer city. -->
+                            <def name="hall_of_bugs" value="true"></def>
+                            <def name="outer_progress" fn="LostCity.MakeProgress" params="outer_progress"></def>
+                        </event-result>
+                        <event-result choice="wipe" next-state="hall_of_bugs_wipe"></event-result>
+                        <event-result choice="giveUp" next-state="hall_of_bugs_retreat"></event-result>
+                    </state>
+                    <state type="vignette" name="hall_of_bugs_win" label="Webbed Passage">
+                        <flavor>
+                            <p>Congrats!  You've cleared the path for next time! I should write more.</p>
+                        </flavor>
+                        <choice result="1" label="Head back"></choice>
+                        <event-result choice="1" victory="true">
+                        </event-result>
+                    </state>
+                    <state type="vignette" name="hall_of_bugs_wipe" label="Webbed Passage">
+                        <flavor>
+                            <p>They were eaten by the bugs. :(</p>
+                        </flavor>
+                        <choice result="1" label="Well, that sucks"></choice>
+                        <event-result choice="1" victory="false">
+                        </event-result>
+                    </state>
+                    <state type="vignette" name="hall_of_bugs_retreat" label="Webbed Passage">
+                        <flavor>
+                            <p>Screw that noise.  Maybe there's somewhere else we can go.</p>
+                        </flavor>
+                        <choice result="1" label="Look Elsewhere"></choice>
+                        <choice result="2" label="Head back home [END]"></choice>
+                        <event-result choice="1" next-state="outer_city"></event-result>
+                        <event-result choice="2" victory="false"></event-result>
+                    </state>
+    
+                </event-blueprint>			
+            </concept>
+    
+            <concept hash="encounter">
+                <info-panel>
+                    <h2>Encounters</h2>
+                    <p>Encounters are combat.  I don't want to rename them all though.</p>
+                </info-panel>
+    
+                <!-- Default encounter setup scripts. -->
+                <encounter-gen name="base">
+                    <!-- Update initiative order if needed. -->
+                    <ifAllDef keys="playersSurprised">
+                        <copyDest initiative-order="enemy player neutral"></copyDest>
+                    </ifAllDef>
+    
+                    <!-- Set up retreat options. -->
+                    <ifAllDef keys="retreatPossible">
+                        <bonusCards>
+                            <!-- Retreat card goes here. -->
+                        </bonusCards>
+                    </ifAllDef>
+    
+                    <!-- Set up handlers -->
+                    <installHandlers>
+                        <!-- Encounter Structure -->
+                        <handler handler="EncounterRules.Round" event-types="Round"></handler>
+                        <handler handler="RoundRules.PlayRound" event-types="PlayRound"></handler>
+                        <handler handler="RoundRules.Volley" event-types="Volley"></handler>
+                        <handler handler="RoundRules.TickCooldowns" event-types="Volley:after"></handler>
+                        <handler handler="RoundRules.UseMove" event-types="UseMove"></handler>
+                        <handler handler="RoundRules.BlockActivation" event-types="BlockActivation"></handler>
+                        <handler handler="RoundRules.ActivateGroup" event-types="ActivateGroup"></handler>
+                        <handler handler="UnitRules.UseAbility" event-types="UseAbility"></handler>
+    
+                        <!-- Combat effects -->
+                        <handler handler="UnitRules.Attack" event-types="Attack"></handler>
+                        <handler handler="UnitRules.TakeDamage" event-types="TakeDamage"></handler>
+                        <handler handler="UnitRules.UnitDeath" event-types="UnitDeath"></handler>
+                        <handler handler="UnitRules.UnitRetreat" event-types="UnitRetreat"></handler>
+                        <handler handler="UnitRules.UnitMoveToward" event-types="UnitMoveToward"></handler>
+                        <handler handler="UnitRules.ShiftUnit" event-types="ShiftUnit"></handler>
+                        <handler handler="UnitRules.PushUnit" event-types="PushUnit"></handler>
+                        <handler handler="UnitRules.UnitCollision" event-types="UnitCollision"></handler>
+                        <handler handler="UnitRules.ApplyStatus" event-types="ApplyStatus" TODO></handler>
+                        <handler handler="UnitRules.RemoveStatus" event-types="RemoveStatus" TODO></handler>
+    
+                        <!-- Handlers for card behavior -->
+                        <handler handler="CardRules.DrawCard" event-types="DrawCard"></handler>
+                        <handler handler="CardRules.RefillHand" event-types="RefillHand"></handler>
+                        <handler handler="CardRules.DiscardCards" event-types="DiscardCards"></handler>
+                        <handler handler="CardRules.DiscardSingleCard" event-types="DiscardSingleCard"></handler>
+                        <handler handler="CardRules.ShuffleDiscard" event-types="ShuffleDiscard"></handler>
+                        <handler handler="CardRules.PlayCard" event-types="PlayCard" TODO></handler>
+                    
+                        <!-- Handlers for structural UI effects-->
+                        <handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after" skip-log="true">
+                            <ui-effect type="delay" delay="1000"></ui-effect>
+                            <ui-effect type="banner" content-fn="EncounterRules.EndOfEncounterBanner"></ui-effect>
+                        </handler>
+    
+                        <!-- Handlers for UI Effects -->
+                        <handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after" skip-log="true">
+                            <ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="500 100 0"></ui-effect>
+                        </handler> 
+                        <handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" skip-log="true">
+                            <ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="0 0 NaN"></ui-effect>
+                            <ui-effect type="blink" blink-color="red"></ui-effect>
+                            <ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
+                        </handler>
+                        <handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
+                            <ui-effect type="wub" icon="☠️"></ui-effect>
+                        </handler>
+                        <handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
+                            <ui-effect type="wub" icon="🏳️"></ui-effect>
+                        </handler>
+                        <handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after" skip-log="true">
+                            <ui-effect type="wub" icon="💥" target-fn="UiTreatments.TargetsFromParams" target-param="firstUnit secondUnit"></ui-effect>
+                        </handler>
+                        <handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before" skip-log="true">
+                            <ui-effect type="wub" icon="💨" target-fn="UiTreatments.TargetsFromParams" target-param="unit" filter-fn="UnitRules.ShiftFromPush"></ui-effect>
+                        </handler>
+                        <handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before" skip-log="true">
+                            <ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
+                            <ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delays="1500 1500 200"></ui-effect>
+                        </handler>
+                        <handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before" skip-log="true">
+                            <ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
+                            <ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="50 0 NaN"></ui-effect>
+                        </handler>
+    
+                        <!-- Handlers for updating functional UI -->
+                        <handler label="ActionButtonVolley" handler="EncounterRules.RemoveStopBeforeRound" event-types="Round:before"></handler>
+                        <handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>	
+                        <handler label="UnitPreAbility" handler="Unit.BeforeUseAbility" event-types="UseAbility:before"></handler>
+                        <handler label="UnitPostAbility" handler="Unit.AfterUseAbility" event-types="UseAbility:after"></handler>
+                        <handler label="VolleyTrackerRound" handler="VolleyCounter.AfterPlayRound" event-types="PlayRound:after"></handler>
+                        <handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
+                        <handler label="VolleyTrackerVolley" handler="VolleyCounter.BeforeVolley" event-types="Volley:before"></handler>
+    
+                    </installHandlers>
+                </encounter-gen>
+    
+                <encounter-gen name="default" base="base">
+                    <!-- Default encounter-end conditions. -->
+                    <endCondition end-fn="EncounterRules.DefaultWin" type="win">
+                        Defeat all enemies to win!
+                    </endCondition>
+    
+                    <endCondition end-fn="EncounterRules.DefaultWipe" type"lose">
+                        You lose if all your units die!
+                    </endCondition>
+                </encounter-gen>
+    
+                <!-- Battlefield generation -->
+                <battlefield-gen name="basic_cross">
+                    <geo battlefield-fn="BattlefieldGen.generateRect" width="3" height="3"></geo>
+                    <forBlocks labels="A1 A3 C1 C3">
+                        <copy disabled="true"></copy>
+                    </forBlocks>
+                </battlefield-gen>
+
+            </concept>
+            
+            <concept hash="assignments">
+                <info-panel renderer="Compendiums.RenderAssignment">
+                    <h2>Assignments</h2>
+    
+                    <p>Assignments are basically quests.  I dunno why I didn't just call them that in the first place.</p>
+                    <p>You send units on these when you embark, and you may get <span compendium="concept/assignments/concept/results">rewards</span> when you return.</p>
+    
+                    <template>
+                        <p>Right-click <span compendium="concept/assignments">here for the base page on assignments</span></p>
+                        <div class="compendium_view">
+    
+                        </div>
+                    </template>
+                </info-panel>
+    
+                <concept hash="results">
+                    <info-panel>
+                        <h2>Assignment Results</h2>
+                        <p>Possible results from an adventure thing are money and healing.  More to come!</p>
+                    </info-panel>
+                </concept>
+                
+                <concept hash="cost">
+                    <info-panel>
+                        <h2>Rumor Costs</h2>
+                        <p>Some rumors cost money to buy.  If it's a flat cost, it's just listed.  If it's per-unit, there's a face added to it.</p>
+                        <p>If the button is greyed out, you don't meet the requirements.  For example, medical help requires units that are missing HP.</p>
+                    </info-panel>
+                </concept>
+    
+                <!-- Left as an example.  Ideally this would be propulated based on your save state. -->
+                <starting-rumors>
+                    <assignment bp="lost_city"></assignment>
+                </starting-rumors>
+    
+                <result-handlers>
+                    <!-- In priority order! -->
+                    <result-handler type="add-gold" fn="GameRules.AddGoldResult"></result-handler>
+                    <result-handler type="add-rumor" fn="GameRules.AddRumorResult"></result-handler>
+                    <result-handler type="heal-units" fn="GameRules.HealUnitsResult"></result-handler>
+                </result-handlers>
+    
+                <default-assignment assignment-invoke-fn="GameRules.LaunchEvent"></default-assignment>
+    
+                <assignment-blueprint name="lost_city">
+                    <info label="Explore the Ruined City"></info>
+                    <event bp="lost_city"></event>
+                    <assign max-units="5" require="false" req-label="Up to 5 units"></assign>
+                    <info wt="Hint">A quest chain I intend to build out to be many adventures deep.  Be on your toes!"</info>
+                    <result>
+                        <add-rumor>
+                            <assignment bp="lost_city"></assignment>
+                        </add-rumor>
+                    </result>
+                    <result victory="true">
+                        <add-gold amount="50"></add-gold>
+                    </result>
+                </assignment-blueprint>
+    
+                <!-- Assignments that are otherwise later available. -->
+                <assignment-blueprint name="hangingout">
+                    <config></config>
+                    <info assignment-invoke-fn="GameRules.LaunchEffect"></info>
+                    <info encounter-fn="Events.success"></info>
+                    <info default-for-units="true"></info>
+                    <info label="Hang Around Base"></info>
+                    <info wt="Hint">This is what units do by default.  You probably have better choices!</info>
+                    <assign required="false" req-label="Each unit finds 1 gold and heals 5 HP"></assign>
+                    <result>
+                        <add-gold amount-fn="Events.hangOutGold" amount="1+"></add-gold>
+                     </result>
+                    <result>
+                        <heal-units amount="5"></heal-units>
+                    </result>
+                </assignment-blueprint>
+    
+    
+            </concept>
+    
+            <concept hash="visitor">
+                <info-panel>
+                    <h2>Visitor</h2>
+                    <p>These people sell you stuff and tell you about interesting rumors!</p>				
+                </info-panel>
+                
+                <!-- TODO: Rethink this. -->
+                <starting-visitors>
+                    <!-- 
+                    <visitor bp="mysterious_stranger"></visitor>
+                    <visitor bp="soldier"></visitor>
+                    <visitor bp="artificer"></visitor>
+                    <visitor bp="apothecary"></visitor> -->
+                </starting-visitors>
+    
+                <!-- Visitors -->
+                <visitor-blueprint name="soldier">
+                    <info frequency="8" on-join-fn="Visitors.HalfFrequency" on-skip-fn="Visitors.PlusOneFrequency"></info>
+                    <info appearance-options="👨‍🏭 👩‍🏭"></info>
+                    <merchant bp="soldier"></merchant>
+                </visitor-blueprint>
+                
+                <visitor-blueprint name="artificer">
+                    <info frequency="7" on-join-fn="Visitors.HalfFrequency" on-skip-fn="Visitors.PlusOneFrequency"></info>
+                    <info appearance-options="🧙‍♂️ 🧙‍♀️"></info>
+                    <merchant bp="artificer"></merchant>
+                </visitor-blueprint>
+    
+                <visitor-blueprint name="apothecary">
+                    <info frequency="6" on-join-fn="Visitors.HalfFrequency" on-skip-fn="Visitors.PlusOneFrequency"></info>
+                    <info appearance-options="👨‍⚕️ 👩‍⚕️"></info>
+                    <merchant bp="apothecary"></merchant>
+                </visitor-blueprint>
+    
+                <visitor-blueprint name="mysterious_stranger">
+                    <info frequency="1" on-join-fn="Visitors.ZeroFrequency" ></info>
+                    <info>
+                        <name-opt value="Mysterious Stranger"></name-opt>
+                    </info>
+                    <info appearance-options="😎" extra-classes="mysterious_stranger"></info>
+                    <merchant>
+                        <bp>
+                            <inventory-bp items-for-sale="1">
+                                <preparation bp="sp_mysteryBox"></preparation>
+                            </inventory-bp>
+                        </bp>
+                    </merchant>
+                </visitor-blueprint>
+    
+    
+                <!-- Merchant blueprints -->
+                <merchant-blueprint name="soldier">
+                    <inventory-bp items-for-sale="3">
+                        <preparation bp="barricade"></preparation>
+                        <preparation bp="throwingknife"></preparation>
+                        <preparation bp="fireBomb"></preparation>
+                        <preparation bp="iceBomb"></preparation>
+                        <preparation bp="windBomb"></preparation>
+                        <preparation bp="earthBomb"></preparation>
+                    </inventory-bp>
+                </merchant-blueprint>
+    
+                <merchant-blueprint name="artificer">
+                    <inventory-bp items-for-sale="3">
+                        <preparation bp="blinkCrystal"></preparation>
+                        <preparation bp="retreatCloak"></preparation>
+                        <preparation bp="fireBomb"></preparation>
+                        <preparation bp="iceBomb"></preparation>
+                        <preparation bp="windBomb"></preparation>
+                        <preparation bp="earthBomb"></preparation>
+                    </inventory-bp>
+                </merchant-blueprint>
+    
+                <merchant-blueprint name="apothecary">
+                    <inventory-bp items-for-sale="3">
+                        <preparation bp="minorDamagePot"></preparation>
+                        <preparation bp="minorDefensePot"></preparation>
+                        <preparation bp="turtlePot"></preparation>
+                        <preparation bp="cheetahPot"></preparation>
+                    </inventory-bp>
+                </merchant-blueprint>
+            </concept>
+    
+            <concept hash="cards">
+                <info-panel>
+                    <h2> Cards </h2>
+                    Cards!  I should say more about cards.
+                </info-panel>
+    
+                <concept hash="card">
+                    <info-panel>
+                        <h2> Card </h2>
+                        <p>You play these when combat is paused.</p>
+                        <p>If the card is blinking and very slightly see-through, it's an ephemeral card: It only exists during this battle, and will be removed from your deck once the battle completes.</p> 
+                    </info-panel>
+                </concept>
+                
+                <concept hash="drawpile">
+                    <info-panel>
+                        <h2> Draw Pile </h2>
+                        When you draw cards, they from from this pile.  You don't know what order they are in by default, but you know how many there are.
+    
+                        You can draw additional cards by clicking the draw pile, but it will cost you money.
+                    </info-panel>
+                </concept>
+    
+                <concept hash="discard">
+                    <info-panel>
+                        <h2> Discard Pile </h2>
+                        When you play a card, unless it goes somewhere else, it goes here.
+    
+                    </info-panel>
+                </concept>
+            </concept>
+    
+            <concept hash="skills">
+                <info-panel>
+                    <h2> Skills </h2>
+                    <p>Units use these to do things during their <span compendium="concept/unit/concept/activation">activations</span>.</p>
+    
+                    <p>To read a <span hover-help="[wt~=Card] [wt~=Ability]">skill on a card</span>:<ul>
+                        <li>Upper-left Icon: Ignore this icon for now.  This is the skill slot's type, which is for a future planned feature.</li>
+                        <li>Bottom-left Icon: Ignore this icon for now.  This is the skill's category, which is for a future planned feature.</li>
+                        <li>Hourglass: The left number is what the starting cooldown is when the unit is placed.  The right number is what the cooldown resets to after use.</li>
+                        <li>Icon + Name right of Hourglass:  The skill's icon and name.</li>
+                        <li><span compendium="concept/unit/concept/activation">Activation</span>: When the skill can be used.</li>
+                    </ul></p>
+                    <p>At the time of writing, the following skills exist:
+                        <ul>
+                            <li>Strike: Basic attack.  Rats do 2 damage.  Player units do 8 (+2 per combo).</li>
+                            <li>Step: Move 1 (+1 per combo, +1 per <span compendium="concept/status">💨 stack</span>.  If the unit can't move, add 1 <span compendium="concept/status">💨 stack</span>.  While it benefits from combos, it does not contribute to them.</li>
+                            <li>Retreat: Remove 1 <span compendium="concept/status">🏳️ stack</span> stack.  While it benefits from combos, it does not contribute to them.</li>
+                            <li>Wind Blast: Attempts to push a unit backward within their cell block.  How far a unit is moved is based on how heavy the unit is, and the strength of the push.  Units that collide may take damage.</li>
+                            <li>Shove: Same as Wind Blast, but in a different row.</li>
+                            <li>Defend: Gain <span compendium="concept/block">block</span>.</li>
+                            <li>Protect: The adjecent ally (or self) with the lowest HP gains <span compendium="concept/block">block</span>.  If this affects a different unit, more block is gained.</li>
+                            <li>Bleed: Add 6 stacks of Bleed to an enemy.  Enemies lose HP (bypassing Block) equal to the number of Bleed stacks they have and lose half their bleed stacks every time the unit is activated.</li>
+                            <li>Sunder: Remove a large amount of block, then apply <span compendium="concept/block">vulnerability</span>.</li>
+                            <li>Distract: Adds 2 stacks of Distract to an enemy.  Each stack causes the enemy's abilities to activate on a later volley.  Enemies lose 1 stack of Distract every time they are activtaed.</li>
+                        </ul>
+                    </p>
+        
+                    <!-- Standard param functions.  -->
+                    <skill-param-fn type="⚔️" fn="SkillParams.MeleeParams"></skill-param-fn>
+                    <skill-param-fn type="⚾" fn="SkillParams.ThrownParams"></skill-param-fn>
+                    <skill-param-fn type="🏹" fn="SkillParams.ShootParams"></skill-param-fn>
+                    <skill-param-fn type="☄️" fn="SkillParams.MAttackParams"></skill-param-fn>
+                    <skill-param-fn type="🛡️" fn="SkillParams.DefendParams"></skill-param-fn>
+                    <skill-param-fn type="🔨" fn="SkillParams.ConstructParams"></skill-param-fn>
+                    <skill-param-fn type="🔮" fn="SkillParams.SummonParams"></skill-param-fn>
+                    <skill-param-fn type="🤲" fn="SkillParams.PushParams"></skill-param-fn>
+                    <skill-param-fn type="🥾" fn="SkillParams.MoveParams"></skill-param-fn>
+                    <skill-param-fn type="✨" fn="SkillParams.BuffParams"></skill-param-fn>
+                    <skill-param-fn type="💫" fn="SkillParams.DebuffParams"></skill-param-fn>
+                    <skill-param-fn type="🏳️" fn="SkillParams.RetreatParams"></skill-param-fn>
+    
+                    <skill-blueprint name="strike" label="Strike" short-label="⚔️" type="⚔️" invoke-fn="Strike.strikeInvoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true"  active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="throw" label="Throw" short-label="⚾" type="⚾" invoke-fn="Strike.throwInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="shoot" label="Shoot" short-label="🏹" type="🏹" invoke-fn="Strike.shootInvoke" target-fn="Targeting.StandardEnemy" target-travel="line" target-overhead="true" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="B1 B2 B3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Strike.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="push" label="Shove" short-label="🤲" type="🤲" invoke-fn="Push.invoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Push.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="wind-gust" label="Wind Gust" short-label="🌬️" type="🤲" invoke-fn="Push.invoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="B1 B2 B3">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Push.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="defend" label="Defend" short-label="🛡️" type="🛡️" invoke-fn="Defend.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M3 B1 B2 B3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Defend.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="protect" label="Protect" short-label="🛡️" type="🛡️" invoke-fn="Protect.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" extra-param-types="✨" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F2 M1 M2 M3 B2 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="Protect.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="bleed" label="Bleed" short-label="🩸" type="💫" invoke-fn="BleedAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" extra-param-types="⚔️" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="BleedAbility.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="sunder" label="Sunder" short-label="💔" type="💫" invoke-fn="SunderAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="walk" param-fn="SkillParams.Standard" extra-param-types="⚔️" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="SunderAbility.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="distract" label="Distract" short-label="💫" type="💫" invoke-fn="DistractAbility.invoke" target-fn="Targeting.StandardEnemy" target-travel="line" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 CC">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="DistractAbility.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <!-- Skills that happen because of orders or whatever. -->
+                    <skill-blueprint name="retreat" label="Retreat" short-label="🏳️" type="🏳️" invoke-fn="RetreatAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="RetreatAbility.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="step" label="Step" short-label="🥾" type="🥾" invoke-fn="StepAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA CC F1 F2 F3 M1 M2 M3 B1 B2 B3">
+                        <combo-effect priority="0" cost-fn="Mana.CostsAllMana" param-fn="StepAbility.combo"></combo-effect>
+                    </skill-blueprint>
+    
+                    <skill-blueprint name="struggle" label="Struggle" short-label="❓" type="❓" invoke-fn="Strike.struggleInvoke" target-fn="Targeting.StandardEnemy" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="CC">
+                    </skill-blueprint>
+    
+                    <!-- Enemy-only skill blueprints -->
+    
+                    <!-- Anyone who needs to move to a destination -->
+                    <skill-blueprint name="scurry" label="Scurry" short-label="🥾" type="🥾" invoke-fn="ScurryAbility.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA F1 F2 F3 M1 M2 M3 B1 B2 B3">
+                    </skill-blueprint>
+    
+                    <!-- Golems -->
+                    <skill-blueprint name="mindlessmarch" label="Mindless March" short-label="🥾" type="🥾" invoke-fn="MindlessMarch.invoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3">
+                    </skill-blueprint>
+                    
+                    <!-- Jimmy the Rat King -->
+                    <skill-blueprint name="rat-redirect" label="That one's scary!" short-label="🎯" type="🛡️" invoke-fn="JimmyAI.redirectInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3">
+                    </skill-blueprint>
+                    
+                    <skill-blueprint name="summon-rats" label="Come my pretties!" short-label="🐀" type="🔮" invoke-fn="JimmyAI.summonInvoke" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="F1 F2 F3 M1 M2 M3 B1 B2 B3" cooldown-duration="12">
+                    </skill-blueprint>
+    
+                    <!-- Bug skills. -->
+                    <skill-blueprint name="bug_spit_web" label="Spit Web" short-label="🕸️" type="💫" invoke-fn="BugEnemy.SpitWeb" target-fn="Targeting.StandardEnemy" param-fn="SkillParams.Standard" receives-combo="true" gives-combo="true" active-in-fn="ActiveIn.Standard" active-in="M1 M2 M3 B1 B2 B3"></skill-blueprint>
+    
+                    <!-- Generic enemy skills. -->
+                    <skill-blueprint name="str_gain" label="Buff!" short-label="💪" type="✨" amount="1" status="base_damage" invoke-fn="GenericMoves.AddStatus" target-fn="Targeting.StandardSelf" param-fn="SkillParams.Standard" receives-combo="false" gives-combo="false" active-in-fn="ActiveIn.Standard" active-in="AA CC F1 F2 F3 M1 M2 M3 B1 B2 B3"></skill-blueprint>
+    
+                </info-panel>
+            </concept>
+    
+            <concept hash="preparations">
+                <info-panel renderer="Compendiums.RenderPreparation">
+                    <h2>Preparations</h2>
+    
+                    <p>Preparations are cards that you can play to create instant efects on the battlefield.  They're a way that you can trade money for immediate efficacy.</p>
+                    <p>Preparations always cost money and have a limited number of uses in combat: <ul>
+                        <li>✔️: This icon means 1 available use that becomes ❌ once used. </li>
+                        <li>❌: This icon means 1 unavailable use that becomes ✔️ after the combat. </li>
+                        <li>🔴: This icon means 1 available use that will never be restored once used.</li>					
+                        <li>🎁: If you use it, this card will transform into something new!</li>					
+                    </ul></p>
+                    <p>If the card has no available uses (all ❌), it's removed from the combat, but will be put back in the owning unit's inventory after combat.</p>
+                    <p>If the card has no available uses because they were all 🔴, the card is gone forever.  Go buy more, when that's implemented.  Use those firebombs wisely.</p>
+    
+                    <template>
+                        <p>Right-click <span compendium="concept/preparations">here for the base page on Preparations.</span></p>
+                        <div class="compendium_view">
+    
+                        </div>
+                    </template>
+                </info-panel>
+    
+                <!-- Left here for reference. -->
+                <starting-preparation count="0">
+                    <!--
+                    <preparation bp="barricade"></preparation>
+                    <preparation bp="minorDamagePot"></preparation>
+                    <preparation bp="throwingknife"></preparation>
+                    <preparation bp="turtlePot"></preparation>
+                    <preparation bp="cheetahPot"></preparation>
+                    <preparation bp="minorDefensePot"></preparation>
+                    <preparation bp="blinkCrystal"></preparation>
+                    <preparation bp="fireBomb"></preparation>
+                    <preparation bp="retreatCloak"></preparation> -->
+                </starting-preparation>
+                
+                <starting-preparation count="0"> <!-- Debug item test. -->
+                    <preparation bp="sp_mysteryBox"></preparation>
+                </starting-preparation>
+    
+                <preparation-mode name="default" init-fn="Preparations.InitDefaultMode"></preparation-mode>
+                <preparation-mode name="degrade" init-fn="Preparations.InitDegradeMode"></preparation-mode>
+                <preparation-mode name="exhaust" init-fn="Preparations.InitExhaustMode"></preparation-mode>
+                <preparation-mode name="gift" init-fn="Preparations.InitGiftMode"></preparation-mode>
+    
+                <preparation-use-type name="default" on-use-fn="Preparations.OnDefaultUse"></preparation-use-type>
+                <preparation-use-type name="exhaust" on-use-fn="Preparations.OnExhaustUse"></preparation-use-type>
+                <preparation-use-type name="gift" on-use-fn="Preparations.OnGiftUse"></preparation-use-type>
+    
+                <preparation-blueprint name="barricade" target-fn="Barricade.target" invoke-fn="Barricade.invoke">
+                    <div label="Barricade" appearance_1="🧱"></div>
+                    <div class="description">Drops a barricade onto the battlefield.  Barricades can be used to block cells, which affects targeting.</div>
+                    <div cost="3" uses="5" mode="degrade"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="throwingknife" target-fn="Preparations.FrontEnemyInAdjacentBlockTarget" invoke-fn="OffensiveItems.throwingKnife">
+                    <div label="Throwing Knife" appearance_1="🗡️"></div>
+                    <div class="description">Deals 5 damage to one of the front-most enemies in a block adjacent to your units.</div>
+                    <div cost="1" uses="3"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="minorDamagePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.minorBaseDamage">
+                    <div label="Bull Potion" appearance_1="🧪" appearance_2="🐂"></div>
+                    <div class="description">Increases damage dealt by your unit's ⚔️⚾🏹 skills by 3.</div>
+                    <div cost="0" uses="1" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="minorDefensePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.minorBaseDefense">
+                    <div label="Bear Potion" appearance_1="🧪" appearance_2="🐻"></div>
+                    <div class="description">Increases defense gained by your unit's 🛡️ skills by 3.</div>
+                    <div cost="0" uses="1" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="turtlePot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.turtlePotion">
+                    <div label="Turtle Soup" appearance_1="🥣" appearance_2="🐢"></div>
+                    <div class="description">Increase cooldowns on all your skills by 2.  Gain 15 🛡️.</div>
+                    <div cost="0" uses="2" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="cheetahPot" target-fn="Preparations.AllyUnitTarget" invoke-fn="BuffPotions.cheetahPotion">
+                    <div label="Cheetah Soup" appearance_1="🥣" appearance_2="🐆"></div>
+                    <div class="description">Decrease cooldowns on all your skills to 1.</div>
+                    <div cost="0" uses="2" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="blinkCrystal" target-fn="BlinkCrystal.TargetFn" invoke-fn="BlinkCrystal.invoke">
+                    <div label="Blink Crystal" appearance_1="💎" appearance_2="🧿"></div>
+                    <div class="description">Teleport a unit to a space in the same cell block.</div>
+                    <div cost="3" uses="3" mode="degrade"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="fireBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.fireBomb">
+                    <div label="Fire Bomb" appearance_1="💣" appearance_2="🔥"></div>
+                    <div class="description">Deal 30 damage to enemies in a cell and the 4 adjacent cells around them within their block.</div>
+                    <div cost="0" uses="1" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="iceBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.iceBomb">
+                    <div label="Ice Bomb" appearance_1="💣" appearance_2="💧"></div>
+                    <div class="description">Deal 15 damage to enemies in a cell and the 4 adjacent cells around them within their block and delays their actions by 6 volleys.</div>
+                    <div cost="0" uses="1" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="windBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.windBomb">
+                    <div label="Gust Bomb" appearance_1="💣" appearance_2="🌪️"></div>
+                    <div class="description">Enemies in the same cell block adjacent to the chosen cell are pushed away from the chosen cell.</div>
+                    <div cost="0" uses="1" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="earthBomb" target-fn="Preparations.AdjacentEnemyBlockCellTarget" invoke-fn="OffensiveItems.earthBomb">
+                    <div label="Pebble Bomb" appearance_1="💣" appearance_2="⛰️"></div>
+                    <div class="description">Applies 45 vulnerability to enemies in a cell and the 4 adjacent cells around them within their block.</div>
+                    <div cost="0" uses="1" mode="exhaust"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="retreatCloak" target-fn="Preparations.AllyUnitTarget" invoke-fn="DefensiveItems.instantRetreat">
+                    <div label="Raven Hat" appearance_1="🎩" appearance_2="🐦"></div>
+                    <div class="description">A selected unit immediately retreats from the battlefield.</div>
+                    <div cost="0" uses="3" mode="exhaust"></div>
+                </preparation-blueprint>
+                
+                <preparation-blueprint name="sp_bombBag" target-fn="Preparations.Owner" invoke-fn="SpecialItems.bombBag">
+                    <div label="Bomb Bag" appearance_1="👜" appearance_2="💣"></div>
+                    <div class="description">Must be played on its owner.  Create a random bomb card in your hand.</div>
+                    <div cost="10" uses="3"></div>
+                </preparation-blueprint>
+    
+                <preparation-blueprint name="sp_mysteryBox" target-fn="Preparations.Owner" invoke-fn="SpecialItems.mysteryBox">
+                    <div label="Mystery Box" appearance_1="🎁" appearance_2="❓"></div>
+                    <div class="description">Must be played on its owner. Keep using it and maybe you'll get something nice!</div>
+                    <div cost="5" uses="4" mode="gift"></div>
+                    <info class="gift">
+                        <preparation bp="sp_bombBag"></preparation>
+                    </info>
+                </preparation-blueprint>
+            </concept>
+    
+            <concept hash="tactics">
+                <info-panel>
+                    <h2>Tactics</h2>
+                    Tactics are cards that direct your units in ways beyond what their abilities allow them to do. 
+    
+                    <div>
+                        📜 indicates an Order.  A unit may only be affected by one order at a time, and any new orders will overwrite old orders.
+                    </div>
+    
+                    <div>
+                        📕 indicates a Maneuver.  Maneuvers have no other special properties.
+                    </div>
+                </info-panel>
+    
+                <!-- Orders -->
+                <tactic-blueprint name="retreat" card-icon="📜" label="Retreat!" short-label="🏳️" target-fn="Retreat.target" invoke-fn="Retreat.invoke">
+                    <div class="description">After 3 <span compendium="concept/unit/concept/activation">activations</span>, the unit is removed from the battlefield and placed to your discard pile.</div>
+                </tactic-blueprint>
+                
+                <tactic-blueprint name="reposition" card-icon="📜" label="Reposition!" short-label="🥾" target-fn="Reposition.target" invoke-fn="Reposition.invoke">
+                    <div class="description">During each activation, move towards the chosen location until it is reached or inaccessible.</div>
+                </tactic-blueprint>
+    
+                <tactic-blueprint name="taunt-enemy" card-icon="📜" label="Hit That One!" short-label="🎯" target-fn="TauntEnemy.target" invoke-fn="TauntEnemy.invoke">
+                    <div class="description">Choose an enemy.  That enemy is <span compendium="concept/taunt">taunted.</span></div>
+                </tactic-blueprint>
+    
+                <tactic-blueprint name="taunt-ally" card-icon="📜" label="Hit Me!" short-label="🗣️" target-fn="TauntAlly.target" invoke-fn="TauntAlly.invoke">
+                    <div class="description">Choose an ally.  That ally is <span compendium="concept/taunt">taunted.</span></div>
+                </tactic-blueprint>
+                
+                <tactic-blueprint name="go-faster" card-icon="📜" label="Hustle!" short-label="🗣️" target-fn="Hustle.target" invoke-fn="Hustle.invoke">
+                    <div class="description">Subtract 1 from all of an ally's current ability cooldowns if they are above 1.</span></div>
+                </tactic-blueprint>
+                
+                <tactic-blueprint name="go-slower" card-icon="📜" label="Wait for it!" short-label="🗣️" target-fn="WaitForIt.target" invoke-fn="WaitForIt.invoke">
+                    <div class="description">Add 1 to all of an ally's current ability cooldowns.</span></div>
+                </tactic-blueprint>
+    
+                <!-- Maneuvers -->
+                <tactic-blueprint name="pivot" card-icon="📕" label="Heel Turn" short-label="⦩" target-fn="Pivot.target" invoke-fn="Pivot.invoke">
+                    <div class="description">Changes which way a squad is facing.</div>
+                </tactic-blueprint>
+    
+                <!-- Situational -->
+                <tactic-blueprint name="march" card-icon="📕" label="March" short-label="🚶" target-fn="March.target" invoke-fn="March.invoke">
+                    <div class="description">Direct all your units in one cell block to move to an adjacent empty cell block.</div>
+                </tactic-blueprint>
+    
+            </concept>
+    
+            <concept hash="unit">
+    
+                <info-panel renderer="Compendiums.RenderUnit">
+                    <h2>Unit</h2>
+    
+                    <p>Units are the folks who bash eachother until they stop moving.  Your units are either on the field (on a grid) or stuck in a <span compendium="concept/cards">card</span>.</p>
+                    <p>You play units from cards onto the battlefield.  When units retreat, they return to your <span compendium="concept/cards/concept/discard">discard pile</span>.</p>
+                    <p>Units have Hit Points, represented by a bar below them.  When this bar is empty, the unit is dead: gone forever!</p>
+                    <p>Player units have Birthdays, represented by the other icons in their avatar bubble.  These determine how the units <span compendium="concept/unit/concept/combo">combo</span> together.</p>
+    
+                    <template>
+                        <h2>Unit Details</h2>
+                        <p>Right click <span compendium="concept/unit">here for the main page on units in general.</span></p>
+                        <div class="exploded_cards" facing="up">
+                            <div class="card unit_container">
+    
+                            </div>
+                        </div>
+                    </template>				
+                </info-panel>
+    
+    
+                <concept hash="block">
+                    <info-panel>
+                        <h2>Block and Vulnerability</h2>
+    
+                        <p>A unit with a 🛡️ next to their HP bar with a number in it has Block.  When receiving attack damage, Block is spent before HP is.</p>
+                        <p>Sometimes a unit may have a 💥 next to their HP instead.  This unit is Vulnerable, and any attack damage they take will be increased by this amount.</p>
+                        <p>Vulnerability can be directly reduced by gaining block.  For example, a unit with 5💥 will have 3🛡️ if they gained 8 block.</p>
+                        <p>Block does not stack; the largest source of block will overwrite smaller sources of block.</p>
+                        
+                    </info-panel>
+                </concept>
+    
+                <concept hash="taunt">
+                    <info-panel>
+                        <h2>Taunt</h2>
+    
+                        <p>A unit with a 🎯 next to their avatar is taunted.</p>
+                        <p>Taunted enemies are prioritized by your units for attack, if possible.</p>
+                        <p>Only one unit for a given team may be taunted in a given cell block.</p>
+                        <p>New taunts take priority.  Old taunts are stored and are restored if the currently-taunted unit loses their taunt status.</p>
+                    </info-panel>
+                </concept>
+    
+    
+                <concept hash="combo">
+                    <info-panel>
+                        <h2>Combo</h2>
+    
+                        <p>When 2 or more units Combo, they use their <span compendium="concept/skills">skills</span> as normal, but they will be powered up by each other.</p>
+                        <p>2 units can combo if one more more of the following is true: <ul>
+                            <li>They have the same birth month (🔥🌪️💧⛰️)</li>
+                            <li>They have the same or adjacent birth days (🌕🌖🌗🌘🌑🌒🌓🌔)</li>
+                        </ul>
+                        Units that can't normally combo together can if there's a unit to act as social glue.</p>
+    
+                        <p>Units can only combo if they are using moves in the same volley.  In other words, look for moves that have the same cooldown!</p>
+    
+                        <p style="font-style: italic;">For example, 🔥🌕 and 💧🌑 can combo together if 🔥🌑 is there to help!</p>
+                    </info-panel>
+    
+                </concept>
+    
+    
+                <concept hash="activation">
+                    <info-panel>
+                        <h2>Activation</h2>
+    
+                        <p>A unit is activated whenever it could possibly act, regardless of whether it is in a valid position for a given ability.</p>
+                        <p>The skill for an activation only occurs if the unit is in the right <span compendium="concept/position">position</span> or if close-quarters combat conditions are met.</p>
+                        <p>Units may have up to 5 possible activations.  Activations have a cooldown.  Once an activation cooldown reaches 1, the unit will use that ability on their next volley.</p>
+                        <p>If a unit has multiple activations with a cooldown of 1, the left-most one will be activated.</p>
+                        <p>Under certain situations, units that activate together may <span compendium="concept/unit/concept/combo">combo</span>.</p>
+                        <p></p>
+                    </info-panel>
+                </concept>
+            </concept>
+    
+            <concept hash="status">
+                <info-panel>
+                    <h2>Status</h2>
+    
+                    <p>Units can have statuses, which are represented above their avatar on the battlefield.</p>
+                    
+                    <p>At the time of writing, the following statuses exist: <ul>
+                        <li>🏳️: This unit will retreat once this reaches 0.  A retreated unit returns to your discard pile if it's yours, or simply leaves the battlefield if it's an enemy unit.</li>
+                        <li>💨: This unit is moving, but was unable to move last time it tried.  Each stack can help the unit move further on a single activation.</li>
+                        <li>🩸: This unit will take this amount of damage (bypasses block) whenever it attempts to use an ability.  After taking damage, the number of of stacks will reduce to half its current value.</li>
+                        <li>💫: This unit cannot combo with other units.</li>
+                    </ul></p>
+                </info-panel>
+    
+    
+                <!-- Orders -->
+                <status-blueprint type="retreat_order" exclusive="order" icon="" extra-classes="hidden" apply-fn="RetreatOrder.onApply" remove-fn="RetreatOrder.onRemove" merge-fn="RetreatOrder.merge"></status-blueprint>
+                <status-blueprint type="reposition_order" exclusive="order" icon="" extra-classes="hidden" apply-fn="RepositionOrder.onApply" remove-fn="RepositionOrder.onRemove">
+                    <handler label="RepositionOrder" handler="RepositionOrder.OnAfterVolley" event-types="Volley:after"></handler>
+                </status-blueprint>
+    
+                <!-- Statuses -->
+                <status-blueprint type="defend" icon="" extra-classes="hidden" extra-types="Defend" merge-fn="DefendStatus.merge" stack-fn="DefendStatus.stack">
+                </status-blueprint>
+    
+                <status-blueprint type="retreating" icon="🏳️" extra-class="" merge-fn="RetreatStatus.merge">
+                    <handler label="Retreating" handler="RetreatStatus.OnAfterVolley" event-types="Volley:after"></handler>
+                </status-blueprint>
+    
+                <status-blueprint type="agility" icon="💨" extra-class="" merge-fn="AgilityStatus.merge">
+                    <handler label="Agility" handler="AgilityStatus.OnAfterVolley" event-types="Volley:after"></handler>
+                </status-blueprint>
+    
+                <status-blueprint type="bleed" icon="🩸" extra-class="" merge-fn="BleedStatus.merge">
+                    <handler label="Bleed" handler="BleedStatus.OnAfterUseAbility" event-types="UseAbility:after"></handler>
+                </status-blueprint>
+    
+                <status-blueprint type="distracted" icon="💫" extra-class="" merge-fn="DistractedStatus.merge" remove-fn="DistractedStatus.onRemove" apply-fn="DistractedStatus.onApply">
+                    <handler label="Distracted" handler="DistractedStatus.TickDownMaybe" event-types="UseAbility:after"></handler>
+                </status-blueprint>
+    
+                <status-blueprint type="base_damage" icon="💪" extra-class="" merge-fn="BaseDamageStatus.merge" stack-fn="BaseDamageStatus.onStackChange" remove-at-zero="true">
+                </status-blueprint>
+    
+                <status-blueprint type="base_defense" icon="🛡️" extra-class="" merge-fn="BaseDefenseStatus.merge" stack-fn="BaseDefenseStatus.onStackChange" remove-at-zero="true">
+                </status-blueprint>
+    
+                <!-- Enemy AI / etc -->
+                <status-blueprint type="rat_ai" exclusive="ai" icon="" extra-classes="hidden">
+                    <handler label="DecideTargetLocation" handler="RatAI.OnAfterVolley" event-types="Volley:after"></handler>
+                </status-blueprint>
+                <status-blueprint type="jimmy_ai" exclusive="ai" icon="" extra-classes="hidden">
+                    <handler label="DoJimmyThings" handler="JimmyAI.OnAfterVolley" event-types="Volley:after"></handler>
+                </status-blueprint>
+                <status-blueprint type="jimmy_blessing" icon="🤴" extra-classes="" apply-fn="JimmyBlessing.onApply" remove-fn="JimmyBlessing.onRemove" >
+                </status-blueprint>
+    
+                <status-blueprint type="bug_curl_up" icon="➰">
+                    <handler label="AfterDamage" handler="BugEnemy.CurlUpAfterHit" event-types="TakeDamage:after"></handler> 
+                </status-blueprint>
+                <status-blueprint type="web_damage_reduction" icon="🕸️">
+                    <handler label="BeforeDamage" handler="WebObstacle.BeforeDamage" event-types="TakeDamage:before"></handler> 
+                </status-blueprint>
+    
+                <!-- Some generic enemy AIs -->
+                <status-blueprint type="basic_ai" exclusive="ai" icon="" extra-classes="hidden">
+                    <handler label="DecideTargetLocation" handler="BasicAI.OnAfterVolley" event-types="Volley:after"></handler>
+                </status-blueprint>
+    
+            </concept>
+    
+            <concept hash="position">
+                <info-panel>
+                    <h2>Position</h2>
+    
+                    <p>The position of a unit determines what <span compendium="concept/skills">skills</span> will <span compendium="concept/unit/concept/activation">activate</span>.</p>
+                    <p>A unit's effective position (front, middle, back) is based on a combination of its literal position and the direction the squad is facing.</p>
+                    <p style="font-style: italic;">For example, a unit facing up in the top row is in the front row.  If the squad then faces down, the unit is now in the back row.</p>
+                    <p>Some abilities indicate activity on their directional arrow.  This implies the ability is active if there are enemy units in the unit's block, or if the unit is in an enemy block.</p>
+                </info-panel>
+            </concept>
+    
+            <concept hash="round">
+                <info-panel>
+                    <h2>Round</h2>
+    
+                    <p>A round begins once you push the big play button.  A round will continue until the combat ends, or you click the button again to stop the action.</p>
+                    <p>The top number in the ⌛ indicates how many <span compendium="concept/volley">volleys</span> must occur before you can end the round.  You can still click the button to experience the combat one volley at a time, but the round will not end until this timer reaches 0.  Once it reaches 0, you will also draw a card.</p>
+                    <p>The bottom number in the ⌛ indicates how many <span compendium="concept/volley">volleys</span> over the minimum have occurred.  This doesn't do anything yet, but I'm hoping to add a Push-your-luck sort of feature to the game around this.</p>
+                </info-panel>
+            </concept>
+    
+            <concept hash="volley">
+                <info-panel>
+                    <h2>Volley</h2>
+    
+                    <p>A single <span compendium="concept/round">round</span> is broken into a number of volleys.</p>
+                    <p>During a volley, any unit actions that can be triggered (e.g. due to positioning) with a cooldown value of 1 or less will happen.</p>
+                </info-panel>
+            </concept>
+            
+    
+            <concept hash="features">
+                <info-panel>
+                    <h2>Future Features</h2>
+    
+                    <ul>
+                        <li>Preparation Cards: Costs money to play, but provide immediate benefits for the unit/squad.</li>
+                        <li>Unit Promotions: Allows you to add new activations/skills to units, along with passive abilities.</li>
+                        <li>Skill Upgrades: Allows you to add special combo-powers to skills.</li>
+                        <li>Outer Loop: A single run will be 1 year, cycling through 32 days, with a boss fight after each 8th day.</li>
+                    </ul>
+    
+                </info-panel>
+            </concept>
+    
+    
+            <uihelp hash="encounter">
+                <uihelp hash="speedbutton">
+                    <info-panel>
+                        <h2>Speed Control</h2>
+    
+                        <p>Controls how fast the flow of combat goes.  Click to change.</p>
+                        <p>🐌: Slow! Useful for pausing at the right time.</p>
+                        <p>🐕: Regular Speed!</p>
+                        <p>🍑: Hold onto your butts!</p>
+                    </info-panel>
+                </uihelp>
+            </uihelp>
+        </compendium>	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </body>
+</html>

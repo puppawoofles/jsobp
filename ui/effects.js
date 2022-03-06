@@ -147,7 +147,7 @@ class UiTreatments {
 
 	static __banner(relativeTo, content, extraClasses) {
 		if (typeof content == 'string') {
-			content = Templates.inflate('text_banner_wrapper', {
+			content = Templates.inflate('fx.text_banner_wrapper', {
 				CONTENT: content
 			});
 		}
@@ -156,7 +156,7 @@ class UiTreatments {
 			Logger.warn("Can't find text banner.");
 			return;
 		}
-		var wrapper = Templates.inflate('banner_contents', {
+		var wrapper = Templates.inflate('fx.banner_contents', {
 			EXTRA_CLASSES: extraClasses
 		});
 		wrapper.appendChild(content)
@@ -175,7 +175,7 @@ class UiTreatments {
 			targets = [targets];
 		}
 		targets.forEach(function(target) {
-			var wubEffect = Templates.inflate('icon_wub_ui_effect', {
+			var wubEffect = Templates.inflate('fx.icon_wub_ui_effect', {
 				CONTENT: icon
 			});
 			
@@ -254,7 +254,7 @@ class UiTreatments {
 			var color = UiTreatments.Color.get(baseEffect) || "white";
 			var shadow = UiTreatments.Shadow.get(baseEffect) || "white";
 
-			var effect = Templates.inflate('text_ui_effect', {
+			var effect = Templates.inflate('fx.text_ui_effect', {
 				CONTENT: text,
 				COLOR: color,
 				SHADOW: shadow

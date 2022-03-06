@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <compendium>
+            <version hash="0.0.1">
+                <info-panel>
+                    <h2>V0.0.1</h2>
+                    <p>Initial demo!  What works:</p>
+                    <ul>
+                        <li>Unit cards can be played.</li>
+                        <li>Initial Autobattling Structure</li>
+                        <li>Units have scripts that allow them to act during autobattling.</li>
+                        <li>Autobattling: <ul>
+                            <li>Volley Structure: 8 volleys that units can act on.</li>
+                            <li>Units act in block order.</li>
+                            <li>Team order within a volley is configurable (e.g. do enemies or allies go first)</li>
+                            <li>Units can combo when certain conditions are met.</li>
+                        </ul></li>
+                        <li>Unit Skills: Allow units to do things during autobattling. <ul>
+                            <li>"Strike" skill: Player units do 8 damage, Rats do 2.</li>
+                            <li>"Step" skill: Unit moves toward destination 1 square orthogonally.  If it can't, it gains 1 Agility instead (increases number of squares moved next time this is used).</li>
+                            <li>"Retreat" skill: Unit removes 1 stack of Retreat status.  Once it's 0, the unit returns to your discard pile.</li>
+                        </ul></li>					
+                        <li>"Order" cards: Instructs a unit with a short-term goal.  Override each other.<ul>
+                            <li>"Reposition": Instruct a unit to move to a given destination.  Temporarily overrides all skills to be "Step"</li>
+                            <li>"Retreat": Instruct a unit to return to your discard pile.  Temporarily overrides all skills to be "Retreat", grants 3 stacks of the "Retreat" status.</li>
+                        </ul></li>
+                        <li>Encounters:<ul>
+                            <li>"The Rats": 8 rats distributed between 2 blocks randomly.  Rats only use "Strike" for 2 damage each once per round.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.2">
+                <info-panel>
+                    <h2>V0.0.2</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Unit Skills:<ul>
+                            <li>"Push" skill: Pushes a unit back in the direction the acting unit is facing.  If there is another unit in the way, they collide with one another dealing damage.  The distance a unit is pushed is based on the attack strength of the pushing unit against the weight of the defending unit.</li>
+                            <li>"Defend" skill: Unit gains Defense, which is used to block damage from attacks and collisions.  This defense is lost at the end of a round.</li>
+                            <li>"Bleed" skill: Target enemy gains the Bleed status based on 75% of the unit's attack damage.</li>
+                        </ul></li>
+                        <li>Player Units:<ul>
+                            <li>Units with 🌪️ birth month have "Strike" and "Push" by default.</li>
+                            <li>Units with 🔥 birth month have "Strike" and "Bleed" by default.</li>
+                            <li>Units with ⛰️ birth month have "Strike" and "Defend" by default.</li>
+                            <li>Units with 💧 birth month still only have "Strike".  Sorry, water benders!</li>
+                        </ul></li>
+                        <li>Enemies:<ul>
+                            <li>"Rat": 2 activations: "Strike" from front row; "Step" from mid/back row.</li>
+                            <li>"Golem": New enemy!</li>
+                        </ul></li>
+                        <li>Encounters:<ul>
+                            <li>"The Golems": Maybe this is like an Elite combat?  Better kill them before they catch up to you!</li>
+                        </ul></li>
+                        <li>Gameplay:<ul>
+                            <li>Basic Persistence: Your deck is saved after each combat, and is fed into the start of the next one.  Can't heal units yet though!</li>
+                            <li>Gold: You get 50 gold when you win a combat now.  Neat!  You also start with 50 gold.  Not that it's particularly useful yet...</li>
+                            <li>Card Mechanics: Updated to more closely resemble "normal" games:<ul>
+                                <li>You start each combat with 5 cards, and draw 1 card at the start of each round.  (You will start each combat with 6 cards effectively)</li>
+                                <li>You can no longer play cards to the discard pile to cycle your deck.  Instead, you can click on your deck icon to draw additional cards.  This costs an increasing amount of gold.</li>
+                                <li>The cost of drawing cards caps at 10 gold and increases by 1 for each additional draw.</li>
+                                <li>Your max hand size is 10 cards.  If you draw more, your leftmost card is discarded.</li>
+                                </ul>
+                            </ul></li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.3">
+                <info-panel>
+                    <h2>V0.0.3</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Unit Skills:<ul>
+                            <li>"Defend" skill: Updated to no longer stack: The largest source of block applies.  It also doesn't expire.</li>
+                            <li>"Distract" skill: Delays an enemy's next skill.  Also applies a debuff that removes its ability to combo.</li>
+                        </ul></li>
+                        <li>Player Units:<ul>
+                            <li>Units with 💧 birth month start with Distract.</li>
+                        </ul></li>
+                        <li>Gameplay:<ul>
+                            <li>Rounds: Round structure has been changed.<ul>
+                                <li>Rather than have 8 volleys per round, now it will continue playing volleys until you choose to pause.</li>
+                                <li>There is a minimum number of volleys per play, however!  And that's 8.</li>
+                                <li>Guitar-hero scroll on the left is gone.</li>
+                            </ul></li>
+                            <li>Targeting:<ul>
+                                <li>Units now prioritize targets according to taunt status.</li>
+                                <li>Just because a unit is taunted, doesn't mean they will target that unit if there's shit in the way!</li>
+                            </ul></li>
+                            <li>Taunting: Units can now be taunted, which will change targeting.</li>
+                        </ul></li>
+                        <li>Cards:<ul>
+                            <li>"Hit That One!": Taunts an enemy unit.</li>
+                            <li>"Hit Me!": Taunts an ally unit.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.4">
+                <info-panel>
+                    <h2>V0.0.4</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Unit Skills:<ul>
+                            <li>Skills now have consistent activation rules (e.g. all Strikes have the same activation).</li>
+                            <li>Skills have a new activation zone: Close Quarters.  This is indicated by the arrow portion of the activation icon, and applies to enemy units in the same cell block as the unit.  Units in foreign cell blocks only have Close Quarters abilities available.</li>
+                            <li>"Strike": Attack. Front row and close quarters only.  Blocked entirely by barricades.</li>
+                            <li>"Throw": Attack. Middle row.  Unblocked by obstacles in the same block.</li>
+                            <li>"Shoot": Attack.  Back row.  If this unit has obstacles all up in its business, then it will hit that for half damage.  Otherwise, this will hit the intended target.</li>
+                            <li>"Defend": Active everywhere but the middle cell.</li>
+                            <li>"Protect": Active everywhere but the corner cells.  If an adjacent ally has low HP, gives them extra block.  Otherwise, applied to self.</li>
+                            <li>"Push": Front-row only.</li>
+                            <li>"Wind Blast": Back-row only version of Push.</li>
+                            <li>"Bleed": Front-row and close quarters only.</li>
+                            <li>"Sunder": Front-row and close quarters only.  Reduces block and applies vulnerability.</li>
+                            <li>"Distract" skill: Middle-row and close-quarters only.</li>
+                        </ul></li>
+                        <li>Player Units:<ul>
+                            <li>Units randomly have one of Strike, Throw, or Shoot. </li>
+                            <li>🌪️ Units randomly have one of Push or Wind Blast. </li>
+                            <li>🔥 Units randomly have one of Bleed or Sunder. </li>
+                            <li>⛰️ Units randomly have one of Protect or Defend. </li>
+                            <li>💧 Units only have Distract for now. </li>
+                        </ul></li>
+                        <li>Encounters:<ul>
+                            <li>Golems: Now immune to Bleed.  You're welcome, Jake.</li>
+                            <li>Jimmy, the Rat King: New boss fight to test Close Quarters mechanics.  Give it a try!</li>
+                        </ul></li>
+                        <li>Cards:<ul>
+                            <li>Starter Deck: 10 units instead of 8.</li>
+                            <li>"Barricade": The first preparation card!  Costs 3 gold to play, max 5 uses per combat, to drop a 30 HP barricade onto the battlefield.  The barricade can be taunted (either to direct enemies at it, or to direct allies at it to get it out of the way).</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.4.1">
+                <info-panel>
+                    <h2>V0.0.4</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Basic Tutorial: Right-click the 👩‍🏫 in the upper left to jump to the most relevant tutorial.</li>
+                        <li>Compendium Links are now underlined, and are either blue or yellow (depending on background).</li>
+                        <li>Red text in the compendium implies if you hover over it, it might highlight things on screen. Keep an eye out!</li>
+                        <li>If you hover over your abilities (either in cards or in combat), it will highlight the locations from which those abilities are active.</li>
+                        <li>In the Town screen, Start buttons are now Prepare buttons, where you're able to choose which units go on that encounter.</li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5">
+                <info-panel>
+                    <h2>V0.0.5</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Outer Loop:<ul>
+                            <li>Added a day system.  A run now has 8 days (equivalent to one act).</li>
+                            <li>Added a Rumor system in which the day's options are seeded by rumors, which can be resolved either by engaging with them (successfully or otherwise), or by being ignored.</li>
+                            <li>Note that for now, every encounter re-adds itself, and Rats adds Jimmy.  See how many Jimmy's you can get in one run!</li>
+                            <li>Added a Hangout daily activity for your unassigned units that gives you a pittance and minor healing.</li>
+                            <li>Added a Doctor rumor that lets you heal 100 HP per unit for 20 gold per unit.</li>
+                        </ul></li>
+                        <li>Adventure Structure:<ul>
+                            <li>Added a basic storyboarding system that you can use to build a quest state machine out of vignettes and encounters.  Variables aren't supported yet.</li>
+                            <li>Updated Rats, Golems, and Jimmy to have a little set dressing.</li>
+                        </ul></li>
+                        <li>Guts:<ul>
+                            <li>Rewrote how encounters are launched (instead of being hardcoded, the battlefield is spawned separately and is driven by blueprints in the dom instead of being hardcoded in JS;  Enemies are still hardcoded in JS).</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.1">
+                <info-panel>
+                    <h2>V0.0.5.1</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Bug Fixes:<ul>
+                            <li>Jimmy was broken.  Put Jimmmy back in his place.</li>
+                            <li>Town tutorial was busted due to a few shenanigans in how the town screen was initially rendered.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.2">
+                <info-panel>
+                    <h2>V0.0.5.2</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Engine:<ul>
+                            <li>Added a few optimizations to the effect queue, so now everything goes way faster.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.3">
+                <info-panel>
+                    <h2>V0.0.5.3</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Speed Button: Above the play/pause buttons.  Used to adjust how fast combat goes.  Use Cheetah mode to finish off the slogfest at the end!</li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.4">
+                <info-panel>
+                    <h2>V0.0.5.4</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Play/Pause/Step: Rewrote play/pause stuff: <ul>
+                            <li>Big Button: This is a play / stop button.  Play starts a round.  Stop ends the round as soon as is possible.  Easy!</li>
+                            <li>Pause Button: Left of Speed Button.  If you click pause, it will pause between every volley.  If you then click the (small) play button, it will no longer pause.</li>
+                            <li>Step Button: Only appears when the volley is paused.  Click to go.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.5">
+                <info-panel>
+                    <h2>V0.0.5.5</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Added a bunch of prep cards: <ul>
+                            <li>Throwing Knife:  Deal 5 damage to an enemy.</li>
+                            <li>Bull Potion: Boost a unit's damage by 3.</li>
+                            <li>Bear Potion: Boost a unit's block-gain by 3.</li>
+                            <li>Turtle Soup: +1 to all your cooldowns, gain 15 block.</li>
+                            <li>Cheetah Soup: -1 to all your cooldowns.</li>
+                            <li>Blink Crystal: Reposition, but instant teleport.</li>
+                            <li>Fire Bomb: Deal 50 damage in a bomberman cross pattern, permanently consumed on use.  This was originally 10, but I set it to 50 for testing and it felt fun.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.6">
+                <info-panel>
+                    <h2>V0.0.5.6</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Added a new Raven Hat prep card (instant retreat)</li>
+                        <li>Added richer Unit wiki: Right-clicking on a <span hover-helper="[wt~=Unit] .appearance">unit portrait</span> will show a detailed view in the info panel.</li>
+                        <li>Added Ghost Units:<ul>
+                            <li>When you place a unit, it is in <span hover-help="[wt~=GhostUnit]">pending state.</span></li>
+                            <li>Units in a pending state may be repositioned until one of the following happens: <ul>
+                                <li>The round is started</li>
+                                <li>You play a card on the unit</li>
+                                <li>You click the unit (to try to reposition it), and click the unit again to confirm it's where you want it.</li>
+                            </ul></li>
+                        </ul></li>
+                        <li>Tweaked a few things / made a few cards: <ul>
+                            <li>Cheetah Soup: Now reduces all your cooldowns to 1.</li>
+                            <li>Turtle Soup: Increases all your cooldowns by 2.</li>
+                            <li>Hustle!: New tactics card, decreases all cooldowns by 1.</li>
+                            <li>Wait for it!: New tactics card, increases all cooldowns by 1.</li>
+                        </ul></li>
+                        <li>Added some UI to the title screen around run seeds.  This does not work yet.</li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.7">
+                <info-panel>
+                    <h2>V0.0.5.7</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Added seeds: Units and combats should now be generated consistently when using the same seed.</li>
+                        <lu>The following things are NOT SEEDED (...yet): <ul>
+                            <li>Card order when drawing cards.</li>
+                            <li>Enemy AI actions (which spots rats try to run to, for example)</li>
+                            <li>Which unit says what during vignettes.</li>
+                        </ul></lu>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.5.8">
+                <info-panel>
+                    <h2>V0.0.5.8</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Added unit names.</li>
+                        <li>Refactored a bunch of code around the event queue.  I might have missed a few bugs. :(</li>
+                        <li>Added result tracking to the event queue.  This might slow down the game. :(</li>
+                        <li>Added close-quarters as a valid range option for throw and shoot, but they will only do one damage!</li>					
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.6">
+                <info-panel>
+                    <h2>V0.0.6</h2>
+                    <p>Changes:</p>
+                    <ul>
+                        <li>Merchants: Every day, a few merchants will show up to your town.  You can spend your hard-earned gold to buy some items!</li>
+                        <li>Item Changes:<ul>
+                            <li>Most items will now exhaust or degrade.  Exhaust items have had their costs reduced to 0.</li>
+                            <li>Degrading items will permanently use a durability on their first use in combat, and all subsequent uses only temporarily use up the durability.</li>
+                        </ul></li>
+                        <li>Manage Items: A new screen that lets you move items around between units and storage.</li>
+                        <li>Embark: Embarking is now different.  You assign all your units at once, so you have a chance to shuffle them as much as you need to.</li>
+                        <li>Compendium changes: <ul>
+                            <li>Right-clicking on a quest/assignment will show you a hint in the info panel.</li>
+                            <li>Right-clicking on a preparation card will show you a copy of that card in the info panel.</li>
+                        </ul></li>
+                        <li>Tutorial Changes: Lots of tutorial changes.</li>
+                        <li>Trappings: Some colors adjusted per feedback.</li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.6.1">
+                <info-panel>
+                    <h2>V0.0.6.1</h2>
+                    <p>Changes:</p>
+                    <ul>					
+                        <li>Visitors: Added weights to visitors, so some appear more frequently than others.  In addition, their weights change if they show up or if they don't.</li>
+                        <li>Merchants: Added a new merchant: the Mysterious Stranger.  He has something odd for sale, but better grab it, because you'll probably never see him again once he appears!</li>
+                        <li>Preparations: <ul>
+                            <li>Mystery Box: I wonder what it does?</li>
+                            <li>Ice Bomb: Freezes enemies for ~6 volleys.</li>
+                            <li>Gust Bomb: Pushes enemies away from a central point.</li>
+                            <li>Pebble Bomb: Shreds armor (and creates vulnerability).</li>
+                        </ul></li>
+                        <li>Game: Upped the max number of days to 32 days (up from 8).</li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.6.2">
+                <info-panel>
+                    <h2>V0.0.6.2</h2>
+                    <p>Changes:</p>
+                    <ul>					
+                        <li>Made card draw/discard obey seeded RNG.</li>
+                        <li>Mostly refactoring / prep for new encounters and events and wanted to checkpoint.</li>
+                    </ul>
+                </info-panel>
+            </version>
+    
+            <version hash="0.0.7">
+                <info-panel>
+                    <h2>V0.0.7</h2>
+                    <p>Changes:</p>
+                    <ul>					
+                        <li>Lots of little rewrites: <ul>
+                            <li>Wrote a bunch of unit-gen logic.  Migrated all unit creation to use the proc-gen unit generation code path.</li>
+                            <li>Write a bunch of encounter-gen logic. Migrated all encounter creation to use the proc-gen encounter generation code path.</li>
+                            <li>Rewrote all pathing / movement logic to factor in the ability to move between blocks.  There's still wonkiness here.</li>
+                            <li>Rewrote how unit damage/defense are tracked.</li>
+                            <li>Rewrote how combat end conditions are determined.</li>
+                        </ul></li>
+                        <li>Added a new enemy (Pill Bug) with 2 variations: One that shoots, one that strikes.  Strikes cause it to gain Block when hit.</li>
+                        <li>Added a new annoying neutral obstacle: The web.  Takes minimal damage from Throw/Shoot.</li>
+                        <li>Added a new assignment/quest area: The Lost City / Ruined City (I forget which I called it)<ul>
+                            <li>Added a new combat, the Hall of Bugs.  May migrate golems to this overarching chain as well.</li>
+                        </ul></li>
+                    </ul>
+                </info-panel>
+            </version>
+        </compendium>
+    </body>
+</html>

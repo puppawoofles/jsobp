@@ -2177,7 +2177,7 @@ input {
 	white-space: normal;
 }
 
-.compendium * {
+compendium {
 	display: none;
 }
 
@@ -4437,23 +4437,6 @@ span[compendium] {
 	animation: var(--effectivePositionActivationInfoAnimation);
 }
 
-/** Banner stuff */
-
-.combo_banner > .appearance {
-	width: 40px;
-	height: 40px;
-	display: inline-block;
-	top: 8px;
-}
-
-.combo_banner > .appearance {
-	line-height: 16px;
-}
-
-.combo_banner > .appearance > .avatar {
-	top: 12px;
-	left: 12px;
-}
 
 @keyframes activationInfoEffectivePosition {
 	0% {

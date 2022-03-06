@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+    <head><title>(pnxen) Encounters and other encounter accessories</title></head>
+    <body>
+
+        <!--
+            COMMON BATTLEFIELD SHAPES GO HERE
+        -->
+       
+        <battlefield-gen name="basic_cross">
+            <geo battlefield-fn="BattlefieldGen.generateRect" width="3" height="3"></geo>
+            <forBlocks labels="A1 A3 C1 C3">
+                <copy disabled="true"></copy>
+            </forBlocks>
+        </battlefield-gen>
+
+        <battlefield-gen name="herd_crossing" base="${SELF}.basic_cross">
+            <forBlocks labels="A2 C2">
+                <copy team="player"></copy>
+            </forBlocks>
+            <forBlocks labels="B1 B2 B3">
+                <copy team="enemy"></copy>
+            </forBlocks>
+        </battlefield-gen>
+
+        <!--
+            ENCOUNTER GENERATION GOES HERE
+        -->
+
+        <encounter-gen name="base">
+            <!-- Update initiative order if needed. -->
+            <ifAllDef keys="playersSurprised">
+                <copyDest initiative-order="enemy player neutral"></copyDest>
+            </ifAllDef>
+
+            <!-- Set up retreat options. -->
+            <ifAllDef keys="retreatPossible">
+                <bonusCards>
+                    <!-- Retreat card goes here. -->
+                </bonusCards>
+            </ifAllDef>
+
+            <!-- Set up handlers -->
+            <installHandlers>
+                <!-- Encounter Structure -->
+                <handler handler="EncounterRules.Round" event-types="Round"></handler>
+                <handler handler="RoundRules.PlayRound" event-types="PlayRound"></handler>
+                <handler handler="RoundRules.Volley" event-types="Volley"></handler>
+                <handler handler="RoundRules.TickCooldowns" event-types="Volley:after"></handler>
+                <handler handler="RoundRules.UseMove" event-types="UseMove"></handler>
+                <handler handler="RoundRules.BlockActivation" event-types="BlockActivation"></handler>
+                <handler handler="RoundRules.ActivateGroup" event-types="ActivateGroup"></handler>
+                <handler handler="UnitRules.UseAbility" event-types="UseAbility"></handler>
+
+                <!-- Combat effects -->
+                <handler handler="UnitRules.Attack" event-types="Attack"></handler>
+                <handler handler="UnitRules.TakeDamage" event-types="TakeDamage"></handler>
+                <handler handler="UnitRules.UnitDeath" event-types="UnitDeath"></handler>
+                <handler handler="UnitRules.UnitRetreat" event-types="UnitRetreat"></handler>
+                <handler handler="UnitRules.UnitMoveToward" event-types="UnitMoveToward"></handler>
+                <handler handler="UnitRules.ShiftUnit" event-types="ShiftUnit"></handler>
+                <handler handler="UnitRules.PushUnit" event-types="PushUnit"></handler>
+                <handler handler="UnitRules.UnitCollision" event-types="UnitCollision"></handler>
+                <handler handler="UnitRules.ApplyStatus" event-types="ApplyStatus" TODO></handler>
+                <handler handler="UnitRules.RemoveStatus" event-types="RemoveStatus" TODO></handler>
+
+                <!-- Handlers for card behavior -->
+                <handler handler="CardRules.DrawCard" event-types="DrawCard"></handler>
+                <handler handler="CardRules.RefillHand" event-types="RefillHand"></handler>
+                <handler handler="CardRules.DiscardCards" event-types="DiscardCards"></handler>
+                <handler handler="CardRules.DiscardSingleCard" event-types="DiscardSingleCard"></handler>
+                <handler handler="CardRules.ShuffleDiscard" event-types="ShuffleDiscard"></handler>
+                <handler handler="CardRules.PlayCard" event-types="PlayCard" TODO></handler>
+            
+                <!-- Handlers for structural UI effects-->
+                <handler label="EndOfCombat" handler="UiTreatments.OnAfterUiEffect" event-types="Encounter:after" skip-log="true">
+                    <ui-effect type="delay" delay="1000"></ui-effect>
+                    <ui-effect type="banner" content-fn="EncounterRules.EndOfEncounterBanner"></ui-effect>
+                </handler>
+
+                <!-- Handlers for UI Effects -->
+                <handler label="VolleyDelay" handler="UiTreatments.OnAfterUiEffect" event-types="Volley:after" skip-log="true">
+                    <ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="500 100 0"></ui-effect>
+                </handler> 
+                <handler label="DamageNumbers" handler="UiTreatments.OnAfterUiEffect" event-types="TakeDamage:after" target-fn="UnitRules.TakeDamageUnit" skip-log="true">
+                    <ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="0 0 NaN"></ui-effect>
+                    <ui-effect type="blink" blink-color="red"></ui-effect>
+                    <ui-effect type="text" color="red" shadow="black" text-fn="UnitRules.TakeDamageAmount" start-transform="translateY(0px)" end-transform="translateY(-50px)"></ui-effect>
+                </handler>
+                <handler label="DeathIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitDeath:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
+                    <ui-effect type="wub" icon="☠️"></ui-effect>
+                </handler>
+                <handler label="RetreatIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitRetreat:before" target-fn="UnitRules.UnitDeathUnit" skip-log="true">
+                    <ui-effect type="wub" icon="🏳️"></ui-effect>
+                </handler>
+                <handler label="CollisionIcon" handler="UiTreatments.OnAfterUiEffect" event-types="UnitCollision:after" skip-log="true">
+                    <ui-effect type="wub" icon="💥" target-fn="UiTreatments.TargetsFromParams" target-param="firstUnit secondUnit"></ui-effect>
+                </handler>
+                <handler label="PushWhoosh" handler="UiTreatments.OnAfterUiEffect" event-types="ShiftUnit:before" skip-log="true">
+                    <ui-effect type="wub" icon="💨" target-fn="UiTreatments.TargetsFromParams" target-param="unit" filter-fn="UnitRules.ShiftFromPush"></ui-effect>
+                </handler>
+                <handler label="ComboTreatments" handler="UiTreatments.OnAfterUiEffect" event-types="ActivateGroup:before" skip-log="true">
+                    <ui-effect type="blink" filter-fn="RoundRules.ActivateGroupHasCombo" target-fn="RoundRules.ActivateGroupUnits" blink-color="yellow"></ui-effect>
+                    <ui-effect type="delay" filter-fn="RoundRules.ActivateGroupHasCombo" delay-fn="VolleyCounter.VolleySpeed" delays="1500 1500 200"></ui-effect>
+                </handler>
+                <handler label="AbilityName" handler="UiTreatments.OnAfterUiEffect" event-types="UseAbility:before" skip-log="true">
+                    <ui-effect type="text" color="white" shadow="black" text-fn="UnitRules.UseAbilityName" target-fn="UnitRules.UseAbilityUnit"></ui-effect>
+                    <ui-effect type="delay" delay-fn="VolleyCounter.VolleySpeed" delays="50 0 NaN"></ui-effect>
+                </handler>
+
+                <!-- Handlers for updating functional UI -->
+                <handler label="ActionButtonVolley" handler="EncounterRules.RemoveStopBeforeRound" event-types="Round:before"></handler>
+                <handler label="ActionButtonVolley" handler="EncounterRules.BlockAfterVolleyIfPaused" event-types="Volley:after"></handler>	
+                <handler label="UnitPreAbility" handler="Unit.BeforeUseAbility" event-types="UseAbility:before"></handler>
+                <handler label="UnitPostAbility" handler="Unit.AfterUseAbility" event-types="UseAbility:after"></handler>
+                <handler label="VolleyTrackerRound" handler="VolleyCounter.AfterPlayRound" event-types="PlayRound:after"></handler>
+                <handler label="VolleyTrackerVolley" handler="VolleyCounter.AfterVolley" event-types="Volley:after"></handler>
+                <handler label="VolleyTrackerVolley" handler="VolleyCounter.BeforeVolley" event-types="Volley:before"></handler>
+
+            </installHandlers>
+        </encounter-gen>
+
+        <encounter-gen name="default" base="${SELF}.base">
+            <!-- Default encounter-end conditions. -->
+            <endCondition end-fn="EncounterRules.DefaultWin" type="win">
+                Defeat all enemies to win!
+            </endCondition>
+
+            <endCondition end-fn="EncounterRules.DefaultWipe" type"lose">
+                You lose if all your units die!
+            </endCondition>
+        </encounter-gen>
+
+
+
+
+
+
+
+
+    </body>
+</html>

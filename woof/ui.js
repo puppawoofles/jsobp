@@ -1,35 +1,4 @@
 
-
-class Compendium {
-	static find(parentElt, opt_path) {
-		var parent = Utils.find(parentElt, '.compendium');
-		if (!parent) return null;
-		if (!opt_path) return parent;
-		
-		var parts = opt_path.toLowerCase().split('/');
-		var current = '';
-		var first = true;
-		for (var i = 0; i < parts.length; i++) {
-			if (first) { first = false; }
-			else { current += " > "; }
-			current += "concept[hash='" + parts[i] + "']";
-		}
-		return qs(parent, current);		
-	}
-	
-	static getValues(parentElt, path, opt_key) {
-		var spot = Compendium.find(parentElt, path);
-		if (!spot) return null;
-		return qsa(spot, 'values > ' + (opt_key || '*'));
-	}
-	
-	static getValue(parentElt, path, key) {
-		var spot = Compendium.find(parentElt, path);
-		if (!spot) return null;
-		return qs(spot, 'values > ' + key);		
-	}
-}
-
 class CompendiumAttr {}
 Utils.classMixin(CompendiumAttr, StringAttr, 'compendium');
 
@@ -83,12 +52,19 @@ class InfoPanel {
 		var parts = page.toLowerCase().split('/');
 		// Check for bonus-hash.
 
+		var body = null;
 		var current = '';
 		var first = true;
 		for (var i = 0; i < parts.length; i += 2) {
-			if (first) { first = false; }
+			var part = parts[i];
+			if (first) {
+				first = false;
+				var content = WoofRootController.resolveResourceName(parts[0])
+				body = content[0];
+				part = content[1];
+			}
 			else { current += " > "; }
-			current += parts[i];
+			current += part;
 			if (i + 1 < parts.length) {
 				current += "[hash='" + parts[i+1] + "']";
 			}
@@ -96,7 +72,7 @@ class InfoPanel {
 		current += " > info-panel";
 		
 		/** TODO: Need to find a compendium **/ 
-		var node = Compendium.find(parentElt);
+		var node = qs(body, 'compendium');
 		if (!node) {
 			return Logger.warn("No compendium found.");
 		}

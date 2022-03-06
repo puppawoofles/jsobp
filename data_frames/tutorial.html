@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <compendium>
+            <tutorial hash="title">
+                <info-panel>
+                    <h2>Thank you for trying this!</h2>
+    
+                    <p>Welcome to my playtest, and thank you for trying this!</p>
+                    <p>At any time, right-click on the 👩‍🏫 emoji in the upper-left to jump to a relevant tutorial!</p>
+                    <p>To jump right into how-to-play, <span compendium="tutorial/title2">Right click on this text.</span></p>
+                    <p>I am open to all constructive feedback.  Things I want you to focus on include: <ul>
+                        <li>Missing pieces of critical functionality.  Examples include:<ul>
+                            <li>"It's too difficult to engage with X part of the game because Y is missing."</li>
+                        </ul></li>
+                        <li>Issues with core mechanics, such as: <ul>
+                            <li>"The volley structure is too fussy" (actual feedback that radically changed the game between 0.0.2 and 0.0.3!)</li>
+                        </ul></li>
+                        <li>Ideas for mechanics, cards, skills, encounters, or anything else, really!</li>
+                        <li>If you would like an easter-egg unit, tell me:<ul>
+                            <li>Your birthday</li>
+                            <li>In preference order, 3 of the following emoji: 🤩😗😀😁🤣🙃😉😜🤑🤐😑😬😴🤮😵🤠🤓🧐😱🐱</li>
+                            <li>What name you want your unit to have.</li>
+                        </ul></li>
+                    </ul></p>
+                </info-panel>
+            </tutorial>
+    
+            <tutorial hash="title2">
+                <info-panel>
+                    <h2>Getting Started</h2>
+    
+                    <p>Note that if text is underlined and yellow or blue (depending on background), right-click it and this panel should update!</p>
+                    <p>If text in the compendium is red, hover over it to highlight things in the main play area to look at!</p>
+    
+                    <p>From the title screen, click the <span hover-help="[wt=StartButton]">Start button</span> to start a run!</p>
+                </info-panel>
+            </tutorial>
+            
+            <tutorial hash="townscreen">
+                <info-panel>
+                    <h2>Town Screen</h2>
+    
+                    <p>For now, your goal in this game is to make as much money as possible while keeping as many units alive as you can.</p>
+                    <p>The top bar shows current run info.  The only useful thing there for now is your <span hover-help=".run_bar .gold_container">current Gold</span>, represented by a yellow circle: 🟡</p>
+                    <p>In general, 🟡 with a number in it indicates that it costs that much to do the thing.</p>
+    
+                    <p>In the town screen, you can do the following:<ul>
+                        <li><span hover-help="[wt~=StorageButton]">Manage Items</span>: You have a stash of items, and a bunch of units that can bring them into combat.  This button allows you to swap items around your units.</li>
+                        <li><span hover-help="[wt~=GoShopping]">Go Shopping</span>: Spend your gold on new items.  Any purchased items will go to your storage.</li>
+                        <li><span hover-help="[wt~=Go]">Embark</span>: Send your units out on their <span hover-help=".town_assignment">adventures</span> for some <span hover-help="result">rewards</span>.</li>
+                    </ul></p>
+    
+                    <p>Feel free to go shopping and assign some items to your units, then <span hover-help="[wt~=Go]">Embark!</span></p>
+                </info-panel>
+            </tutorial>
+    
+            
+            <tutorial hash="vignette">
+                <info-panel>
+                    <h2>Story Vignette</h2>
+    
+                    <p>For now, this is flavor text, but eventually there will be actual impact from what happens in these!</p>
+                    <p>Feel free to read the hastily-thrown-together flavor text, then click a <span hover-help="[wt~=Choice]">button</span> to proceed.</p>
+                </info-panel>
+            </tutorial>
+    
+            <tutorial hash="encounterscreen">
+                <info-panel>
+                    <h2>Encounter!!</h2>
+    
+                    <p>Each encounter has an objective and a losing condition.  In general, you win if all <span hover-help="[wt~=Unit][team=enemy] .appearance">enemies</span> are dead, and you lose if all <span hover-help="[wt~=Unit][team=player] .appearance">allies</span> die and you have no units left to play.</p>
+                    <p>The screen is broken up into a few sections: <ul>
+                        <li><span hover-help="[wt~=EncounterScreen] .preview_panel">Left Panel</span>: Under Construction!</li>
+                        <li><span hover-help="[wt~=EncounterScreen] .battlefield_widget_container">Center Panel</span>: The Battlefield</li>
+                        <li><span hover-help="[wt~=CardHud]">Bottom Panel</span>: The Card HUD</li>
+                        <li><span hover-help="[wt~=ActionButton]">Bottom-Right Circle Bitton</span>: The Action Button</li>
+                    </ul></p>
+    
+                    <p>During an Encounter, your goal is to play <span hover-help="[wt~=Card]">cards</span> onto the battlefield that will allow you to win the encounter.</p>
+    
+                    <p>To play a card, click it once.  If the card does not move up slightly, it means you can't play that card.  This generally means it has no valid targets, or you can't afford it.  Valid targets for the card will begin blinking obnoxiously.  Click one of the blinking targets to play the card on that target.</p>
+    
+                    <p>When a card hasn't been played yet, you can cancel by clicking the card again, or clicking the <span hover-help="[wt~=ActionButton]">Action Button containing a 🚫 symbol</span>.</p>
+    
+                    <p>Some targets blink more obnoxiously than others: Those are priority targets.  It's generally a good idea to play cards on priority targets.</p>
+    
+                    <p>If you don't like the cards in your hand, you can click the <span hover-help="[wt~=DrawPileUi]">Deck symbol</span> on the left side of the car UI.  Note that drawing cards out of turn costs gold!  You can have up to 10 cards in hand: if you would draw more, the leftmost card is discarded to the <span hover-help="[wt~=Discard]">discard pile</span>.  Once your draw pile runs out of cards, your discard pile is shuffled into a new draw pile.</p>
+    
+                    <p>For now, play a few <span hover-help="[wt~=Card] [wt~=Unit]">Unit cards</span> onto the battlefield.  If you have none, draw cards from the draw pile until you do.  Be sure to choose a location that blinks obnoxiously.</p>
+    
+                    <p>When you first play a unit onto the battlefield, it's in a <span hover-help="[wt~=GhostUnit]">pending state</span>, where its avatar has muted colors.  Units in this state<ul>
+                        <li>Can be repositioned.  To do so, click the unit and click the destination cell.</li>
+                        <li>May not have certain cards played on them until they are no longer pending.</li>
+                        <lI>Are made no-longer pending.  To do so, click the unit, then click the unit again.</lI>
+                    </ul></p>
+    
+                    <p>Once you've played some units, click the <span hover-help="[wt~=ActionButton]">Action Button with a ▶️ symbol</span> to start a round.  Any pending units will no longer be pending once the round starts.  Units and enemies will take turns using their abilities.  Each of these turns is called a Volley.</p>
+    
+                    <p>By default, volleys play one step at a time, which you can progress by clicking the <span hover-help="[wt~=StepButton]">Step Forward</span> button.  Click the <span hover-help="[wt~=PlayPauseButton]">Pause/Resume</span> button to toggle between auto-play or pause between volleys, which will hide the <span hover-helper="[wt~=StepButton]">Step Forward</span> button while it's in auto-play.  In addition, you can toggle the speed of a volley using the <span hover-help="[wt~=SpeedButton]">Speed Control</span>, which as 3 modes: 🐌 (slow), 🐕(standard), and 🍑(hold-onto-your-butts, aka fast).</p>
+    
+                    <p>To end the round, click on the <span hover-help="[wt~=ActionButton]">Action Button with a ⏹️ symbol</span>.  Note that before you can play cards again, a minimum number of Volleys must pass.  This is represented by the top number in the <span hover-help=".volley_tracker">Volley Tracker hourglass symbol</span>.  The <span hover-help="[wt~=ActionButton]">Action Button</span> will display a ⌛ symbol while it is waiting for the minimum number of volleys to pass.  This may require that you click the</p>
+    
+                    <p>Once the round ends, you will once again be able to play cards.  Note that some game effects end when the round ends, so sometimes it's to your benefit to not end a round.</p>				
+    
+                    <p>Above each unit on the battlefield, you'll see a <span hover-help="[wt~=Battlefield] [wt~=Ability]">vomit of icons</span>.  These icons represent the unit's Intents, which is what they plan to do during the battle.</p>
+    
+                    <p>The large icon on top is the category of move.  The small icon to the bottom-left is the actual move's icon.  The number is the cooldown for that move.  The move will be used in a volley if its cooldown value is 1.  If there are multiple such moves for a unit, the leftmost is used.  Once a move is used, its cooldown resets.</p>
+    
+                    <p>Some <span hover-help="[wt~=Battlefield] [wt~=Ability][inactive=true]">moves cannot be used because the unit is in the wrong position</span>.  Hover over those icons to highlight the correct positions for those moves.  If your units are unable to act, try to play a card that lets you move that unit to a better position.</p>
+    
+                    <p>When multiple compatible units use moves at the same time, they can <span compendium="concept/unit/concept/combo">combo</span>.  Combos have extra UI treatment and are simply more powerful versions of the same effect (e.g. Strike deals +25% damage for every additional unit that is part of the combo).  Check out the <span compendium="concept/unit/concept/combo">combo</span> page for more info on when units can combo, but the TL;DR is matching cooldowns and either matching element symbols or similar moon icons.</p>
+    
+                    <p>A few last points: <ul>
+                        <li>If a unit dies, they are gone forever!</li>
+                        <li>HP is not restored between combats/rounds.  To heal your units, you need to pay the doctor in town!</li>
+                    </ul></p>
+                </info-panel>
+            </tutorial>
+    
+            <tutorial hash="manageitems">
+                <info-panel>
+                    <h2>Manage Items</h2>
+    
+                    <p>This dialog allows you to equip your units with item cards.</p>
+    
+                    <p>Select a unit by clicking a <span hover-help=".units_holder .card">unit card</span>.  The currently-selected one glows annoyingly.</p>
+    
+                    <p>Their items will be shown in the <span hover-help=".unit_preview">panel below</span>.</p>
+    
+                    <p>You can move items to the unit's inventory by clicking an <span hover-help="[wt~=Dialog] .card > [wt~=Item]">item in storage</span>.</p>
+    
+                    <p>You can move items back to storage by clicking the <span hover-help="[wt~=Dialog] .battlefield_unit inventory [wt~=Item]">item in the unit's inventory.</span></p>
+    
+                    <p>You can click the <span hover-help="[wt~=EmptyAll]">Empty All Units button</span> to move all units items back to storage.</p>
+    
+                    <p>When you're done, click <span hover-help="[wt~=Okay]">Done</span>.</p>
+    
+                </info-panel>
+            </tutorial>
+    
+            <tutorial hash="shop">
+                <info-panel>
+                    <h2>Shop</h2>
+    
+                    <p>Spend your <span hover-help=".run_bar .gold_container">Gold</span> on sweet <span hover-help=".shop_item">merch for sale</span>.</p>
+                    <p>Hopefully it's obvious, but you can only buy things <span hover-help="[can-afford=true]">that you can afford.</span></p>
+                    <p>Things you own are shown in <span hover-help=".storage_holder">Your storage</span>.  You can't sell things; it's only here so you can see what you already have laying around.</p>
+                    <p>When you're done shopping, click <span hover-help="[wt~=Okay]">Done.</span></p>
+    
+                </info-panel>
+            </tutorial>
+    
+            <tutorial hash="embark">
+                <info-panel>
+                    <h2>Embark</h2>
+    
+                    <p>This is where you assign <span hover-help="[wt~=Card]">units</span> to <span hover-help=".town_assignment">missions.</span></p>
+                    <p><span hover-help=".town_assignment [wt~=Card]">Units already assigned to missions</span> will appear within the mission's row.  You can click the unit cards to unassign them, back into the <span hover-help=".units_holder">pending area</span>.</p>
+                    <p>All units must be assigned before you can <span hover-help="[wt~=Okay]">embark</span>.</p>
+                    <p>For now, click the <span hover-help="[wt~=Reset]">Reset Assignments</span> button to unassign all your units.</p>
+                    <p>You can select one or more <span hover-help=".units_holder [wt~=Card]">unassigned units</span> by clicking them.  Units that are selected will be fully opaque and have a flashing border.  Select a few now.</p>				
+                    <p>After selecting a few, some <span hover-help="[wt~=AddUnit]">Plus buttons</span> will appear in the mission rows.  Click that button to assign all selected units to that mission.</p>
+                    <p>You can right click a <span hover-help=".quest_name">mission title</span> to view a hint for that mission.  Remember you can <span hover-help=".tutorial_button">return to this tutorial by right-clicking the 👩‍🏫</span> icon in the upper-left!</p>
+                    <p>If this is your first time playing, choose 5 units to assign to <span hover-help="[wt~=Assignment][name=rats]">The Rats</span>.  Choose units whose <span hover-help="[wt~=Ability]">abilities</span> have similar numbers and whose <span hover-help="[wt~=Card] .appearance">avatars</span> have similar non-face icons.</p>
+                    <p>Assign your other 5 units to <span hover-help="[wt~=Assignment][name=hangingout]">Hang Around The Base</span>, then click <span hover-help="[wt~=Okay]">Embark!</span></p>
+                    <p>If you want to go shopping and to rearrange items, you can click <span hover-help="[wt~=Cancel]">the go-back-to-town button</span>.</p>
+                </info-panel>
+            </tutorial>
+        </compendium>
+    </body>
+</html>

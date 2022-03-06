@@ -1,3 +1,10 @@
+/** TODO: Maybe a singleton getting pattern would work? */
+class Workspace {
+    static find() {
+        return RunInfo.getWorkspace(doc());
+    }
+}
+
 
 class RunInfo {
     static Month = new ScopedAttr("month", StringAttr);

@@ -1072,12 +1072,11 @@ class BaseStatus {
         }
         var bp = bf(unit, 'status-blueprint[type="' + statusName + '"]');
         var container = EffectQueue.getHandlerContainer(unit);
-        var existingHandlerSet = BaseStatus.ForStatus.find(container, statusName);
-
+        var existingHandlerSet = HandlerSet.findFor(statusName);
+        
         // Install our handlers if needed.
         if (!existingHandlerSet) {
-            existingHandlerSet = Templates.inflate('handler-set');
-            BaseStatus.ForStatus.set(existingHandlerSet, statusName);
+            existingHandlerSet = HandlerSet.installFor(container, statusName);
             var bpCopy = bp.cloneNode(true);
             Utils.moveChildren(bpCopy, existingHandlerSet);
             container.appendChild(existingHandlerSet);

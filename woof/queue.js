@@ -18,14 +18,24 @@ class HandlerSet {
 			handlerSet = qs(container, selector);
 		} else {
 			// We don't!
-			handlerSet = Templates.inflate('handler-set');
-			HandlerSet.For.set(handlerSet, WoofType.buildSelectorFor(context));
-			WoofType.add(context, "HandlerOwner");
-			HandlerSet.OwnsHandlers.set(context, IdAttr.generate(handlerSet));
+			handlerSet = Templates.inflate('woof.handler-set');
+			if (isElement(context)) {
+				HandlerSet.For.set(handlerSet, WoofType.buildSelectorFor(context));
+				WoofType.add(context, "HandlerOwner");
+				HandlerSet.OwnsHandlers.set(context, IdAttr.generate(handlerSet));	
+			} else {
+				// Set this directly.
+				HandlerSet.For.set(handlerSet, context);
+			}
 			container.appendChild(handlerSet);
 		}
 
 		return handlerSet;
+	}
+
+	static findFor(elt, contextString) {
+		var container = EffectQueue.getHandlerContainer(elt);
+		return qs(container, HandlerSet.For.buildSelector(contextString));
 	}
 
 	static onRemoveOwner(event, handler) {
@@ -399,7 +409,7 @@ class GameEffect {
 
 	static __simpleClone(obj) {
 		var clone;
-		if (obj instanceof HTMLElement || obj == null) {
+		if (obj == null || isElement(obj)) {
 			clone = obj; // No clone.
 		} else if (Array.isArray(obj)) {
 			clone = [];
@@ -534,7 +544,7 @@ class GameEffect {
 	}
 
     static dumpToResult(effect) {
-        var resultElt = Templates.inflate('game_effect_result', {
+        var resultElt = Templates.inflate('woof.game_effect_result', {
             TYPE: GameEffect.getType(effect)
         });
         // Copy our params and results.

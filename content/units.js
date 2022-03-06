@@ -25,13 +25,11 @@ class DamageTypes {
 
 class PlayerUnits {
     static _generateNames(elt) {
-        var runInfo = RunInfo.find(elt);
-        var workspace = qs(runInfo, 'workspace');
+        var workspace = Workspace.find();
         // We've got names already.
         if (qs(workspace, 'name-option')) return;
-
-        var optionsHolder = qs(doc("unit_names"), 'name-option').parentNode;
-        Utils.moveChildren(optionsHolder, workspace);    
+        
+        fa('name-option').forEach(h => workspace.appendChild(h.cloneNode()));
     }
 
     static Alias = new ScopedAttr("alias", StringAttr);
@@ -39,11 +37,11 @@ class PlayerUnits {
     static Values = new ScopedAttr("values", ListAttr);
     static Data = new ScopedAttr("data", BlobAttr);
     static _generateDemographics(elt) {
-        var runInfo = RunInfo.find(elt);
-        var workspace = qs(runInfo, 'workspace');
+        var workspace = Workspace.find();
         if (qs(workspace, 'player-demographic')) return;
-        var axes = bfa(elt, 'player-demographics > def', 'body');
-        var template = bf(elt, 'player-demographics > template[name="demographic"]', 'body');
+
+        var axes = fa('player-demographics > def');
+        var template = f('player-demographics > template[name="demographic"]');
 
         var results = [{}]
         var workingSet = [];
@@ -68,8 +66,7 @@ class PlayerUnits {
     }
 
     static TakeName(unit, elt, rng) {
-        var runInfo = RunInfo.find(elt);
-        var workspace = qs(runInfo, 'workspace');
+        var workspace = Workspace.find();
         PlayerUnits._generateNames(elt);
         var options = qsa(workspace, 'name-option');
         var option = rng.randomValue(options);
@@ -79,8 +76,7 @@ class PlayerUnits {
     }
 
     static TakeDemographic(unit, elt, rng) {
-        var runInfo = RunInfo.find(elt);
-        var workspace = qs(runInfo, 'workspace');
+        var workspace = Workspace.find();
         PlayerUnits._generateDemographics(elt);
         var options = qsa(workspace, 'player-demographic');
         var option = rng.randomValue(options);

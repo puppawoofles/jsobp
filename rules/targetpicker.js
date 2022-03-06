@@ -18,7 +18,7 @@ class TargetPicker {
             return Utils.bfind(handler, 'body', elt);
         });
 
-        Templates.inflateIn('target_context', handler, {
+        Templates.inflateIn('woof.target_context', handler, {
             CONTEXT: params.context,
             TICKET: ticket,
             EFFECT: IdAttr.get(effect)
@@ -44,8 +44,7 @@ class TargetPicker {
 
         // Set our results.
         contextElt.remove(); // Remove tis, since it's no longer needed.
-        var results = GameEffect.createResults(effect, result);
-        GameEffect.setResult(effect, results);
+        GameEffect.setResult(effect, result);
         PendingOpAttr.returnTicket(effect, ticket);
     }
 

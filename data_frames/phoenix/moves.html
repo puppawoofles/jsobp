@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+        <!-- Icon Hints: ⚔️⚾🏹☄️🛡️🔨🔮🤲🥾✨💫🏳️ -->
+    <head><title>Where moves and movegen go hide.</title></head>
+    <body>
+
+        <move-blueprint name="punch">
+            <appearance move_icon="✊"></appearance>
+            <target-mode target-type="hostile" target-mode="AT"></target-mode>
+            <info invoke-fn="AttackMove.invoke"></info>
+        </move-blueprint>
+
+        <move-blueprint name="strike">
+            <appearance move_icon="⚔️"></appearance>
+            <target-mode target-type="hostile" target-mode="AT"></target-mode>
+            <target-mode target-type="hostile" target-mode="SZ"></target-mode>
+            <target-mode target-type="hostile" target-mode="AZ" effective-from="F1 F2 F3"></target-mode>
+            <info invoke-fn="AttackMove.invoke" resolve-target-fn="MoveUtils.MeleeTarget"></info>	
+        </move-blueprint>
+
+        <move-blueprint name="shoot">
+            <bp>
+                <appearance move_icon="🏹"></appearance>
+                <!-- TODO: Figure out how to configure being able to bypass a barricade. -->
+                <target-mode target-type="hostile" target-mode="AZ" effective-from="M1 M2 M3"></target-mode>
+                <info invoke-fn="AttackMove.invoke"></info>	
+            </bp>
+        </move-blueprint>
+
+        <move-blueprint name="step">
+            <appearance move_icon="🥾"></appearance>
+            <!-- Not active if the destination has been reached.  -->
+            <active-mode active-fn="MoveUtils.UserNotInTargetLocation"></active-mode>
+            <target-mode target-type="self"></target-mode>
+            <info invoke-fn="StepMove.invoke"></info>
+        </move-blueprint>
+
+        <move-blueprint name="flee">
+            <appearance move_icon="🏳️"></appearance>
+            <!-- Not active if the unit isn't on an escapable square  -->
+            <active-mode active-fn="MoveUtils.UserInMatchingTeamCell" cell-selector="[tag~=escape]"></active-mode>
+            <target-mode target-type="self"></target-mode>
+            <info invoke-fn="RetreatMove.invoke"></info>
+        </move-blueprint>
+
+        <!-- Movesets (temporary: these should be on weapons!) -->
+        <move-slot-gen name="sharp_stick">
+            <bp>
+                <appearance moveset_name="Sharp Stick"></appearance>
+            </bp>
+            <gen>
+                <copyDest moveset_name="Sharp Stick"></copyDest>
+                <setMoves>
+                    <move-gen bp="${SELF}.strike">
+                        <priority value="0"></priority>
+                    </move-gen>
+                </setMoves>
+            </gen>
+        </move-slot-gen>
+
+        <move-slot-gen name="rocks">
+            <bp>
+                <description>Bash an adjacent enemy with a rock, otherwise throw one at a further enemy.</description>
+            </bp>
+            <gen>
+                <copyDest moveset_name="Rocks"></copyDest>
+                <setMoves>
+                    <move-gen bp="${SELF}.punch">
+                        <priority value="0"></priority>
+                    </move-gen>
+                    <move-gen bp="${SELF}.shoot">
+                        <priority value="-1"></priority>
+                    </move-gen>
+                </setMoves>
+            </gen>
+        </move-slot-gen>
+
+        <!-- Moveset: This is what humans start with. -->
+        <move-slot-gen name="base_human">
+            <bp>
+                <appearance moveset_name="Fists"></appearance>
+            </bp>
+            <gen>
+                <copyDest moveset_name="Fists"></copyDest>
+                <setMoves>
+                    <move-gen bp="${SELF}.punch">
+                        <priority value="0"></priority>
+                    </move-gen>
+                </setMoves>
+            </gen>
+        </move-slot-gen>
+
+
+    </body>
+</html>

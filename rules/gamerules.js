@@ -5,7 +5,7 @@ class GameRules {
     static Count = new ScopedAttr("count", IntAttr);
 
     static NewRun = GameEffect.handle(function(handler, effect, params) {
-        Logger.info("Got a request for a run, seed: ", params.seed);
+        Logger.game("Starting game with seed ", params.seed);
         var runScreen = RunScreen.inflate();
     
         // Put up the run screen.
@@ -15,30 +15,20 @@ class GameRules {
         var setupRNG = new SRNG(NC.Seed, true);
 
         // Next up, generate the starter deck.
-        var starterDeck = [
-            /**
-            Tactic.inflate(Tactic.findBlueprint(handler, "retreat")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "reposition")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "pivot")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "taunt-enemy")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "taunt-ally")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "go-faster")),
-            Tactic.inflate(Tactic.findBlueprint(handler, "go-slower"))
-            */
-        ];
+        var starterDeck = [];
         starterDeck.forEach(function(content) {
             RunInfo.addToDeck(runScreen, content);
         });
 
         var starterUnits = [
-            UnitGen.gen(runScreen, 'protagonist_unit'),
-            UnitGen.gen(runScreen, 'random_teammate'),
-            UnitGen.gen(runScreen, 'random_teammate'),
-            UnitGen.gen(runScreen, 'random_teammate'),
-            UnitGen.gen(runScreen, 'random_teammate'),
-            UnitGen.gen(runScreen, 'random_teammate'),
-            UnitGen.gen(runScreen, 'random_teammate'),
-            UnitGen.gen(runScreen, 'random_teammate')
+            UnitGen.gen(runScreen, 'ugen.protagonist_unit'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate'),
+            UnitGen.gen(runScreen, 'ugen.random_teammate')
         ];
         starterUnits.forEach(function(content) {
             var card = Card.inflate(Utils.UUID());
@@ -46,27 +36,18 @@ class GameRules {
             RunInfo.addUnit(runScreen,card);
         });
 
-        RunInfo.setCurrentGold(handler, params.startingGold);        
+        RunInfo.setCurrentGold(handler, params.startingGold);
 
         // Seed our starter rumors.
-        Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-rumors'), 'assignment').forEach(function(rumor) {
+        fa('starting-rumors').map(e => Blueprint.findAll(e, 'assignment')).flat().forEach(function(rumor) {
             RunInfo.addRumor(runScreen, Rumor.FromAssignmentBlueprint(rumor))
         });
 
         // Generate our visitors.
         // TODO: Visitors should, at their base, be based on a Unit.
         // That way you can fight them and shit.  TODO: Rewrite this whole thing.
-        Blueprint.findAll(Utils.bfind(effect, 'body', 'starting-visitors'), 'visitor').forEach(function(bp) {
+        fa('starting-visitors').map(e => Blueprint.findAll(e, 'visitor')).flat().forEach(function(bp) {
             RunInfo.addVisitor(runScreen, Visitor.FromBlueprintWithParams(bp, Units.randomVisitor(effect), UnitGen._rng));
-        });
-
-        // Give ourselves some starting items.
-        Utils.bfindAll(effect, 'body', 'starting-preparation').forEach(function(startingPreparation) {
-            var count = GameRules.Count.get(startingPreparation);
-            var preparations = Blueprint.findAll(startingPreparation, 'preparation');
-            times(count).forEach(function() {
-                RunInfo.addStorageItem(effect, Preparation.inflate(setupRNG.randomValue(preparations)));
-            });    
         });
 
         var act = 1;

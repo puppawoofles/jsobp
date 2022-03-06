@@ -184,7 +184,10 @@ isInDocument = function(elt) {
 }
 
 isElement = function(elt) {
-	return elt instanceof Element;
+	// Can't use instanceof because each Element prototype is speciic to
+	// the window it's in, which is lame (e.g "instanceof Element" == "this.prototype == window.Element.prototype")
+	// So, property checks. :(	
+	return !!elt && !!elt.outerHTML && !!elt.addEventListener && !!elt.appendChild;
 };
 
 emptyObjectFn = function() { return {}; }
@@ -238,6 +241,26 @@ isPromise = function(result) {
 
 doc = function(name) {
 	return WoofRootController.assertDocument(name);
+}
+
+rr = function(label) {
+	return WoofRootController.resolveResourceName(label);
+}
+
+fa = function(selector) {
+	var toReturn = [];
+	for (var d of WoofRootController.allDocuments()) {
+		toReturn.extend(qsa(d.body, selector));
+	}
+	return toReturn;
+}
+
+f = function(selector) {
+	for (var d of WoofRootController.allDocuments()) {
+		var result = qs(d.body, selector);
+		if (result) return result;
+	}
+	return null;
 }
 
 
@@ -327,13 +350,71 @@ class WoofRootController {
 		"AddChild", "RemoveChild", "Create", "MoveFrom", "MoveTo", "Destroy",
 		"Attr"
 	];
+
+	static __fixWindows() {
+		var map = {};
+
+		// { File name => name.name.name }
+		var keyMan = {};
+		// [[ name, doc, { File name => KEY } ]]
+		var toProcess = [[null, WoofRootController._mainWindow.document, {}]];
+		while (toProcess.length > 0) {
+			var current = toProcess.shift();
+			if (!!current[0]) {
+				map[current[0]] = [current[1], current[2]];
+			}
+ 
+			qsa(current[1], 'iframe[name]').forEach(function(iframe) {
+				var name = iframe.getAttribute('name');
+				name = !!current[0] ? `${current[0]}.${name}` : name;
+				var fName = iframe.getAttribute("src");
+				keyMan[fName] = name;
+				var body = iframe.contentDocument.body;
+				var obj = qsa(body, 'import[file][as]').toObject(
+						e => e.getAttribute('file'),
+						e => e.getAttribute('as'));
+				toProcess.push([name, body, obj]);
+			});
+		}
+
+		for (var [name, val] of Object.entries(map)) {
+			var body = val[0];
+			var imports = val[1];
+			a(body.children).forEach(function(elt) {
+				// Skip iframes.
+				if (elt.tagName.toLowerCase() == 'iframe') return;
+
+				var html = elt.outerHTML;
+				for (var [fName, key] of Object.entries(imports)) {
+					html = html.replaceAll(`\$\{${key}\}`, keyMan[fName]);
+				}
+				html = html.replaceAll('${SELF}', name);
+				if (html == elt.outerHTML) return;
+				elt.outerHTML = html;
+			})
+		}
+	}
+
+	static allDocuments() {
+		var toReturn = [];
+		var toProcess = [WoofRootController._mainWindow.document];
+
+		while (toProcess.length > 0) {
+			var current = toProcess.shift();
+			toReturn.push(current);
+
+			// Push all the children.
+			qsa(current.body, 'iframe[name]').forEach(w => toProcess.push(w.contentDocument));
+		}
+		return toReturn;
+	}
 	
 	static roots() {
 		return Array.from(WoofRootController._roots.keys());
 	}
 
 	static assertDocument(name) {
-		var parts = name.split('.');
+		var parts = !!name ? name.split('.') : [];
 		var current = WoofRootController._mainWindow.document.body;
 		while (parts.length > 0) {
 			var currentPart = parts.shift();
@@ -1152,7 +1233,7 @@ class Utils {
 		var serializeFn = function(obj) {
 			Object.keys(obj).forEach(function(key) {
 				var value = obj[key];
-				if (value instanceof HTMLElement) {
+				if (isElement(value)) {
 					var types = WoofType.get(value);
 					var baseObj = {
 						____: true,

@@ -812,7 +812,7 @@ class GridGenerator {
         // Macro Grid
         var macroRowLabelCode = "A".charCodeAt(0);
         for (var i = 0; i < y; i++) {
-            var macroRow = Templates.inflateIn("beegrow", elt);
+            var macroRow = Templates.inflateIn("grid.beegrow", elt);
             for (var j = 0; j < x; j++) {
                 CellBlock.inflateIn(macroRow, j, i, String.fromCharCode(macroRowLabelCode) + (j + 1));
             }
@@ -858,37 +858,14 @@ class CellBlock {
         return "[wt~='CellBlock'][beeg-x='" + coords[0] + "'][beeg-y='" + coords[1] + "']";
     }
 
-    // TODO: Remove?
-    static findEnabled(elt) {
-        return qsa(elt, "");
-    }
-
-    static findFacing(block, opt_direction) {
-        var facing = opt_direction || FacingAttr.get(block);
-        var bigCoord = BigCoord.extract(block);
-        switch (facing) {
-            case FacingAttr.Up:
-                bigCoord[1] -= 1;
-                break;
-            case FacingAttr.Down:
-                bigCoord[1] += 1;
-                break;
-            case FacingAttr.Left:
-                bigCoord[0] -= 1;
-                break;
-            case FacingAttr.Right:
-                bigCoord[0] += 1;
-                break;
-            default:
-                return null;
-        }
-        return CellBlock.findByCoord(WoofType.find(block, "Grid"), bigCoord);
+    static isActive(block) {
+        return !DisabledAttr.findGet(block);
     }
 
 }
 Utils.classMixin(CellBlock, AbstractDomController, {
     matcher: "[wt~='CellBlock']",
-    template: "beegcell",
+    template: "grid.beegcell",
     params: function(x, y, label) {
         return {
             "X-LU": x,
@@ -901,7 +878,7 @@ Utils.classMixin(CellBlock, AbstractDomController, {
         // Micro Grid
         var microRowLabelCode = "A".charCodeAt(0);
         for (var k = 0; k < 3; k++) {
-            var microRow = Templates.inflateIn("smolrow", fragment);
+            var microRow = Templates.inflateIn("grid.smolrow", fragment);
             for (var l = 0; l < 3; l++) {
                 var cell = Cell.inflateIn(microRow, l, k, String.fromCharCode(microRowLabelCode) + (l + 1));        
                 Cell.__populateEffectivePositions(cell);
@@ -945,7 +922,7 @@ class Cell {
 }
 Utils.classMixin(Cell, AbstractDomController, {
     matcher: "[wt~='Cell']",
-    template: "smolcell",
+    template: "grid.smolcell",
     params: function(x, y, label) {
         return {
             "X-LU": x,

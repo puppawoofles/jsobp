@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <body>    
+        <!-- Grids -->
+		<template name="beegrow">
+			<div class="beeg_grid_row"></div>
+		</template>
+
+		<template name="beegcell">
+			<div class="beeg_grid_cell" wt="CellBlock" beeg-x="X-LU" beeg-y="Y-LU" beeg-label="LAY-BOH" odd="ODDNESS">
+				<div class="underlay">
+					<div class="direction_arrow"></div>
+				</div>
+			</div>
+		</template>
+
+		<template name="smolrow">
+			<div class="smol_grid_row"></div>
+		</template>
+
+		<template name="smolcell">
+			<div class="smol_grid_cell" wt="Cell" smol-x="X-LU" smol-y="Y-LU", smol-label="LAY-BOH">
+				<div class="icon_hint" direction="left"></div>
+				<div class="icon_hint" direction="right"></div>
+				<div class="icon_hint" direction="up"></div>
+				<div class="icon_hint" direction="down"></div>
+				<div class="icon_hint" direction="local"></div>
+			</div>
+		</template>        
+    </body>
+</html>

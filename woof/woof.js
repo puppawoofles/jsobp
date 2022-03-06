@@ -2030,15 +2030,16 @@ class Blueprint {
 	}
 
 	static resolve(ref) {
-		if (Blueprint.Bp.has(ref)) {
+		if (Blueprint.Bp.has(ref)) {			
 			var bpName = Blueprint.Bp.get(ref);
-			return Utils.bfind(ref, 'body', ref.tagName.toLowerCase() + '-blueprint[name="' + bpName + '"]');
+			var blob = rr(bpName);
+			return qs(blob[0], `${ref.tagName.toLowerCase()}-blueprint[name="${blob[1]}"]`);
 		}
 		return ref;
 	}
 
 	static findAll(element, ...types) {
-		return types.map(function(type) {
+		return types.map(function(type) {			
 			return qsa(element, type).map(function(candidate) {
 				return Blueprint.resolve(candidate);
 			});			

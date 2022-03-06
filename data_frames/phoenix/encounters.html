@@ -2,6 +2,8 @@
 <html>
     <head><title>(pnxen) Encounters and other encounter accessories</title></head>
     <body>
+		<import file="data_frames/phoenix/unit-gen.html" as="UNITS"></import>
+
 
         <!--
             COMMON BATTLEFIELD SHAPES GO HERE
@@ -22,6 +24,55 @@
                 <copy team="enemy"></copy>
             </forBlocks>
         </battlefield-gen>
+
+        <!--
+            EVENT STATES GO HERE
+        -->
+        <event-blueprint name="hunt_for_food" label="Hunt for Food">
+            <state type="vignette" name="start" start="true">
+                <flavor>
+                    <p>You're here to get some food for your group of humans.</p>
+                    <p>Kill the antelope as they cross to get some food!</p>
+                </flavor>
+                <choice result="1" label="Can do!"></choice>
+                <event-result choice="1" next-state="fight"></event-result>	
+            </state>
+            <state type="encounter" name="fight">
+                <encounter base="${SELF}.base">
+                    <battlefield base="${SELF}.herd_crossing">
+                        <!-- TODO: Make this work. -->
+                        <forCells labels="B3.A3 B3.B3 B3.C3">
+                            <add tag="spawn"></add>
+                        </forCells>
+                        <forCells labels="A2.A1 A2.A2 A2.A3 C2.C1 C2.C2 C2.C3 B1.A1 B1.B1 B1.C1">
+                            <add tag="escape"></add>
+                        </forCells>
+                    </battlefield>
+                    <endCondition end-fn="EncounterRules.Endless" type="win">
+                        You're stuck here forever!  Go go dev.
+                    </endCondition>
+                    <installHandlers>
+                        <!-- TODO: Make this work with the spawn tags. -->
+                        <handler handler="HuntForFoodEncounter.SpawnDeer" event-types="Volley:before" spawn-count="20" spawn-selector="[tag~='spawn']" location-filter="HuntForFoodEncounter.SpawnLocationFilter">
+                            <unit-gen base="${UNITS}.deer">
+                                <copy team="enemy" preferred-locations="B1.A1 B1.B1 B1.C1"></copy>
+                                <add tag="deer"></add>
+                                <forMoveSlots selector="[tag=basic]">
+                                    <copyDest cooldown-duration="12"></copyDest>
+                                </forMoveSlots>
+                            </unit-gen>
+                        </handler>
+                </encounter>
+                <event-result choice="victory" victory="true"></event-result>
+                <event-result choice="wipe" victory="false"></event-result>
+                <event-result choice="giveUp" victory="false"></event-result>
+            </state>
+        </event-blueprint>
+
+
+
+
+
 
         <!--
             ENCOUNTER GENERATION GOES HERE

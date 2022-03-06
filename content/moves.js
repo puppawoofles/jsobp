@@ -192,9 +192,9 @@ WoofRootController.register(RetreatMove);
 
 class AttackMove {
     static invoke(move, components, target) {
+        return MoveUtils.Push(move, GameEffect.create('', {
 
-
-        
+        }));
     }
 }
 WoofRootController.register(AttackMove);

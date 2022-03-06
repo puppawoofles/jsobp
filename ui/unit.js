@@ -23,6 +23,14 @@ class UnitScriptCommands {
         var slot = MoveSlotGen.gen(null, cmdElt, defs);
         qs(unit, '.battle_script_base').appendChild(slot);
     }
+
+    static Selector = new ScopedAttr("selector", StringAttr);
+    static forMoveSlots(cmdElt, unit, defs) {
+        var selector = UnitScriptCommands.Selector.get(cmdElt);
+        qsa(unit, '[wt~=MoveSlot]').filter(e => e.matches(selector)).forEach(function(slot) {
+            MoveSlotGen.runScriptFor(cmdElt, slot, defs);
+        });
+    }
 }
 
 

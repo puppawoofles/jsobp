@@ -29,7 +29,8 @@ class PlayerUnits {
         var workspace = qs(runInfo, 'workspace');
         // We've got names already.
         if (qs(workspace, 'name-option')) return;
-        var optionsHolder = bf(elt, 'name-options', 'body').cloneNode(true);
+
+        var optionsHolder = qs(doc("unit_names"), 'name-option').parentNode;
         Utils.moveChildren(optionsHolder, workspace);    
     }
 

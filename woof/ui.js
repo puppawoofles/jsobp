@@ -360,7 +360,7 @@ class ConsoleCommands {
 
 class TestConsole {	
 	static create(parentElt) {	
-		Templates.inflateIn("message_log", parentElt);
+		Templates.inflateIn("woof.message_log", parentElt);
 		TestConsole.syncCheckboxesToAttr(TestConsole.find(parentElt));
 	}
 	
@@ -442,7 +442,7 @@ class TestConsole {
 				}));
 				
 				input.value = null;
-				var fragment = Templates.inflate("message_log_history", { "VALUE": command});
+				var fragment = Templates.inflate("woof.message_log_history", { "VALUE": command});
 				history.appendChild(fragment);
 				input.setAttribute("scrolling", "false");
 				var elts = qs(history, "[active]");
@@ -521,7 +521,7 @@ class TestConsole {
 		var pinned = log.scrollHeight > log.clientHeight ?
 				((log.scrollTop - log.scrollHeight + log.offsetHeight) < 1) : true;
 				
-		Templates.inflateIn("log_entry", log, {"CONTENT": newMessages.join(' ')});
+		Templates.inflateIn("woof.log_entry", log, {"CONTENT": newMessages.join(' ')});
 		
 		if (pinned) {
 			window.setTimeout(function() {

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <!-- Used for game effects. -->        
+		<template name="game_effect">
+			<game-effect w-id="ID" wt="Effect" type="TYPE" phase="before">
+				<results></results>
+				<queue></queue>
+			</game-effect>
+		</template>
+
+        <!-- Used to track the results of those effects -->
+		<template name="game_effect_result">
+			<game-effect-result type="TYPE" value=""></game-effect-result>
+		</template>
+
+        <!-- Used for RNG counter tracking -->
+		<template name="noise_counter">
+			<info name="NAME" value="VALUE"></info>
+		</template>
+
+        <!-- Structure of our message log -->
+		<template name="message_log">
+			<div wt="MessageLog" class="message_log" wh-c="TestConsoleInput.keydown>TestConsole.OnKeyDown,MessageLog.Attr:wlogger-allow>TestConsole.OnLoggerLevelChange,MLLS.change>TestConsole.OnLoggerLevelCheckboxChange" wlogger="TestConsole.PostMessage" wlogger-allow="GAME ERR">
+				<div class="log_history text">
+				</div>
+				<input wt="TestConsoleInput" type="text" placeholder="Enter console command" class="console_input" />
+				<div class="log_level_selectors">
+				  <label><input wt="MLLS" type="checkbox" level="GAME" />Game</label>
+				  <label><input wt="MLLS" type="checkbox" level="TRACE" />Trace</label>
+				  <label><input wt="MLLS" type="checkbox" level="INFO" />Info</label>
+				  <label><input wt="MLLS" type="checkbox" level="WARN" />Warn</label>
+				  <label><input wt="MLLS" type="checkbox" level="ERR" />Err</label>
+				</div>
+				
+				<div class="message_log_past_entries" style="display:none"></div>
+			</div>
+		</template>
+		
+		<template name="message_log_history">
+			<div>VALUE</div>
+		</template>
+		
+		<!-- Structure of a single message -->
+		<template name="log_entry">
+			<div class="log_entry">
+				CONTENT
+			</div>
+		</template>
+    </body>
+</html>

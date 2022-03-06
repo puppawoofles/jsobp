@@ -340,7 +340,7 @@ class GameEffect {
     static Label = new ScopedAttr('label', StringAttr);
     static HandlerLabel = new ScopedAttr('handler-label', StringAttr);
 	static create(type, opt_config, opt_handler) {
-		var element = Templates.inflate("game_effect", {
+		var element = Templates.inflate("woof.game_effect", {
 			ID: Utils.UUID(),
 			TYPE: type
 		});
@@ -379,7 +379,7 @@ class GameEffect {
     static ResultValue = new ScopedAttr('value', BlobAttr);
     static addChildResult(elt, type, blob) {
         var container = qs(elt, 'results');
-        var child = Templates.inflateIn('game_effect_result', container, {
+        var child = Templates.inflateIn('woof.game_effect_result', container, {
             TYPE: type
         });
         GameEffect.ResultValue.set(child, blob)

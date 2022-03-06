@@ -354,6 +354,11 @@ class MetaScriptCommands {
  * a DOM-script (to configure).
  */
 class BPScriptBasedGenerator {
+    static runScriptFor(config, scriptRoot, baseObj, defs) {
+        return ScriptShortcuts.runScriptFor(scriptRoot, config.commands, baseObj, defs);
+    }
+
+
     static gen(config, contextElt, bpEltOrName, opt_defs, opt_baseObj, opt_skipFinalize) {
         // This is basically a 2-part thing.  We want to find a blueprint,
         // and we want to find a script.  Sometimes, one or more may be null.

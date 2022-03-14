@@ -81,6 +81,22 @@ class MoveTargeting {
 }
 
 
+class GoapMoves {
+    static Matching = new StringAttr('matching', StringAttr);
+    // For a given unit + requirement pair, find matching moves.
+    static Requirements(unit, problem, params) {
+        // TODO: more complexity or something.
+
+        return qsa(unit, '.battle_script [wt~=Move]').filter(function(move) {
+            return move.matches(GoapMoves.Matching.get(problem));
+        }).map(function(elt) {
+            return qsa(elt, 'goap-node');
+        }).flat();
+    }
+}
+WoofRootController.register(GoapMoves);
+
+
 
 class MoveUtils {
 

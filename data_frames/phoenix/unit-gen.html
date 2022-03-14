@@ -154,15 +154,18 @@
 						<appearance moveset_name="Travel"></appearance>
 					</bp>
 					<gen>
-						<add tag="basic"></add>"
+						<add tag="basic"></add>
 						<copyDest cooldown-duration="8"></copyDest>
 						<copyDestDef warmup-time="moveslot" current-cooldown="moveslot"></copyDestDef>
 						<setMoves>
-							<move-gen bp="${MOVES}.step">
+							<move-gen base="${MOVES}.step">
 								<priority value="0"></priority>
 							</move-gen>
-							<move-gen bp="${MOVES}.flee">
+							<move-gen base="${MOVES}.flee">
 								<priority value="-1"></priority>
+							</move-gen>
+							<move-gen base="${MOVES}.hoof_bash">
+								<priority value="-2"></priority>
 							</move-gen>
 						</setMoves>
 					</gen>
@@ -172,6 +175,11 @@
 
 
 
+		<!--
+			MISC OTHER GEN GOES HERE
+		-->
+		<unit-gen name="barricade" bp="${SELF}.immobile_construct">
+		</unit-gen>
 
 
 

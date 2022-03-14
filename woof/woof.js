@@ -145,6 +145,31 @@ Object.prototype["toArray"] = function(mapper) {
 	return returnMe;
 }
 
+cloneObject = function(obj) {
+	var clone;
+	if (obj == null || isElement(obj)) {
+		clone = obj; // No clone.
+	} else if (Array.isArray(obj)) {
+		clone = [];
+		for (var i = 0; i < obj.length; i++) {
+			clone[i] = cloneObject(obj[i]);
+		}
+	} else if (typeof obj === 'object') {
+		clone = {};
+		for (var [key, value] of Object.entries(obj)) {
+			if (obj.hasOwnProperty(key)) clone[key] = cloneObject(value);
+		}
+	} else {
+		clone = obj; // No clone.
+	}
+	return clone;
+}
+
+Object.prototype["clone"] = function() {
+	return cloneObject(this);
+}
+
+
 /* Normalize queryselectorall */
 qsa = function(element, matcher) {
 	return Array.from(element.querySelectorAll(matcher) || []);
@@ -743,8 +768,12 @@ class WoofRootController {
 		}
 	}
 	
+	static __memoizedController = {};
 	static invokeController(controllerText, params) {
-		return WoofRootController.controller(controllerText).apply(this, params);
+		if (!WoofRootController.__memoizedController[controllerText]) WoofRootController.__memoizedController[controllerText] = WoofRootController.controller(controllerText);
+		var controller = WoofRootController.__memoizedController[controllerText];
+		if (!controller) throw boom("Unknown controller", controllerText);
+		return controller.apply(this, params);
 	}
 	
 	static expandEventKeys(eventTypes, objectTypes) {
@@ -1205,6 +1234,7 @@ class Utils {
 	}
 
 	static deserializeBlob(relativeTo, blob) {
+		if (blob === null || blob === undefined) return blob;
 		var parsed = JSON.parse(blob);
 		return Utils.denormalizeBlob(relativeTo, parsed);
 	}

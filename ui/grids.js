@@ -443,6 +443,7 @@ class Grid {
     static pathTo(start, dest, okayFn, tileMultFn) {
         // Returns a path from the start to the dest while avoiding any locations in the avoid set.
         // Note: start and dest must be normUnits.
+        if (!tileMultFn) tileMultFn = function(norm) { return 1; };
         var workQueue = [];
         var candidates = [];
         okayFn = Grid.__memoize(okayFn);
@@ -551,6 +552,9 @@ class UberCoord {
     }
 
     static toNorm(uc) {
+        if (!Array.isArray(uc)) {
+            uc = UberCoord.extract(uc);
+        }
         return [
             (uc[0][0] * 3) + (uc[1][0] % 3),
             (uc[0][1] * 3) + (uc[1][1] % 3)

@@ -4,44 +4,107 @@
     <head><title>Where moves and movegen go hide.</title></head>
     <body>
 
-        <move-blueprint name="punch">
-            <appearance move_icon="✊"></appearance>
-            <target-mode target-type="hostile" target-mode="AT"></target-mode>
-            <info invoke-fn="AttackMove.invoke"></info>
-        </move-blueprint>
+        <move-gen name="punch">
+            <bp>
+                <appearance move_icon="✊"></appearance>
+                <target-mode target-type="hostile" target-mode="AT"></target-mode>
+                <info invoke-fn="AttackMove.invoke"></info>
 
-        <move-blueprint name="strike">
-            <appearance move_icon="⚔️"></appearance>
-            <target-mode target-type="hostile" target-mode="AT"></target-mode>
-            <target-mode target-type="hostile" target-mode="SZ"></target-mode>
-            <target-mode target-type="hostile" target-mode="AZ" effective-from="F1 F2 F3"></target-mode>
-            <info invoke-fn="AttackMove.invoke" resolve-target-fn="MoveUtils.MeleeTarget"></info>	
-        </move-blueprint>
+                <goap-pnode n="punch_move_node">
+                    <req n="at_location" mode="target"></req>
+                </goap-pnode>
+            </bp>
+            <gen>
+                <add tag="damage"></add>
+            </gen>
+        </move-gen>
 
-        <move-blueprint name="shoot">
+        <move-gen name="strike">
+            <bp>
+                <appearance move_icon="⚔️"></appearance>
+                <target-mode target-type="hostile" target-mode="AT"></target-mode>
+                <target-mode target-type="hostile" target-mode="SZ"></target-mode>
+                <target-mode target-type="hostile" target-mode="AZ" effective-from="F1 F2 F3"></target-mode>
+                <info invoke-fn="AttackMove.invoke" resolve-target-fn="MoveUtils.MeleeTarget"></info>	
+
+                <goap-pnode n="strike_move_node">
+                    <req n="at_location" mode="target"></req>
+                </goap-pnode>
+            </bp>
+            <gen>
+                <add tag="damage"></add>
+            </gen>
+        </move-gen>
+
+        <move-gen name="shoot">
             <bp>
                 <appearance move_icon="🏹"></appearance>
                 <!-- TODO: Figure out how to configure being able to bypass a barricade. -->
                 <target-mode target-type="hostile" target-mode="AZ" effective-from="M1 M2 M3"></target-mode>
                 <info invoke-fn="AttackMove.invoke"></info>	
+
+                <goap-pnode n="shoot_move_node">
+                    <req n="at_location" mode="target"></req>
+                </goap-pnode>
             </bp>
-        </move-blueprint>
+            <gen>
+                <add tag="damage"></add>
+            </gen>
+        </move-gen>
 
-        <move-blueprint name="step">
-            <appearance move_icon="🥾"></appearance>
-            <!-- Not active if the destination has been reached.  -->
-            <active-mode active-fn="MoveUtils.UserNotInTargetLocation"></active-mode>
-            <target-mode target-type="self"></target-mode>
-            <info invoke-fn="StepMove.invoke"></info>
-        </move-blueprint>
+        <move-gen name="step">
+            <bp>
+                <appearance move_icon="🥾"></appearance>
+                <!-- Not active if the destination has been reached.  -->
+                <active-mode active-fn="MoveUtils.UserNotInTargetLocation"></active-mode>
+                <target-mode target-type="self"></target-mode>
+                <info invoke-fn="StepMove.invoke"></info>
 
-        <move-blueprint name="flee">
-            <appearance move_icon="🏳️"></appearance>
-            <!-- Not active if the unit isn't on an escapable square  -->
-            <active-mode active-fn="MoveUtils.UserInMatchingTeamCell" cell-selector="[tag~=escape]"></active-mode>
-            <target-mode target-type="self"></target-mode>
-            <info invoke-fn="RetreatMove.invoke"></info>
-        </move-blueprint>
+                <goap-pnode n="step_move_node">
+                    <req n="unobstructed_path_to_dest"></req>
+                </goap-pnode>
+            </bp>
+            <gen>
+                <add tag="movement"></add>
+            </gen>
+        </move-gen>
+
+        <move-gen name="flee">
+            <bp>
+                <appearance move_icon="🏳️"></appearance>
+                <!-- Not active if the unit isn't on an escapable square  -->
+                <active-mode active-fn="MoveUtils.UserInMatchingTeamCell" cell-selector="[tag~=escape]"></active-mode>
+                <target-mode target-type="self"></target-mode>
+                <info invoke-fn="RetreatMove.invoke"></info>
+
+                <goap-pnode n="flee_move_node">
+                    <req n="at_location" matching="[tag~=escape]" team="allied"></req>
+                </goap-pnode>
+
+            </bp>
+            <gen>
+                <add tag="flee"></add>
+            </gen>
+
+        </move-gen>
+        
+        <move-gen name="hoof_bash">
+            <bp>
+                <appearance move_icon="⚔️"></appearance>
+                <!-- Not active if the unit isn't on an escapable square  -->
+                <target-mode target-type="hostile" target-mode="AT"></target-mode>
+                <info invoke-fn="AttackMove.invoke" resolve-target-fn="MoveUtils.MeleeTarget"></info>	
+
+                <goap-pnode n="hoof_bash_move_node">
+                    <req n="at_location" mode="target"></req>
+                </goap-pnode>
+            </bp>
+            <gen>
+                <add tag="damage"></add>
+            </gen>
+
+
+        </move-gen>
 
         <!-- Movesets (temporary: these should be on weapons!) -->
         <move-slot-gen name="sharp_stick">
@@ -51,7 +114,7 @@
             <gen>
                 <copyDest moveset_name="Sharp Stick"></copyDest>
                 <setMoves>
-                    <move-gen bp="${SELF}.strike">
+                    <move-gen base="${SELF}.strike">
                         <priority value="0"></priority>
                     </move-gen>
                 </setMoves>
@@ -65,10 +128,10 @@
             <gen>
                 <copyDest moveset_name="Rocks"></copyDest>
                 <setMoves>
-                    <move-gen bp="${SELF}.punch">
+                    <move-gen base="${SELF}.punch">
                         <priority value="0"></priority>
                     </move-gen>
-                    <move-gen bp="${SELF}.shoot">
+                    <move-gen base="${SELF}.shoot">
                         <priority value="-1"></priority>
                     </move-gen>
                 </setMoves>
@@ -83,7 +146,7 @@
             <gen>
                 <copyDest moveset_name="Fists"></copyDest>
                 <setMoves>
-                    <move-gen bp="${SELF}.punch">
+                    <move-gen base="${SELF}.punch">
                         <priority value="0"></priority>
                     </move-gen>
                 </setMoves>

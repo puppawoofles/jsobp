@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+    <head><title>Definitions and things for GOAP AI.  Basically, obstacle types and goal types.</title></head>
+    <body>
+
+        <goap-global>
+        <!-- Brainstoming:
+          - You have a data structure with 2 parts: State and Conclusions.
+          - State represents stuff you just gathered from the field, sort of
+            like sensory input.  This is primarily used as a form of caching.
+          - Conclusions are simple boolean statements that control behavior.
+            Conclusions are derived from State, and if you need to gather more
+            State to derive a Conclusion, then you do so (basically lazily
+            reading state).
+          - You have a graph of nodes, where the "roots" of the graph are
+            Goals and the "leaves" of the graph are the actions the AI can
+            actually perform.  While most usages of this will be very simple
+            (e.g. "Conclusion of { damageEnemy: true } => Hit them"), the
+            goal is to achieve complexity such as "If your path is blocked,
+            you can push the obstacle out of the way."  Each "node" represents
+            a potential plan to solve a specific problem, but itself is made
+            of smaller problems to solve.
+        -->
+
+                <!--
+            Goal: Flee
+              => Activate a Flee move (this has in-move requirements)
+                (From move requirements)
+                => Need to be on Flee Tile
+                  => Activate a Move move (this has in-move requirements)
+                    (from move requirements)
+                    => Do I have an unobstructed path to a flee tile?
+                      => How can I remove the obstruction? (kill, push)
+                        => Activate an Attack move
+                          => Need to be on an appropriate tile (cool, need to detect cycle and short-circuit)
+                        => Activate a Push move
+                          => Same
+        -->
+
+        <!-- Basemost data that triggers our action nodes. -->
+        <goap-data n="has_destination" eval-fn="GoapData.HasDestination"></goap-data>
+        <goap-data n="has_enemy_target" eval-fn="GoapData.HasEnemyTarget"></goap-data>
+        <goap-data n="has_move_active" eval-fn="GoapData.HasMoveActive"></goap-data>
+        <goap-data n="has_moveset" eval-fn="GoapData.HasMoveset"></goap-data>
+
+        <!-- Location/Pathing -->
+        <goap-data n="at_location" eval-fn="GoapData.AtLocation"></goap-data>
+        <goap-data n="unobstructed_path_to_dest" eval-fn="GoapData.UnobstructedPathToDestination"></goap-data>
+        <goap-data n="unobstruct_path" eval-fn="TODO"></goap-data>
+
+        <!-- Targeting / Attacking -->
+        <goap-data n="enemies_alive" eval-fn="TODO"></goap-data>
+
+
+        <!--
+          Base-most Boys are up here.  These are structural ones that
+          actually change things on the battlefield.
+        -->
+        <goap-node n="set_destination">
+            <goap-action invoke-fn="TODO"></goap-action>
+            <res n="has_destination"></res>
+        </goap-node>
+
+        <goap-node n="set_target">
+            <goap-action invoke-fn="TODO"></goap-action>
+            <res n="has_enemy_target"></res>
+        </goap-node>
+
+        <goap-node n="activate_moveset" expand-fn="GoapModes.Movesets">
+            <res n="has_moveset"></res>
+        </goap-node>
+
+        <goap-node n="activate_move" expand-fn="GoapModes.MoveRequirements">
+            <goap-action invoke-fn="TODO"></goap-action>
+            <res n="has_move_active"></res>
+        </goap-node>
+
+        <!--
+          High-level common strategery goes up here.  These
+          are the things that make you want to use specific
+          moves.
+        -->
+
+        <!-- Main goals are up here.  These have no specific results. -->
+        <goap-node n="flee">
+            <req n="has_move_active" matching="[tag~=flee]"></req>
+        </goap-node>        
+
+        <goap-node n="get_to_location">
+            <req n="has_destination"></req>
+            <req n="has_move_active" matching="[tag~=movement]"></req>
+      
+            <res n="at_location"></res>
+        </goap-node>
+
+        <goap-node n="kill_unit">
+            <req n="has_enemy_target"></req>
+            <req n="has_move_active" matching="[tag~=damage]"></req>
+
+            <res n="enemies_alive"></res>
+        </goap-node>
+
+        <!--
+          "Common Sense" nodes are here.  These are the middle layers of the node walk.
+        -->
+        
+        <!-- If your path is blocked, seek to clear blockages. -->
+        <!-- Used by movement abilities. -->
+        <goap-node n="fix_obstructed_path">
+          <req n="unobstruct_path"></req>
+          <res n="unobstructed_path_to_dest"></res>
+        </goap-node>
+
+        <!-- If something is dead, it can't obstruct your path. -->
+        <goap-node n="corpses_arent_obstacles">
+          <req n="enemies_alive" />
+          <res n="unobstruct_path" />
+        </goap-node>
+
+
+        <!-- Intermediary goals are here.  They might have inputs. -->
+
+        <!--
+            Base-most goals/actions are here.  At the moment, these are mostly
+            setting priority targets, setting destinations, or activating moves.
+        -->
+
+
+
+      </goap-global>
+    </body>
+</html>

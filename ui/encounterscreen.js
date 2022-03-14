@@ -24,7 +24,7 @@ class EncounterScriptCommands {
 
             // TODO: Include preferred spawn locations.
             var unit = UnitGen.gen(encounter, elt, defs);
-            var spawnLocation = EncounterGen._rng.randomValueR(validLocations);
+            var spawnLocation = EncounterRules._rng.randomValueR(validLocations);
             BattlefieldHandler.placeUnitAt(encounter, unit, UberCoord.extract(spawnLocation));
         });
     }

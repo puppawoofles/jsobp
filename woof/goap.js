@@ -12,11 +12,13 @@ class Goap {
         };
     }
 
-    static AddEvalOption(ev, option, cost) {
-        ev.options.push({
+    static AddEvalOption(ev, option, cost, opt_id) {
+        var blob = {
             data: option,
             cost: cost
-        });
+        };
+        if (opt_id) blob.id = opt_id;
+        ev.options.push(blob);
     }
 
     static MarkBlocked(ev, opt_blocked) {
@@ -160,7 +162,10 @@ class Goap {
 
             // A reverse-order list of actions we can take based on our walk.  Later items
             // will be from deeper requirements, and should be prioritized.
-            actions: []
+            actions: [],
+
+            // A mechanism for detecting cycles to terminate early.
+            cycleDetect: {}
         }];
         var options = [];
         var minOptionCost = Number.MAX_SAFE_INTEGER;
@@ -181,8 +186,18 @@ class Goap {
             var currentProblem = currentWalk.nodes.shift();
             params = currentProblem.params;
             var currentNode = currentProblem.node;
+            var nodeId = IdAttr.generate(currentNode);
             Logger.info("Currently evaluating", Goap.N.get(currentNode));            
             currentWalk.cost += currentProblem.cost;
+            if (currentProblem.cycleDetect) {
+                if (currentWalk.cycleDetect[currentProblem.cycleDetect]) {
+                    Logger.info("Detected infinite loop, terminating this walk.");
+                    continue;
+                }
+                currentWalk.cycleDetect[currentProblem.cycleDetect] = true;
+            }
+
+
             if (currentWalk.cost > minOptionCost) {
                 // This is dead because we have a better option already.
                 continue;
@@ -249,15 +264,20 @@ class Goap {
                         var newParams = params.clone();
                         Object.assign(newParams, dataOption.data);
 
-                        // Store it as an option.
-                        candidateOptions[evalReq.id].push({
+                        var option = {
                             evalReq: evalReq,
                             node: nodeOption,
                             data: dataOption,
                             reqs: reqs,
                             params: newParams,
                             cost: dataOption.cost
-                        });
+                        };
+                        if (!!dataOption.id) {
+                            option.cycleDetect = nodeId + dataOption.id;
+                        }
+
+                        // Store it as an option.
+                        candidateOptions[evalReq.id].push(option);
                     }
                 }
             }

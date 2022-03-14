@@ -114,7 +114,6 @@ class Move {
 
     /** Finds all locations from which we can hit the target. */
     static findUsablePositions(move, target) {
-        debugger;
         var battlefield = BattlefieldHandler.find(move);
         var user = Unit.findUp(move);
         var inCell = BattlefieldHandler.cellAt(battlefield, user);

@@ -107,7 +107,7 @@ class GoapData {
             // Favor close-by stuff.
             Goap.AddEvalOption(ev, {
                 destination: option
-            }, distance);
+            }, distance, IdAttr.generate(option));
         });
     }
 
@@ -128,7 +128,7 @@ class GoapData {
             var distance = NormCoord.distance(UberCoord.toNorm(standing), UberCoord.toNorm(loc));
             Goap.AddEvalOption(ev, {
                 destination: loc
-            }, distance);
+            }, distance, IdAttr.generate(loc));
         });
     }
 
@@ -206,7 +206,7 @@ class GoapData {
             // TODO: Figure out how to cost these targets.
             Goap.AddEvalOption(ev, {
                 target: target
-            }, 0);    
+            }, 0, IdAttr.generate(target));
         });
     });
 

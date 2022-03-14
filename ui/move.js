@@ -112,6 +112,57 @@ class Move {
     static MoveIcon = new ScopedAttr("move_icon", StringAttr);
 
 
+    /** Finds all locations from which we can hit the target. */
+    static findUsablePositions(move, target) {
+        debugger;
+        var battlefield = BattlefieldHandler.find(move);
+        var user = Unit.findUp(move);
+        var inCell = BattlefieldHandler.cellAt(battlefield, user);
+        var inZone = CellBlock.findByRef(battlefield, user);
+        var baseTeam = TeamAttr.get(user);
+        var targetCell = BattlefieldHandler.cellAt(battlefield, target);
+        var targetZone = CellBlock.findByRef(battlefield, target);
+
+        return qsa(move, 'target-mode').map(function(modeElt) {
+            // Special case: Self target just returns self.
+            var targetType = Move.TargetType.findGet(modeElt);
+            var targetMode = Move.TargetMode.findGet(modeElt) || null;
+            var effectivePos = Move.EffectiveFrom.findGet(modeElt) || [];
+
+            if (targetType == 'self') {
+                return [inCell];
+            }
+            var found = [];
+            switch (targetMode) {
+                case "AT":
+                    // Adjacent tiles.
+                    found = Grid.adjacentCells(targetCell);
+                    break;
+                case "SZ":
+                    found = Cell.findAllInBlock(targetZone);
+                    break;
+                case "AZ":
+                    found = Direction.allDirections().filter(function(dir) {
+                        // First, check that the block even exists.
+                        var thatBlock = CellBlock.findByCoord(battlefield, BigCoord.plus(BigCoord.extract(targetZone), Direction.coordDelta(Direction.flip(dir))));
+                        if (!thatBlock || !CellBlock.isActive(thatBlock)) {
+                            return false;
+                        }
+                        
+                        return effectivePos.map(ep => `${dir}-${ep}`).map(function(selector) {
+                            return qsa(thatBlock, `[effective-positions~="${selector}"]`);
+                        });
+                    }).flat();
+                    break;
+            }
+            // Filter out anything with something in the way, unless that something is us.
+            return found.filter(function(cell) {
+                if (cell === inCell) return true;
+                return !BattlefieldHandler.unitAt(battlefield, cell);
+            });
+        }).flat();
+   }
+
     /** TODO: Consider splitting this up somehow. */
     static TargetMode = new ScopedAttr("target-mode", StringAttr);
     static TargetType = new ScopedAttr("target-type", StringAttr);

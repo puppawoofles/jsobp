@@ -163,12 +163,16 @@ class Goap {
             actions: []
         }];
         var options = [];
+        var minOptionCost = Number.MAX_SAFE_INTEGER;
 
         while (toEvaluate.length > 0) {
             var currentWalk = toEvaluate.shift();
             if (currentWalk.nodes.length == 0) {
                 // Base case: We have terminated a requirement pass.
                 options.push(currentWalk);
+                if (currentWalk.cost < minOptionCost) {
+                    minOptionCost = currentWalk.cost;
+                }
                 continue;
             }
 
@@ -179,6 +183,11 @@ class Goap {
             var currentNode = currentProblem.node;
             Logger.info("Currently evaluating", Goap.N.get(currentNode));            
             currentWalk.cost += currentProblem.cost;
+            if (currentWalk.cost > minOptionCost) {
+                // This is dead because we have a better option already.
+                continue;
+            }
+
             currentWalk.actions.extend(qsa(currentNode, 'goap-action').map(function(action) {
                return {
                    action: action,

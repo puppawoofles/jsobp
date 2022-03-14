@@ -33,7 +33,6 @@ class BattlefieldHandler {
 		Unit.CellBlock.set(unit, BigGridLabel.get(block));
         BigCoord.write(unit, bigCoord);
         SmallCoord.write(unit, smallCoord);
-		if (!TeamAttr.get(unit)) TeamAttr.copy(unit, block);
 		IdAttr.generate(unit);
 		overlay.appendChild(unit);
 		Unit.join(unit);

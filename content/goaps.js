@@ -27,6 +27,7 @@ class GoapData {
 
     static Matching = new ScopedAttr('matching', StringAttr);
     static Team = new ScopedAttr('team', StringAttr);
+    static Mode = new ScopedAttr('mode', StringAttr);
 
     static HasMoveActive = GoapData._Base(function(ev, reqElt, params, unit) {
         // Always return blocked so the AI evaluates all move options.
@@ -64,11 +65,22 @@ class GoapData {
         Goap.MarkBlocked(ev, uberLabel != targetLocation);
     });
 
-    static HasEnemyTarget = GoapData._Base(function(ev, reqElt, params, unit) {
-        // TODO: Implement.
+    static HasEnemyTarget = GoapData._Base(function(ev, reqElt, params, unit) {                
+        // TODO: Implement to set a target like we do with destinations.
     });
 
+    /** Verifies if were at the location, and if not, returns those as options. */
     static AtLocation = GoapData._Base(function(ev, reqElt, params, unit) {
+        var mode = GoapData.Mode.get(reqElt);
+        if (mode === 'move_target') {
+            return GoapData.AtLocation_MoveTarget(ev, reqElt, params, unit);
+        }
+        if (GoapData.Matching.has(reqElt)) {
+            return GoapData.AtLocation_Matcher(ev, reqElt, params, unit);
+        }
+    });
+
+    static AtLocation_Matcher(ev, reqElt, params, unit) {
         var matcher = GoapData.Matching.get(reqElt);
         var battlefield = BattlefieldHandler.find(unit);
 
@@ -90,17 +102,36 @@ class GoapData {
 
         Cell.findAll(battlefield).filter(function(cell) {
             return cell.matches(matcher);
-        }).map(function(cell) {
-            return {
-                destination: cell
-            };
         }).forEach(function(option) {
-            var distance = NormCoord.distance(
-                    UberCoord.toNorm(unit), UberCoord.toNorm(option.destination));
+            var distance = NormCoord.distance(UberCoord.toNorm(unit), UberCoord.toNorm(option));
             // Favor close-by stuff.
-            Goap.AddEvalOption(ev, option, distance);
+            Goap.AddEvalOption(ev, {
+                destination: option
+            }, distance);
         });
-    });
+    }
+
+    static AtLocation_MoveTarget(ev, reqElt, params, unit) {
+        // We want to figure out where we have to be to hit this boy.
+        var move = params.move;
+        var target = params.target;
+
+        var locations = Move.findUsablePositions(move, target);
+        var battlefield = BattlefieldHandler.find(unit);
+        var standing = BattlefieldHandler.cellAt(battlefield, unit);
+
+        if (!locations.includes(standing)) {
+            Goap.MarkBlocked(ev);
+        }
+
+        locations.forEach(function(loc) {
+            var distance = NormCoord.distance(UberCoord.toNorm(standing), UberCoord.toNorm(loc));
+            Goap.AddEvalOption(ev, {
+                destination: loc
+            }, distance);
+        });
+    }
+
 
     static UnobstructedPathToDestination = GoapData._Base(function(ev, reqElt, params, unit) {
         var battlefield = BattlefieldHandler.find(unit);
@@ -124,16 +155,61 @@ class GoapData {
         });
 
         // Check if we're obstructed.
-        var obstructions = !!path.map(function(cell) {
+        var obstructions = path.map(function(cell) {
             var found = BattlefieldHandler.unitAt(battlefield, cell);
             if (!found || found == unit) return null;
             return (TeamAttr.get(unit) == TeamAttr.get(found)) ? null : found;
         }).filter(u => !!u);
+
+        if (obstructions.length > 0) {
+            Goap.MarkBlocked(ev);
+        }
 
         Goap.AddEvalOption(ev, {
             path: path,
             obstructions: obstructions
         }, obstructions.length + path.length);
     });
+
+    static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
+        Goap.MarkBlocked(ev);
+        Goap.AddEvalOption(ev, {}, 1);
+    });
+    
+    static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
+        Goap.MarkBlocked(ev);
+        Goap.AddEvalOption(ev, {}, 0);
+    });
+    
+    // Goal: Obstacles are now targets.
+    static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
+        Goap.MarkBlocked(ev);
+        Goap.AddEvalOption(ev, {
+            targets: params.obstructions.clone()
+        }, params.obstructions.length);
+    });
+
+    /** Populates {target:} for each of our potential enemies. */
+    static EnemiesAlive = GoapData._Base(function(ev, reqElt, params, unit) {
+        // If something else set some targets, carry those forward.
+        var targets = params.targets || [];
+        if (targets.length == 0) {
+            // TODO: Implement this.
+            // You should factor in targeting.
+
+        }
+        if (targets.length > 0) {
+            Goap.MarkBlocked(ev);
+        }
+
+        targets.forEach(function(target) {
+            // TODO: Figure out how to cost these targets.
+            Goap.AddEvalOption(ev, {
+                target: target
+            }, 0);    
+        });
+    });
+
+
 }
 WoofRootController.register(GoapData);

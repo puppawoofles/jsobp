@@ -38,6 +38,22 @@ class Direction {
         }
         throw boom("Unknown direction for delta-ing", direction);
     }
+
+    static flip(direction) {
+        switch (direction) {
+            case Direction.Left:
+                return Direction.Right;
+            case Direction.Right:
+                return Direction.Left;
+            case Direction.Up:
+                return Direction.Down;
+            case Direction.Down:
+                return Direction.Up;
+            case Direction.None:
+                return Direction.None;
+        }
+        throw boom("Unknown direction for flipping", direction);
+    }
 }
 
 class EffectivePosition {    

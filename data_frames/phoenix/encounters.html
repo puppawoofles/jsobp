@@ -55,12 +55,12 @@
                     </endCondition>
                     <installHandlers>
                         <!-- TODO: Make this work with the spawn tags. -->
-                        <handler handler="HuntForFoodEncounter.SpawnDeer" event-types="Volley:before" spawn-count="1" spawn-selector="[tag~='spawn']" location-filter="HuntForFoodEncounter.SpawnLocationFilter">
+                        <handler handler="HuntForFoodEncounter.SpawnDeer" event-types="Volley:before" spawn-count="5" spawn-selector="[tag~='spawn']" location-filter="HuntForFoodEncounter.SpawnLocationFilter">
                             <unit-gen base="${UNITS}.deer">
                                 <copy team="enemy" preferred-locations="B1.A1 B1.B1 B1.C1"></copy>
                                 <add tag="deer"></add>
                                 <forMoveSlots selector="[tag=basic]">
-                                    <copyDest cooldown-duration="12"></copyDest>
+                                    <copyDest cooldown-duration="2"></copyDest>
                                 </forMoveSlots>
                             </unit-gen>
                         </handler>

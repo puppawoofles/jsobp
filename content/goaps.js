@@ -197,25 +197,31 @@ class GoapData {
         });
 
         // Check if we're obstructed.
-        var obstructions = path.map(function(cell) {
+        var allObstructions = path.map(function(cell) {
             var found = BattlefieldHandler.unitAt(battlefield, cell);
             if (!found || found == unit) return null;
-            return (TeamAttr.get(unit) == TeamAttr.get(found)) ? null : found;
+            return found;
         }).filter(u => !!u);
 
-        if (obstructions.length > 0) {
+        var obstructions = allObstructions.filter(function(found) {
+            return (TeamAttr.get(unit) == TeamAttr.get(found)) ? null : found;
+        });
+
+        if (allObstructions.length > 0) {
             Goap.MarkBlocked(ev);
         }
 
         Goap.AddEvalOption(ev, {
             path: path,
             obstructions: obstructions
-        }, obstructions.length + path.length);
+        }, (allObstructions.length * 5) + path.length);
     });
     
     // Goal: Obstacles are now targets.
     static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
-        Goap.MarkBlocked(ev);
+        if (params.obstructions.length > 0) {
+            Goap.MarkBlocked(ev);
+        }
         Goap.AddEvalOption(ev, {
             targets: params.obstructions.clone()
         }, params.obstructions.length);

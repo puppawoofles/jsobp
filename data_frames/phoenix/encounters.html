@@ -55,7 +55,7 @@
                     </endCondition>
                     <installHandlers>
                         <!-- TODO: Make this work with the spawn tags. -->
-                        <handler handler="HuntForFoodEncounter.SpawnDeer" event-types="Volley:before" spawn-count="20" spawn-selector="[tag~='spawn']" location-filter="HuntForFoodEncounter.SpawnLocationFilter">
+                        <handler handler="HuntForFoodEncounter.SpawnDeer" event-types="Volley:before" spawn-count="1" spawn-selector="[tag~='spawn']" location-filter="HuntForFoodEncounter.SpawnLocationFilter">
                             <unit-gen base="${UNITS}.deer">
                                 <copy team="enemy" preferred-locations="B1.A1 B1.B1 B1.C1"></copy>
                                 <add tag="deer"></add>
@@ -95,6 +95,9 @@
 
             <!-- Set up handlers -->
             <installHandlers>
+                <!-- Experimental stuff! -->
+                <handler handler="Goals.TestHandler" event-types="Volley:after"></handler>
+
                 <!-- Encounter Structure -->
                 <handler handler="EncounterRules.Round" event-types="Round"></handler>
                 <handler handler="RoundRules.PlayRound" event-types="PlayRound"></handler>

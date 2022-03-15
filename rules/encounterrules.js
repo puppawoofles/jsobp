@@ -444,21 +444,6 @@ class RoundRules {
         return Promise.resolve().then(baseFn);
     });
 
-
-    static _findActiveAbilitiesInBlock = function(block, team) {
-
-        var battlefield = BattlefieldHandler.find(block);
-        var bigCoord = BigCoord.selector(BigCoord.extract(block));
-        var abilitySelector = Ability.CurrentCooldown.selector(1);
-        var teamSelector = TeamAttr.buildSelector(team);
-
-        return qsa(battlefield, teamSelector + bigCoord + " .ability" + abilitySelector).map(function(elt) {
-            return Ability.find(elt);
-        }).filter(function(a) {
-            return Ability.shouldTriggerSkill(a, Unit.findUp(a));
-        });
-    }
-
     /**
      * After volleys.
      */
@@ -502,12 +487,6 @@ class RoundRules {
         }).then(function() {
             // Find all units that have yet to act.
             var activateFn = function() {
-                // First, refresh unit abilities.  This might be slow though. :(
-                // TODO: Figure out if this is too inefficient.
-                Unit.findAllWith(battlefield, Unit.Acted.buildAntiSelector(true)).forEach(function(unit) {
-                    Move.findAll(unit).forEach(Move.isActive);
-                });
-
                 var cdReadyMap = MoveSlot.findAllUnitsWithReadySlot(battlefield).filter(u => !Unit.Acted.get(u)).groupBy(TeamAttr.get);
 
                 // Next up, we want to find a group to activate based on the combos available to them.
@@ -559,8 +538,20 @@ class RoundRules {
             };
             return Promise.resolve().then(activateFn);
         }).then(function(results) {
+            var deadFn = function() {
+                var deadUnits = qsa(battlefield, "progress.hp_bar[value='0']");
+                if (deadUnits.length == 0) {
+                    return results;
+                }
+    
+                return GameEffect.push(effect, GameEffect.create("UnitDeath", {
+                    unit: Unit.findUp(deadUnits[0])
+                }, handler)).then(deadFn.bind(this));
+            };
+            return deadFn();
+        }).then(function(results) {
             // Reset state.
-            Unit.Acted.findAll(battlefield, true).forEach(u => Unit.Acted.set(u, false));
+            Unit.Acted.findAll(battlefield, true).forEach(u => Unit.Acted.set(u, false));            
             return results;
         });
     });

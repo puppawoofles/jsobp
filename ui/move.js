@@ -219,7 +219,10 @@ class Move {
                         if (opposed.includes(TeamAttr.get(unit))) {
                             return true;
                         }
-                        // TODO: Taunted neutrals.
+                        var target = Unit.getTarget(user);
+                        if (unit == target) {
+                            return true;
+                        }
                         return false;
                     });
                     break;

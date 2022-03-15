@@ -57,21 +57,17 @@
           actually change things on the battlefield.
         -->
         <goap-node n="set_destination">
-            <goap-action invoke-fn="TODO"></goap-action>
+            <goap-action invoke-fn="GoapAction.SetDestination"></goap-action>
             <res n="has_destination"></res>
         </goap-node>
 
         <goap-node n="set_target">
-            <goap-action invoke-fn="TODO"></goap-action>
+            <goap-action invoke-fn="GoapAction.SetTarget"></goap-action>
             <res n="has_enemy_target"></res>
         </goap-node>
 
-        <goap-node n="activate_moveset" expand-fn="GoapModes.Movesets">
-            <res n="has_moveset"></res>
-        </goap-node>
-
         <goap-node n="activate_move" expand-fn="GoapModes.MoveRequirements">
-            <goap-action invoke-fn="TODO"></goap-action>
+            <goap-action invoke-fn="GoapAction.ActivateMove"></goap-action>
             <res n="has_move_active"></res>
         </goap-node>
 
@@ -82,7 +78,7 @@
         -->
 
         <!-- Main goals are up here.  These have no specific results. -->
-        <goap-node n="flee">
+        <goap-node n="flee" tag="goal">
             <req n="has_move_active" matching="[tag~=flee]"></req>
         </goap-node>        
 

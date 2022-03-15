@@ -183,6 +183,21 @@ class Unit {
         Unit.setCurrentHP(unit, Math.min(Unit.currentHP(unit) + amount, Unit.maxHP(unit)));
     }
 
+    static Target = new ScopedAttr('target', ListAttr);
+    static setTarget(unit, otherUnit) {
+        var value = WoofType.buildSelectorFor(otherUnit);
+        Unit.Target.set(unit, [value]);
+    }
+
+    static getTarget(unit) {
+        var targetSelector = Unit.Target.get(unit);
+        if (!targetSelector) return null;
+        if (targetSelector.length == 0) return null;
+
+        var battlefield = BattlefieldHandler.find(unit);
+        return qs(battlefield, targetSelector[0]);
+    }
+
     static setTargetLocation(unit, cell) {
         Unit.TargetLocation.set(unit, Grid.contextualLabelFor(cell, false));
     }

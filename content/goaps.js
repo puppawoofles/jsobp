@@ -1,3 +1,6 @@
+/**
+ * All of our <goap-node> Expand functions.
+ */
 class GoapModes {
 
     static MoveRequirements(nodeOption, req, dataOption, unit) {
@@ -12,8 +15,42 @@ class GoapModes {
 }
 WoofRootController.register(GoapModes);
 
+/**
+ * All of our <goap-action> invokes.
+ */
+class GoapAction {
+    static SetDestination(action, unit, data, resources) {
+        if (resources['destination']) return;
+        resources['destination'] = true;
 
+        Unit.setTargetLocation(unit, data.destination);
+    }
 
+    static SetTarget(action, unit, data, resources) {
+        if (resources['target']) return;
+        resources['target'] = true;
+
+        Unit.setTarget(unit, data.target);
+    }
+
+    static ActivateMove(action, unit, data, resources) {
+        var slotId = IdAttr.generate(data.slot);
+        if (resources[slotId]) return;
+        resources[slotId] = true;
+
+        Move.Inactive.set(data.move);
+        qsa(data.slot, WoofType.buildSelector("Move")).forEach(function(m) {
+            if (data.move !== m) {
+                Move.Inactive.set(m, true);
+            }
+        });
+    }
+}
+WoofRootController.register(GoapAction);
+
+/**
+ * All of our <goap-data> evals.
+ */
 class GoapData {
     /** A base impl that makes an ev and returns it. */
     static _Base(func) {
@@ -66,7 +103,12 @@ class GoapData {
     });
 
     static HasEnemyTarget = GoapData._Base(function(ev, reqElt, params, unit) {                
-        // TODO: Implement to set a target like we do with destinations.
+        var target = Unit.getTarget(unit);
+        if (params.target == target) {
+            return;
+        }
+        Goap.MarkBlocked(ev, true);
+        Goap.AddEvalOption(ev, {}, 0);
     });
 
     /** Verifies if were at the location, and if not, returns those as options. */
@@ -170,16 +212,6 @@ class GoapData {
             obstructions: obstructions
         }, obstructions.length + path.length);
     });
-
-    static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
-        Goap.MarkBlocked(ev);
-        Goap.AddEvalOption(ev, {}, 1);
-    });
-    
-    static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
-        Goap.MarkBlocked(ev);
-        Goap.AddEvalOption(ev, {}, 0);
-    });
     
     // Goal: Obstacles are now targets.
     static UnobstructPath = GoapData._Base(function(ev, reqElt, params, unit) {
@@ -213,3 +245,61 @@ class GoapData {
 
 }
 WoofRootController.register(GoapData);
+
+
+
+/**
+ * A wrapper thing that knows how to kick off the GOAP node stuff.
+ */
+class Goals {
+    static __cached = null;
+
+    static __precache() {
+        if (!Goals.__cached) {
+            Goals.__cached = fa('goap-node[tag~="goal"]').toObject(function(key) {
+                return Goap.N.get(key);
+            });
+        }
+        return Goals.__cached.clone();
+    }
+
+
+    static TestHandler = GameEffect.handle(function(handler, effect, params) {
+        var b = BattlefieldHandler.find(handler);
+        Unit.findAll(b).forEach(Goals.doTheThing);
+    });
+
+
+
+    static InvokeFn = new ScopedAttr('invoke-fn', FunctionAttr)
+    static doTheThing(unit) {
+
+        var goals = qsa(unit, 'goal');
+
+        // For now, just do them in order.
+        if (goals.length == 0) return;
+
+
+        var result;
+        for (var i = 0; i < goals.length && !result; i++) {
+            result = Goals.InvokeFn.invoke(goals[i], unit);
+        }
+        if (!result) return;
+
+        // Flip our actions around.
+        result.actions.reverse();
+
+        var resources = {};
+        result.actions.forEach(function(actionStuff) {
+            Goals.InvokeFn.invoke(actionStuff.action, actionStuff.action, unit, actionStuff.data, resources);
+        });
+
+    }
+
+    static Flee(unit) {
+        var cached = Goals.__precache();
+        return Goap.goap(cached['flee'], unit);
+    }
+
+}
+WoofRootController.register(Goals);

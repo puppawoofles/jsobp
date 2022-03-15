@@ -284,6 +284,13 @@ class BasicScriptCommands {
         params.unshift(obj);
         BasicScriptCommands.Fn.aInvoke(elt, params);
     }
+
+    static Selector = new ScopedAttr("selector", StringAttr);
+    static append(elt, obj, defs) {
+        var selector = BasicScriptCommands.Selector.get(elt);
+        var target = qs(obj, selector);
+        Utils.moveChildren(elt.cloneNode(true), target);
+    }
 }
 
 
